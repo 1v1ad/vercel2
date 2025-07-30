@@ -1,55 +1,36 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>VK One Tap Login</title>
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+  <script src="https://unpkg.com/@vkid/sdk@2.10.0/dist-sdk/umd/index.js"></script>
 </head>
 <body>
-  <h1>VK One Tap Login</h1>
-  <div id="vk_container"></div>
+  <div class="header" style="background-color: #0077FF; padding: 10px;">
+    <b style="color: white;">VK One Tap Login</b>
+  </div>
+  <div class="container" style="margin-top: 30px; text-align: center;">
+    <div id="vk_id_signin"></div>
+    <p>или войти через VK ID с использованием данных из сервиса</p>
+  </div>
+  <script>
+    const authConfig = {
+      clientId: '53969710',
+      redirectUri: window.location.origin + '/vk-callback.html'
+    };
 
-  <script type="text/javascript">
-    if ('VKIDSDK' in window) {
-      const VKID = window.VKIDSDK;
-
-      VKID.Config.init({
-        app: 53969710,
-        redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
-        responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.ONE_TAP,
-        scope: ''
-      });
-
-      const oneTap = new VKID.OneTap();
-
-      oneTap.render({
-        container: document.getElementById("vk_container"),
-        scheme: 'dark',
-        showAlternativeLogin: true,
-        oauthList: ['mail_ru']
-      })
-      .on(VKID.WidgetEvents.ERROR, vkidOnError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-        const code = payload.code;
-        const deviceId = payload.device_id;
-
-        VKID.Auth.exchangeCode(code, deviceId)
-          .then(vkidOnSuccess)
-          .catch(vkidOnError);
-      });
-
-      function vkidOnSuccess(data) {
-        console.log('VKID success:', data);
-        window.location.href = "/lobby.html";
+    const VKID = window.VKIDSDK;
+    VKID.Config.set(authConfig);
+    VKID.Widgets.OneTapButton.init({
+      mountEl: document.getElementById('vk_id_signin'),
+      style: 'primary',
+      callback: ({ type, payload }) => {
+        if (type === 'AUTH_SUCCESS') {
+          const { code, device_id } = payload;
+          window.location.href = `/vk-callback.html?code=${code}&device_id=${device_id}`;
+        }
       }
-
-      function vkidOnError(error) {
-        console.error('VKID error:', error);
-        alert('Ошибка авторизации: ' + (error.message || JSON.stringify(error)));
-      }
-    }
+    });
   </script>
 </body>
 </html>
