@@ -1,41 +1,68 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>VK One Tap Login</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    .header {
-      background-color: #0077FF;
-      color: white;
-      padding: 10px;
-      font-weight: bold;
-      font-size: 20px;
-    }
-    #vk_auth {
-      margin-top: 40px;
-      display: flex;
-      justify-content: center;
-    }
-  </style>
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
 </head>
 <body>
-  <div class="header">VK One Tap Login</div>
-  <div id="vk_auth"></div>
+  <h1>VK One Tap Login</h1>
+  <div id="vk_container"></div>
 
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0"></script>
-  <script>
-    window.VKIDSDK.Widgets.OneTapAuthWidget("vk_auth", {
-      app_id: 53969710,
-      state: "random_state_string",
-      redirect_url: "https://sweet-twilight-63a9b6.netlify.app/vk-callback.html"
-    });
+  <script type="text/javascript">
+    const BACKEND_URL = "https://example.com"; // ← заменить на адрес backend
+
+    if ('VKIDSDK' in window) {
+      const VKID = window.VKIDSDK;
+
+      VKID.Config.init({
+        app: 53969710,
+        redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.ONE_TAP,
+        scope: ''
+      });
+
+      const oneTap = new VKID.OneTap();
+
+      oneTap.render({
+        container: document.getElementById("vk_container"),
+        scheme: 'dark',
+        showAlternativeLogin: true,
+        oauthList: ['mail_ru']
+      })
+      .on(VKID.WidgetEvents.ERROR, vkidOnError)
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+        const code = payload.code;
+        const deviceId = payload.device_id;
+
+        VKID.Auth.exchangeCode(code, deviceId)
+          .then(vkidOnSuccess)
+          .catch(vkidOnError);
+      });
+
+      async function vkidOnSuccess(data) {
+        console.log('VKID success:', data);
+
+        // отправляем user на backend
+        try {
+          await fetch(BACKEND_URL + "/api/save-user", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data.user)
+          });
+        } catch (e) {
+          console.warn("Не удалось отправить user на backend:", e);
+        }
+
+        window.location.href = "/lobby.html";
+      }
+
+      function vkidOnError(error) {
+        console.error('VKID error:', error);
+        alert('Ошибка авторизации: ' + (error.message || JSON.stringify(error)));
+      }
+    }
   </script>
 </body>
 </html>
