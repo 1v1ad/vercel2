@@ -1,12 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Лобби</title>
 </head>
 <body>
   <h1>Добро пожаловать в лобби!</h1>
-  <div id="userInfo"></div>
+  <div class="user-info" id="userInfo" style="display: flex; align-items: center; gap: 10px; margin-top: 20px;"></div>
 
   <script>
     const firstName = localStorage.getItem("user_first_name");
@@ -14,10 +15,13 @@
     const avatar = localStorage.getItem("user_avatar");
 
     if (firstName && avatar) {
-      document.getElementById("userInfo").innerHTML = `
-        <p>${firstName} ${lastName}</p>
-        <img src="${avatar}" width="50" height="50" style="border-radius: 50%" />
+      const container = document.getElementById("userInfo");
+      container.innerHTML = `
+        <img src="\${avatar}" alt="avatar" width="40" height="40" style="border-radius: 50%;" />
+        <span>\${firstName} \${lastName}</span>
       `;
+    } else {
+      console.warn("Данные пользователя не найдены");
     }
   </script>
 </body>

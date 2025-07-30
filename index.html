@@ -1,33 +1,29 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VK One Tap Login</title>
-  <script src="https://unpkg.com/@vkid/sdk@2.10.0/dist-sdk/umd/index.js"></script>
+  <script src="https://unpkg.com/@vkid/sdk@2.10.0/dist-sdk.umd/index.js"></script>
 </head>
 <body>
-  <div class="header" style="background-color: #0077FF; padding: 10px;">
-    <b style="color: white;">VK One Tap Login</b>
-  </div>
-  <div class="container" style="margin-top: 30px; text-align: center;">
-    <div id="vk_id_signin"></div>
-    <p>или войти через VK ID с использованием данных из сервиса</p>
-  </div>
-  <script>
-    const authConfig = {
-      clientId: '53969710',
-      redirectUri: window.location.origin + '/vk-callback.html'
-    };
+  <div class="header" style="background: #0077FF; color: white; padding: 10px;">VK One Tap Login</div>
+  <p style="text-align: center;">или войти через VK ID с использованием данных из сервиса</p>
 
-    const VKID = window.VKIDSDK;
-    VKID.Config.set(authConfig);
-    VKID.Widgets.OneTapButton.init({
-      mountEl: document.getElementById('vk_id_signin'),
-      style: 'primary',
-      callback: ({ type, payload }) => {
-        if (type === 'AUTH_SUCCESS') {
-          const { code, device_id } = payload;
-          window.location.href = `/vk-callback.html?code=${code}&device_id=${device_id}`;
+  <script>
+    window.VKID.Config.set({
+      app: 53969710,
+      redirectUrl: window.location.origin + "/vk-callback.html",
+    });
+
+    window.VKID.Widgets.OneTapButton("body", {
+      callback: (response) => {
+        console.log("VK One Tap callback:", response);
+        if (response.status === 'ok' && response.user) {
+          const userData = encodeURIComponent(JSON.stringify(response.user));
+          window.location.href = "/vk-callback.html?user=" + userData;
+        } else {
+          alert("Ошибка авторизации через VK");
         }
       }
     });
