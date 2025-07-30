@@ -3,43 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <title>Лобби</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: sans-serif;
+      margin: 0;
+      padding: 8px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .user-info {
-      position: absolute;
-      top: 10px;
-      right: 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
     .user-info img {
+      border-radius: 50%;
       width: 32px;
       height: 32px;
-      border-radius: 50%;
-    }
-    .user-info span {
-      font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <h1>Добро пожаловать в лобби!</h1>
-
-  <div class="user-info" id="userInfo" style="display: none;">
-    <img id="userAvatar" src="" alt="avatar">
-    <span id="userName"></span>
+  <div class="header">
+    <h1>Добро пожаловать в лобби!</h1>
+    <div class="user-info" id="userInfo" style="display: none;"></div>
   </div>
 
   <script>
-    const user = JSON.parse(localStorage.getItem("vk_user"));
-
-    if (user && user.first_name && user.photo) {
-      document.getElementById("userAvatar").src = user.photo;
-      document.getElementById("userName").textContent = user.first_name;
-      document.getElementById("userInfo").style.display = "flex";
+    try {
+      const user = JSON.parse(localStorage.getItem("vk_user"));
+      if (user && user.first_name && user.photo) {
+        const info = document.getElementById("userInfo");
+        info.innerHTML = `<img src="${user.photo}" alt="avatar"><span>${user.first_name}</span>`;
+        info.style.display = "flex";
+      }
+    } catch (e) {
+      console.warn("Нет данных пользователя");
     }
   </script>
 </body>
