@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -55,8 +56,6 @@
       letter-spacing: 2px;
       text-shadow: 0 0 8px #42040480;
     }
-
-    /* Лобби */
     .lobby-main {
       display: flex;
       flex-direction: column;
@@ -67,71 +66,86 @@
     }
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 30px;
-      width: 80vw; max-width: 900px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 40px;
+      width: 80vw; max-width: 1100px;
       margin: 0 auto;
     }
     .game-card {
-      background: linear-gradient(145deg, #26232e 65%, #3d2e1d 100%);
-      border-radius: 30px;
-      box-shadow: 0 2px 16px #000a, 0 0 24px #ffbb0055 inset;
-      padding: 30px 22px 22px 22px;
+      background: linear-gradient(145deg, #26232e 60%, #4d371d 100%);
+      border-radius: 36px;
+      box-shadow:
+        0 4px 28px 8px #000a,
+        0 0 42px #ffbb0040 inset,
+        0 8px 48px #fa42421a;
+      padding: 40px 30px 30px 30px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      border: 2px solid #ffbb00cc;
+      border: 3.5px solid #ffbb00e0;
       position: relative;
-      transition: transform 0.12s;
+      overflow: hidden;
+      transition: transform 0.16s, box-shadow 0.18s;
+    }
+    .game-card::before {
+      content: "";
+      position: absolute;
+      top: 18px; left: 18px; right: 18px;
+      height: 36px;
+      background: linear-gradient(90deg, #fff4 25%, #fff1 65%, transparent);
+      border-radius: 20px 20px 90px 90px;
+      opacity: 0.32;
+      z-index: 1;
     }
     .game-card:hover {
-      transform: translateY(-6px) scale(1.035);
-      box-shadow: 0 8px 30px #ffbb0033, 0 0 30px #ff0022bb inset;
-      border-color: #ff4444cc;
+      transform: translateY(-9px) scale(1.045);
+      box-shadow: 0 12px 50px #ffbb0030, 0 0 50px #fa4242bb inset;
+      border-color: #ff4444ee;
     }
     .game-icon {
-      width: 70px; height: 70px;
-      margin-bottom: 18px;
+      width: 88px; height: 88px;
+      margin-bottom: 26px;
       border-radius: 50%;
-      box-shadow: 0 0 18px #fa424280;
-      background: linear-gradient(135deg, #fff1e3 10%, #ffc143 90%);
+      box-shadow: 0 0 24px #fa424250, 0 0 0 6px #fff3;
+      background: linear-gradient(135deg, #fff3c0 10%, #ffcf62 100%);
       display: flex; align-items: center; justify-content: center;
-      font-size: 2.2em;
+      font-size: 2.7em;
       color: #fa4242;
+      border: 2.5px solid #ffbb0066;
     }
     .game-title {
-      font-size: 1.3em;
-      font-weight: 600;
-      margin-bottom: 8px;
-      letter-spacing: 0.6px;
+      font-size: 1.45em;
+      font-weight: 700;
+      margin-bottom: 11px;
+      letter-spacing: 0.8px;
+      text-shadow: 0 2px 8px #000a;
     }
     .game-prize {
       color: #ffbb00;
-      font-size: 1.2em;
+      font-size: 1.28em;
       font-weight: 600;
-      margin-bottom: 10px;
-      text-shadow: 0 0 5px #ffbb0050;
+      margin-bottom: 18px;
+      text-shadow: 0 0 7px #ffbb0040;
     }
     .game-btn {
       background: linear-gradient(90deg, #ff4242 60%, #ffa502 100%);
       color: #fff;
       border: none;
       outline: none;
-      padding: 12px 32px;
-      border-radius: 18px;
-      font-size: 1.15em;
+      padding: 15px 38px;
+      border-radius: 20px;
+      font-size: 1.21em;
       font-weight: 700;
       letter-spacing: 1px;
       box-shadow: 0 0 16px #fa424299;
       cursor: pointer;
       transition: background 0.13s, box-shadow 0.13s;
+      margin-top: 10px;
     }
     .game-btn:hover {
       background: linear-gradient(90deg, #ffbb00 40%, #ff4242 100%);
       box-shadow: 0 0 22px #ffbb00cc;
     }
-
-    /* Кнопка создать */
     .create-btn {
       margin-top: 32px;
       background: linear-gradient(90deg, #21d397 20%, #ff4242 100%);
@@ -167,7 +181,6 @@
   </div>
   <main class="lobby-main">
     <div class="games-grid">
-      <!-- Пример карточек игр -->
       <div class="game-card">
         <div class="game-icon">🎲</div>
         <div class="game-title">Дуэль 1 на 1</div>

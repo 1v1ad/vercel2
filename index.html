@@ -5,11 +5,71 @@
   <meta charset="UTF-8">
   <title>VK One Tap Login</title>
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%; width: 100vw;
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .vk-container-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 64px;
+    }
+    .vk-login-box {
+      background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
+      border-radius: 36px;
+      box-shadow:
+        0 4px 28px 8px #000a,
+        0 0 32px #ffbb0040 inset;
+      padding: 56px 48px 44px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 3.5px solid #ffbb00e0;
+      position: relative;
+      min-width: 370px;
+      max-width: 92vw;
+    }
+    .vk-login-box::before {
+      content: "";
+      position: absolute;
+      top: 18px; left: 18px; right: 18px;
+      height: 32px;
+      background: linear-gradient(90deg, #fff4 15%, #fff1 85%, transparent);
+      border-radius: 20px 20px 90px 90px;
+      opacity: 0.24;
+      z-index: 1;
+    }
+    .vk-login-title {
+      font-size: 2em;
+      font-weight: 800;
+      color: #fa4242;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 8px #42040480;
+      margin-bottom: 26px;
+      margin-top: 6px;
+    }
+    #vk_container {
+      margin-top: 16px;
+      z-index: 2;
+    }
+  </style>
 </head>
 <body>
-  <h1>VK One Tap Login</h1>
-  <div id="vk_container"></div>
-
+  <div class="vk-container-wrap">
+    <div class="vk-login-box">
+      <div class="vk-login-title">Вход через VK</div>
+      <div id="vk_container"></div>
+    </div>
+  </div>
   <script type="text/javascript">
     if ('VKIDSDK' in window) {
       const VKID = window.VKIDSDK;
