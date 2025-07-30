@@ -1,36 +1,36 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Лобби</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 0; }
+    .header { display: flex; justify-content: space-between; padding: 10px; background: #333; color: white; }
+    .user-info { display: flex; align-items: center; gap: 8px; }
+    .user-info img { width: 32px; height: 32px; border-radius: 50%; }
+  </style>
 </head>
 <body>
-  <h1>Добро пожаловать в лобби!</h1>
-  <div id="userInfo"></div>
+  <div class="header">
+    <div>Добро пожаловать в лобби!</div>
+    <div class="user-info" id="userInfo" style="display: none;">
+      <img id="avatar" src="" alt="avatar">
+      <span id="name"></span>
+    </div>
+  </div>
 
   <script>
-    const token = localStorage.getItem("session_token");
-    if (!token) {
-      location.href = "/";
-    }
+    const firstName = localStorage.getItem("user_first_name");
+    const lastName = localStorage.getItem("user_last_name");
+    const avatar = localStorage.getItem("user_avatar");
 
-    fetch("/api/me", {
-      headers: {
-        "Authorization": "Bearer " + token
-      }
-    })
-    .then(res => res.json())
-    .then(user => {
-      document.getElementById("userInfo").innerHTML = `
-        <p>${user.first_name} ${user.last_name}</p>
-        <img src="${user.photo}" width="40" style="border-radius: 50%" />
-      `;
-    })
-    .catch(() => {
-      alert("Не удалось загрузить данные пользователя");
-      location.href = "/";
-    });
+    if (!firstName || !avatar) {
+      window.location.href = "/";
+    } else {
+      document.getElementById("userInfo").style.display = "flex";
+      document.getElementById("name").textContent = firstName + " " + lastName;
+      document.getElementById("avatar").src = avatar;
+    }
   </script>
 </body>
 </html>

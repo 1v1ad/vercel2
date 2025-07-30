@@ -1,67 +1,66 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VK One Tap Login</title>
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 0; }
+    .header { background: #0077ff; color: white; padding: 8px; font-weight: bold; }
+    .container { padding: 20px; text-align: center; }
+    #vk-container { margin-top: 20px; }
+  </style>
 </head>
 <body>
-  <h1>VK One Tap Login</h1>
-  <div id="vk_container"></div>
+  <div class="header">VK One Tap Login</div>
+  <div class="container">
+    <div id="vk-container"></div>
+    <p>или войти через VK ID с использованием данных из сервиса</p>
+  </div>
 
+  <script src="https://unpkg.com/@vkid/sdk@3.0.0/dist-sdk/umd/index.js"></script>
   <script>
+    const BACKEND_URL = "https://example.com"; // ← замените на свой backend
+
     if ('VKIDSDK' in window) {
       const VKID = window.VKIDSDK;
 
       VKID.Config.init({
         app: 53969710,
-        redirectUrl: window.location.origin + '/vk-callback.html',
+        redirectUrl: window.location.href,
         responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.ONE_TAP,
-        scope: ''
+        source: VKID.ConfigSource.LOWCODE,
       });
 
       const oneTap = new VKID.OneTap();
 
       oneTap.render({
-        container: document.getElementById("vk_container"),
+        container: document.getElementById('vk-container'),
         scheme: 'dark',
         showAlternativeLogin: true,
         oauthList: ['mail_ru']
       })
-      .on(VKID.WidgetEvents.ERROR, vkidOnError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-        const code = payload.code;
-        const deviceId = payload.device_id;
+      .on(VKID.WidgetEvents.ERROR, (err) => {
+        alert("VKID ошибка: " + err.message);
+      })
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async function ({ code, device_id }) {
+        try {
+          const res = await fetch(BACKEND_URL + "/api/vk-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, device_id })
+          });
 
-        fetch("/api/vk-login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ code, device_id: deviceId })
-        })
-        .then(res => res.json())
-        .then(data => {
-          console.log("Backend response:", data);
-          if (data.success && data.token) {
-            localStorage.setItem("session_token", data.token);
-            window.location.href = "/lobby.html";
-          } else {
-            alert("Ошибка авторизации: " + (data.message || "Unknown error"));
-          }
-        })
-        .catch(err => {
-          console.error("VK Auth error:", err);
-          alert("Ошибка при отправке данных на сервер.");
-        });
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message || "Не удалось авторизоваться");
+
+          localStorage.setItem("user_first_name", data.user.first_name);
+          localStorage.setItem("user_last_name", data.user.last_name);
+          localStorage.setItem("user_avatar", data.user.photo);
+          window.location.href = "/lobby.html";
+        } catch (err) {
+          alert("Ошибка при отправке данных на сервер: " + err.message);
+        }
       });
-
-      function vkidOnError(error) {
-        console.error("VKID error:", error);
-        alert("Ошибка VKID: " + (error.message || JSON.stringify(error)));
-      }
     }
   </script>
 </body>
