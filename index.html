@@ -1,68 +1,63 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VK One Tap Login</title>
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
-</head>
-<body>
-  <h1>VK One Tap Login</h1>
-  <div id="vk_container"></div>
-
-  <script type="text/javascript">
-    const BACKEND_URL = "https://example.com"; // ← заменить на адрес backend
-
-    if ('VKIDSDK' in window) {
-      const VKID = window.VKIDSDK;
-
-      VKID.Config.init({
+  <style>
+    body {
+      margin: 0;
+      background-color: #1a1a1a;
+      font-family: sans-serif;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background-color: #2c2c2c;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      text-align: center;
+      width: 300px;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: #ccc;
+      margin: 10px 0 20px 0;
+    }
+    #vk_container {
+      margin-bottom: 10px;
+    }
+  </style>
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0"></script>
+  <script>
+    window.onload = function () {
+      const app = new VKIDSDK({
         app: 53969710,
-        redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
-        responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.ONE_TAP,
-        scope: ''
+        redirectUrl: window.location.origin + "/vk-callback.html",
+        state: "login",
       });
-
-      const oneTap = new VKID.OneTap();
-
-      oneTap.render({
-        container: document.getElementById("vk_container"),
-        scheme: 'dark',
-        showAlternativeLogin: true,
-        oauthList: ['mail_ru']
-      })
-      .on(VKID.WidgetEvents.ERROR, vkidOnError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-        const code = payload.code;
-        const deviceId = payload.device_id;
-
-        VKID.Auth.exchangeCode(code, deviceId)
-          .then(vkidOnSuccess)
-          .catch(vkidOnError);
-      });
-
-      async function vkidOnSuccess(data) {
-        console.log('VKID success:', data);
-
-        // отправляем user на backend
-        try {
-          await fetch(BACKEND_URL + "/api/save-user", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data.user)
-          });
-        } catch (e) {
-          console.warn("Не удалось отправить user на backend:", e);
+      app.renderAuthButton(document.getElementById("vk_container"), {
+        displayMode: "default",
+        callback: (response) => {
+          // КОСТЫЛЬ НА ВРЕМЯ ОТСУТСТВИЯ BACKEND
+          alert('Вы успешно вошли');
+          window.location.href = "lobby.html";
+        },
+        onError: (error) => {
+          alert("Ошибка авторизации: " + JSON.stringify(error));
         }
-
-        window.location.href = "/lobby.html";
-      }
-
-      function vkidOnError(error) {
-        console.error('VKID error:', error);
-        alert('Ошибка авторизации: ' + (error.message || JSON.stringify(error)));
-      }
+      });
     }
   </script>
+</head>
+<body>
+  <div class="card">
+    <h2>VK One Tap Login</h2>
+    <div id="vk_container"></div>
+    <div class="subtitle">или войти через VK ID с использованием данных из сервиса</div>
+  </div>
 </body>
 </html>
