@@ -1,11 +1,193 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Лобби</title>
+  <title>Лобби | GGRoom</title>
+  <meta name="viewport" content="width=500, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%; width: 100vw;
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
+      color: #fff;
+      min-height: 100vh;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32px 40px 16px 40px;
+      background: rgba(16,16,24,0.95);
+    }
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .profile-avatar {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 3px solid #ffbb00;
+      box-shadow: 0 0 12px #ffbb00a0, 0 0 0 4px #231818;
+      background: url('https://avatars.githubusercontent.com/u/583231?v=4') center/cover;
+    }
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .profile-name {
+      font-size: 1.2em;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .profile-balance {
+      color: #ffbb00;
+      font-size: 1.1em;
+      margin-top: 3px;
+      font-weight: 500;
+      text-shadow: 0 0 5px #19110099;
+    }
+    .header-title {
+      font-size: 2em;
+      font-weight: 800;
+      color: #fa4242;
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px #42040480;
+    }
+
+    /* Лобби */
+    .lobby-main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 36px;
+      margin-top: 30px;
+      min-height: 60vh;
+    }
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 30px;
+      width: 80vw; max-width: 900px;
+      margin: 0 auto;
+    }
+    .game-card {
+      background: linear-gradient(145deg, #26232e 65%, #3d2e1d 100%);
+      border-radius: 30px;
+      box-shadow: 0 2px 16px #000a, 0 0 24px #ffbb0055 inset;
+      padding: 30px 22px 22px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid #ffbb00cc;
+      position: relative;
+      transition: transform 0.12s;
+    }
+    .game-card:hover {
+      transform: translateY(-6px) scale(1.035);
+      box-shadow: 0 8px 30px #ffbb0033, 0 0 30px #ff0022bb inset;
+      border-color: #ff4444cc;
+    }
+    .game-icon {
+      width: 70px; height: 70px;
+      margin-bottom: 18px;
+      border-radius: 50%;
+      box-shadow: 0 0 18px #fa424280;
+      background: linear-gradient(135deg, #fff1e3 10%, #ffc143 90%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2em;
+      color: #fa4242;
+    }
+    .game-title {
+      font-size: 1.3em;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: 0.6px;
+    }
+    .game-prize {
+      color: #ffbb00;
+      font-size: 1.2em;
+      font-weight: 600;
+      margin-bottom: 10px;
+      text-shadow: 0 0 5px #ffbb0050;
+    }
+    .game-btn {
+      background: linear-gradient(90deg, #ff4242 60%, #ffa502 100%);
+      color: #fff;
+      border: none;
+      outline: none;
+      padding: 12px 32px;
+      border-radius: 18px;
+      font-size: 1.15em;
+      font-weight: 700;
+      letter-spacing: 1px;
+      box-shadow: 0 0 16px #fa424299;
+      cursor: pointer;
+      transition: background 0.13s, box-shadow 0.13s;
+    }
+    .game-btn:hover {
+      background: linear-gradient(90deg, #ffbb00 40%, #ff4242 100%);
+      box-shadow: 0 0 22px #ffbb00cc;
+    }
+
+    /* Кнопка создать */
+    .create-btn {
+      margin-top: 32px;
+      background: linear-gradient(90deg, #21d397 20%, #ff4242 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.25em;
+      border: none;
+      border-radius: 25px;
+      padding: 18px 56px;
+      box-shadow: 0 0 22px #21d39755;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      cursor: pointer;
+      transition: background 0.13s, box-shadow 0.13s;
+    }
+    .create-btn:hover {
+      background: linear-gradient(90deg, #ffbb00 10%, #21d397 90%);
+      box-shadow: 0 0 44px #ffbb00bb;
+      color: #191919;
+    }
+  </style>
 </head>
 <body>
-  <h1>Добро пожаловать в лобби!</h1>
+  <div class="header">
+    <div class="profile">
+      <div class="profile-avatar"></div>
+      <div class="profile-info">
+        <div class="profile-name">Имя Фамилия</div>
+        <div class="profile-balance">Баланс: <b>8 500 ₽</b></div>
+      </div>
+    </div>
+    <div class="header-title">GGROOM</div>
+  </div>
+  <main class="lobby-main">
+    <div class="games-grid">
+      <!-- Пример карточек игр -->
+      <div class="game-card">
+        <div class="game-icon">🎲</div>
+        <div class="game-title">Дуэль 1 на 1</div>
+        <div class="game-prize">Приз: 1 000 ₽</div>
+        <button class="game-btn">Войти</button>
+      </div>
+      <div class="game-card">
+        <div class="game-icon">👥</div>
+        <div class="game-title">Тройная схватка</div>
+        <div class="game-prize">Приз: 2 500 ₽</div>
+        <button class="game-btn">Войти</button>
+      </div>
+      <div class="game-card">
+        <div class="game-icon">💎</div>
+        <div class="game-title">Супер-игра</div>
+        <div class="game-prize">Приз: 10 000 ₽</div>
+        <button class="game-btn">Войти</button>
+      </div>
+    </div>
+    <button class="create-btn">Создать новую игру</button>
+  </main>
 </body>
 </html>
