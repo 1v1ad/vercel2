@@ -4,8 +4,44 @@
 <head>
   <meta charset="UTF-8">
   <title>Лобби</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    .user-info {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .user-info img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+    .user-info span {
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
   <h1>Добро пожаловать в лобби!</h1>
+
+  <div class="user-info" id="userInfo" style="display: none;">
+    <img id="userAvatar" src="" alt="avatar">
+    <span id="userName"></span>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("vk_user"));
+
+    if (user && user.first_name && user.photo) {
+      document.getElementById("userAvatar").src = user.photo;
+      document.getElementById("userName").textContent = user.first_name;
+      document.getElementById("userInfo").style.display = "flex";
+    }
+  </script>
 </body>
 </html>
