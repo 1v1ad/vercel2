@@ -8,6 +8,7 @@
 </head>
 <body>
   <div class="header" style="background: #0077FF; color: white; padding: 10px;">VK One Tap Login</div>
+  <div id="vk_container" style="margin-top: 40px; text-align: center;"></div>
   <p style="text-align: center;">или войти через VK ID с использованием данных из сервиса</p>
 
   <script>
@@ -16,7 +17,7 @@
       redirectUrl: window.location.origin + "/vk-callback.html",
     });
 
-    window.VKID.Widgets.OneTapButton("body", {
+    window.VKID.Widgets.OneTapButton("vk_container", {
       callback: (response) => {
         console.log("VK One Tap callback:", response);
         if (response.status === 'ok' && response.user) {

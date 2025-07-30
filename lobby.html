@@ -17,8 +17,8 @@
     if (firstName && avatar) {
       const container = document.getElementById("userInfo");
       container.innerHTML = `
-        <img src="\${avatar}" alt="avatar" width="40" height="40" style="border-radius: 50%;" />
-        <span>\${firstName} \${lastName}</span>
+        <img src="${avatar}" alt="avatar" width="40" height="40" style="border-radius: 50%;" />
+        <span>${firstName} ${lastName}</span>
       `;
     } else {
       console.warn("Данные пользователя не найдены");
