@@ -42,14 +42,16 @@
       function vkidOnSuccess(data) {
         console.log('VKID success:', data);
 
-        // 💾 Сохраняем имя и фото в localStorage
-        localStorage.setItem("vk_user", JSON.stringify({
-          first_name: data.user.first_name,
-          photo: data.user.photo
-        }));
-
-        // 🔁 Переход в лобби
-        window.location.href = "/lobby.html";
+        if (data && data.user && data.user.first_name && data.user.photo) {
+          localStorage.setItem("vk_user", JSON.stringify({
+            first_name: data.user.first_name,
+            photo: data.user.photo
+          }));
+          window.location.href = "/lobby.html";
+        } else {
+          alert("Ошибка: данные пользователя отсутствуют.");
+          console.error("VKID user data отсутствует:", data);
+        }
       }
 
       function vkidOnError(error) {
