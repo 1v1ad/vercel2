@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>VK One Tap Login</title>
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
     html, body {
@@ -14,6 +14,7 @@
       background: linear-gradient(135deg, #18181f 0%, #292734 100%);
       min-height: 100vh;
       color: #fff;
+      overflow-x: hidden;
     }
     .vk-container-wrap {
       min-height: 100vh;
@@ -21,7 +22,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding-top: 64px;
+      padding-top: 56px;
     }
     .vk-login-box {
       background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
@@ -29,22 +30,22 @@
       box-shadow:
         0 4px 28px 8px #000a,
         0 0 32px #ffbb0040 inset;
-      padding: 56px 48px 44px 48px;
+      padding: 54px 36px 38px 36px;
       display: flex;
       flex-direction: column;
       align-items: center;
       border: 3.5px solid #ffbb00e0;
       position: relative;
-      min-width: 370px;
-      max-width: 92vw;
+      min-width: 330px;
+      max-width: 97vw;
     }
     .vk-login-box::before {
       content: "";
       position: absolute;
       top: 18px; left: 18px; right: 18px;
-      height: 32px;
+      height: 28px;
       background: linear-gradient(90deg, #fff4 15%, #fff1 85%, transparent);
-      border-radius: 20px 20px 90px 90px;
+      border-radius: 18px 18px 50px 50px;
       opacity: 0.24;
       z-index: 1;
     }
@@ -52,14 +53,29 @@
       font-size: 2em;
       font-weight: 800;
       color: #fa4242;
-      letter-spacing: 1.5px;
+      letter-spacing: 1.1px;
       text-shadow: 0 0 8px #42040480;
-      margin-bottom: 26px;
-      margin-top: 6px;
+      margin-bottom: 24px;
+      margin-top: 4px;
+      text-align: center;
     }
     #vk_container {
-      margin-top: 16px;
+      margin-top: 14px;
       z-index: 2;
+      width: 100%;
+    }
+    /* — Mobile — */
+    @media (max-width: 600px) {
+      .vk-container-wrap { padding-top: 18vw; }
+      .vk-login-box {
+        padding: 38px 8vw 24px 8vw;
+        min-width: 0;
+        border-radius: 24px;
+      }
+      .vk-login-title { font-size: 1.2em; }
+    }
+    @media (max-width: 390px) {
+      .vk-login-box { padding: 21px 3vw 13px 3vw;}
     }
   </style>
 </head>
