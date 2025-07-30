@@ -1,34 +1,55 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>VK One Tap Login</title>
-  <script type="text/javascript" src="https://vk.com/js/api/openapi.js?169"></script>
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
 </head>
 <body>
   <h1>VK One Tap Login</h1>
-
-  <div id="vk_auth"></div>
+  <div id="vk_container"></div>
 
   <script type="text/javascript">
-    // 🔑 Подставь свой ID приложения
-    const VK_APP_ID = 53969710;
+    if ('VKIDSDK' in window) {
+      const VKID = window.VKIDSDK;
 
-    VK.init({
-      apiId: VK_APP_ID
-    });
+      VKID.Config.init({
+        app: 53969710,
+        redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.ONE_TAP,
+        scope: ''
+      });
 
-    VK.Widgets.Auth("vk_auth", {
-      onAuth: function(user) {
-        // Здесь получаем id, имя и т.д.
-        console.log("VK user:", user);
-        alert(`Добро пожаловать, ${user.first_name}!`);
+      const oneTap = new VKID.OneTap();
 
-        // TODO: Можно отправить user info на backend или в localStorage
-        // и перейти на страницу 
-        // window.location.href = "/l.html"
+      oneTap.render({
+        container: document.getElementById("vk_container"),
+        scheme: 'dark',
+        showAlternativeLogin: true,
+        oauthList: ['mail_ru']
+      })
+      .on(VKID.WidgetEvents.ERROR, vkidOnError)
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+        const code = payload.code;
+        const deviceId = payload.device_id;
+
+        VKID.Auth.exchangeCode(code, deviceId)
+          .then(vkidOnSuccess)
+          .catch(vkidOnError);
+      });
+
+      function vkidOnSuccess(data) {
+        console.log('VKID success:', data);
+        window.location.href = "/lobby.html";
       }
-    });
+
+      function vkidOnError(error) {
+        console.error('VKID error:', error);
+        alert('Ошибка авторизации: ' + (error.message || JSON.stringify(error)));
+      }
+    }
   </script>
 </body>
 </html>
