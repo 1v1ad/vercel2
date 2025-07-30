@@ -1,31 +1,36 @@
-
-import { useEffect } from 'react';
+import Head from 'next/head'
+import Script from 'next/script'
+import { useEffect } from 'react'
 
 export default function Home() {
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://vk.com/js/api/openapi.js?169';
-    script.async = true;
-    script.onload = () => {
-      // @ts-ignore
-      if (window.VK) {
-        // @ts-ignore
-        window.VK.init({
-          apiId: 53969710,
-          onlyWidgets: true,
-        });
+    window.VKID?.Config.init({
+      app: 53969710,
+      responseMode: window.VKID?.ConfigResponseMode.JWT,
+      source: window.VKID?.ConfigSource.LOWCODE,
+    });
 
-        // @ts-ignore
-        window.VK.Widgets.Auth("vk_auth", {});
-      }
-    };
-    document.body.appendChild(script);
+    const oneTap = new window.VKID?.OneTap();
+    oneTap?.render({
+      container: document.getElementById('vk_button'),
+      showAlternativeLogin: true,
+      oauthList: []
+    })
+    .on(window.VKID.WidgetEvents.ERROR, console.error)
+    .on(window.VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+      const jwt = payload.token;
+      console.log("VK JWT Token:", jwt);
+    });
   }, []);
 
   return (
-    <div>
+    <>
+      <Head>
+        <title>VK One Tap Login</title>
+      </Head>
       <h1>VK One Tap Login</h1>
-      <div id="vk_auth"></div>
-    </div>
-  );
+      <div id="vk_button"></div>
+      <Script src="https://unpkg.com/@vkid/sdk@3.0.0/dist/sdk.umd/index.js" strategy="afterInteractive" />
+    </>
+  )
 }
