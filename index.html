@@ -1,71 +1,21 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>VK One Tap Login</title>
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0"></script>
 </head>
 <body>
   <h1>VK One Tap Login</h1>
-  <div id="vk_container"></div>
-
+  <div id="vk-id-widget"></div>
+  <p style="text-align:center">или войти через VK ID с использованием данных из сервиса</p>
   <script>
-    const BACKEND_URL = "https://example.com"; // Заменить на адрес своего backend-сервера
-
-    if ('VKIDSDK' in window) {
-      const VKID = window.VKIDSDK;
-
-      VKID.Config.init({
-        app: 53969710,
-        redirectUrl: window.location.href,
-        responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.ONE_TAP,
-        scope: ''
-      });
-
-      const oneTap = new VKID.OneTap();
-
-      oneTap.render({
-        container: document.getElementById("vk_container"),
-        scheme: 'dark',
-        showAlternativeLogin: true,
-        oauthList: ['mail_ru']
-      })
-      .on(VKID.WidgetEvents.ERROR, vkidOnError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async function (payload) {
-        const code = payload.code;
-        const deviceId = payload.device_id;
-
-        try {
-          const response = await fetch(BACKEND_URL + "/api/vk-login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code, device_id: deviceId })
-          });
-
-          const result = await response.json();
-
-          if (!result.success || !result.user) {
-            alert("Ошибка авторизации: " + (result.message || "неизвестная ошибка"));
-            return;
-          }
-
-          localStorage.setItem("user_first_name", result.user.first_name);
-          localStorage.setItem("user_last_name", result.user.last_name);
-          localStorage.setItem("user_avatar", result.user.photo);
-
-          window.location.href = "/lobby.html";
-        } catch (err) {
-          alert("Ошибка при обращении к backend.");
-          console.error(err);
-        }
-      });
-
-      function vkidOnError(error) {
-        console.error('VKID error:', error);
-        alert('Ошибка авторизации: ' + (error.message || JSON.stringify(error)));
-      }
-    }
+    new VKIDSDK.Widget({
+      app: 53969710,
+      redirectUrl: window.location.origin + "/vk-callback.html",
+      widgetDomId: "vk-id-widget",
+      displayMode: "button",
+    });
   </script>
 </body>
 </html>

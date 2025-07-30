@@ -1,42 +1,22 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Лобби</title>
-  <style>
-    .user-info {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .user-info img {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-    }
-  </style>
 </head>
 <body>
   <h1>Добро пожаловать в лобби!</h1>
-  <div class="user-info" id="userInfo" style="display: none;">
-    <img id="avatar" src="" alt="avatar">
-    <span id="name"></span>
-  </div>
-
+  <div id="userInfo" style="display: none;"></div>
   <script>
     const firstName = localStorage.getItem("user_first_name");
     const lastName = localStorage.getItem("user_last_name");
     const avatar = localStorage.getItem("user_avatar");
 
     if (firstName && avatar) {
-      document.getElementById("avatar").src = avatar;
-      document.getElementById("name").textContent = firstName + " " + (lastName || "");
-      document.getElementById("userInfo").style.display = "flex";
-    } else {
-      window.location.href = "/";
+      document.querySelector("h1").innerText = `Привет, ${firstName} ${lastName}!`;
+      const info = document.getElementById("userInfo");
+      info.style.display = "block";
+      info.innerHTML = `<img src="${avatar}" alt="avatar" width="100"/>`;
     }
   </script>
 </body>
