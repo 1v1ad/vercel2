@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -35,20 +36,14 @@
         const deviceId = payload.device_id;
 
         VKID.Auth.exchangeCode(code, deviceId)
-          .then(function (data) {
-            console.log('VKID success:', data);
-
-            if (data && data.user && data.user.first_name && data.user.photo) {
-              localStorage.setItem("vk_user", JSON.stringify({
-                first_name: data.user.first_name,
-                photo: data.user.photo
-              }));
-            }
-
-            window.location.href = "/lobby.html";
-          })
+          .then(vkidOnSuccess)
           .catch(vkidOnError);
       });
+
+      function vkidOnSuccess(data) {
+        console.log('VKID success:', data);
+        window.location.href = "/lobby.html";
+      }
 
       function vkidOnError(error) {
         console.error('VKID error:', error);
