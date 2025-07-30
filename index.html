@@ -1,50 +1,34 @@
 <!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VK One Tap Login</title>
-  </head>
-  <body>
-    <h1>VK One Tap Login</h1>
-    <div id="vkid_container"></div>
+<head>
+  <meta charset="UTF-8">
+  <title>VK One Tap Login</title>
+  <script type="text/javascript" src="https://vk.com/js/api/openapi.js?169"></script>
+</head>
+<body>
+  <h1>VK One Tap Login</h1>
 
-    <script src="https://unpkg.com/@vkid/sdk@3.0.0/dist-sdk/umd/index.js"></script>
-    <script>
-      const VKID = window.VKIDSDK;
+  <div id="vk_auth"></div>
 
-      VKID.Config.init({
-        app: 53969710,
-        redirectUrl: 'https://vercel2-eight-blue.vercel.app/api/vk/callback',
-        responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.LOWCODE,
-        scope: '',
-      });
+  <script type="text/javascript">
+    // 🔑 Подставь свой ID приложения
+    const VK_APP_ID = 53969710;
 
-      const oneTap = new VKID.OneTap();
+    VK.init({
+      apiId: VK_APP_ID
+    });
 
-      oneTap.render({
-        container: document.getElementById('vkid_container'),
-        showAlternativeLogin: true,
-        oauthList: ['mail_ru']
-      })
-      .on(VKID.WidgetEvents.ERROR, vkidOnError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-        const code = payload.code;
-        const deviceId = payload.device_id;
+    VK.Widgets.Auth("vk_auth", {
+      onAuth: function(user) {
+        // Здесь получаем id, имя и т.д.
+        console.log("VK user:", user);
+        alert(`Добро пожаловать, ${user.first_name}!`);
 
-        VKID.Auth.exchangeCode(code, deviceId)
-          .then(vkidOnSuccess)
-          .catch(vkidOnError);
-      });
-
-      function vkidOnSuccess(data) {
-        console.log("VK Auth Success", data);
+        // TODO: Можно отправить user info на backend или в localStorage
+        // и перейти на страницу лобби:
+        // window.location.href = "/lobby.html"
       }
-
-      function vkidOnError(error) {
-        console.error("VK Auth Error", error);
-      }
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
