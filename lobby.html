@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Лобби | GGRoom</title>
-  <meta name="viewport" content="width=500, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
     html, body {
@@ -14,157 +13,194 @@
       background: linear-gradient(135deg, #18181f 0%, #292734 100%);
       color: #fff;
       min-height: 100vh;
+      overflow-x: hidden;
     }
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 32px 40px 16px 40px;
+      padding: 24px 20px 14px 20px;
       background: rgba(16,16,24,0.95);
+      flex-wrap: wrap;
     }
     .profile {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 14px;
     }
     .profile-avatar {
-      width: 60px; height: 60px; border-radius: 50%;
-      border: 3px solid #ffbb00;
-      box-shadow: 0 0 12px #ffbb00a0, 0 0 0 4px #231818;
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 2.5px solid #ffbb00;
+      box-shadow: 0 0 8px #ffbb00a0, 0 0 0 2px #231818;
       background: url('https://avatars.githubusercontent.com/u/583231?v=4') center/cover;
+      flex-shrink: 0;
     }
     .profile-info {
       display: flex;
       flex-direction: column;
     }
     .profile-name {
-      font-size: 1.2em;
+      font-size: 1em;
       font-weight: 700;
       letter-spacing: 0.5px;
+      line-height: 1.1;
     }
     .profile-balance {
       color: #ffbb00;
-      font-size: 1.1em;
-      margin-top: 3px;
+      font-size: 0.97em;
+      margin-top: 2px;
       font-weight: 500;
-      text-shadow: 0 0 5px #19110099;
+      text-shadow: 0 0 4px #19110099;
     }
     .header-title {
-      font-size: 2em;
+      font-size: 1.3em;
       font-weight: 800;
       color: #fa4242;
-      letter-spacing: 2px;
+      letter-spacing: 1.1px;
       text-shadow: 0 0 8px #42040480;
+      margin-top: 8px;
     }
+
     .lobby-main {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 36px;
-      margin-top: 30px;
+      gap: 26px;
+      margin-top: 18px;
       min-height: 60vh;
+      padding-bottom: 32px;
     }
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 40px;
-      width: 80vw; max-width: 1100px;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      width: 95vw; max-width: 410px;
       margin: 0 auto;
     }
     .game-card {
       background: linear-gradient(145deg, #26232e 60%, #4d371d 100%);
-      border-radius: 36px;
+      border-radius: 26px;
       box-shadow:
-        0 4px 28px 8px #000a,
-        0 0 42px #ffbb0040 inset,
-        0 8px 48px #fa42421a;
-      padding: 40px 30px 30px 30px;
+        0 2px 18px 4px #0008,
+        0 0 28px #ffbb0030 inset,
+        0 6px 32px #fa424218;
+      padding: 25px 12px 18px 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      border: 3.5px solid #ffbb00e0;
+      border: 2.2px solid #ffbb00b8;
       position: relative;
       overflow: hidden;
-      transition: transform 0.16s, box-shadow 0.18s;
+      transition: transform 0.13s, box-shadow 0.13s;
     }
     .game-card::before {
       content: "";
       position: absolute;
-      top: 18px; left: 18px; right: 18px;
-      height: 36px;
-      background: linear-gradient(90deg, #fff4 25%, #fff1 65%, transparent);
-      border-radius: 20px 20px 90px 90px;
-      opacity: 0.32;
+      top: 10px; left: 10px; right: 10px;
+      height: 18px;
+      background: linear-gradient(90deg, #fff5 20%, #fff1 70%, transparent);
+      border-radius: 12px 12px 50px 50px;
+      opacity: 0.19;
       z-index: 1;
     }
     .game-card:hover {
-      transform: translateY(-9px) scale(1.045);
-      box-shadow: 0 12px 50px #ffbb0030, 0 0 50px #fa4242bb inset;
-      border-color: #ff4444ee;
+      transform: translateY(-4px) scale(1.025);
+      box-shadow: 0 8px 22px #ffbb0020, 0 0 18px #fa4242aa inset;
+      border-color: #ff4444cc;
     }
     .game-icon {
-      width: 88px; height: 88px;
-      margin-bottom: 26px;
+      width: 56px; height: 56px;
+      margin-bottom: 14px;
       border-radius: 50%;
-      box-shadow: 0 0 24px #fa424250, 0 0 0 6px #fff3;
+      box-shadow: 0 0 16px #fa424250, 0 0 0 2px #fff3;
       background: linear-gradient(135deg, #fff3c0 10%, #ffcf62 100%);
       display: flex; align-items: center; justify-content: center;
-      font-size: 2.7em;
+      font-size: 2.1em;
       color: #fa4242;
-      border: 2.5px solid #ffbb0066;
+      border: 2px solid #ffbb0050;
     }
     .game-title {
-      font-size: 1.45em;
+      font-size: 1.13em;
       font-weight: 700;
-      margin-bottom: 11px;
-      letter-spacing: 0.8px;
+      margin-bottom: 7px;
+      letter-spacing: 0.5px;
       text-shadow: 0 2px 8px #000a;
+      text-align: center;
     }
     .game-prize {
       color: #ffbb00;
-      font-size: 1.28em;
+      font-size: 1.08em;
       font-weight: 600;
-      margin-bottom: 18px;
+      margin-bottom: 10px;
       text-shadow: 0 0 7px #ffbb0040;
+      text-align: center;
     }
     .game-btn {
       background: linear-gradient(90deg, #ff4242 60%, #ffa502 100%);
       color: #fff;
       border: none;
       outline: none;
-      padding: 15px 38px;
-      border-radius: 20px;
-      font-size: 1.21em;
+      padding: 13px 20px;
+      border-radius: 16px;
+      font-size: 1.08em;
       font-weight: 700;
       letter-spacing: 1px;
-      box-shadow: 0 0 16px #fa424299;
+      box-shadow: 0 0 12px #fa424299;
       cursor: pointer;
       transition: background 0.13s, box-shadow 0.13s;
-      margin-top: 10px;
+      margin-top: 8px;
+      width: 95%;
+      max-width: 230px;
     }
     .game-btn:hover {
       background: linear-gradient(90deg, #ffbb00 40%, #ff4242 100%);
-      box-shadow: 0 0 22px #ffbb00cc;
+      box-shadow: 0 0 15px #ffbb00cc;
+      color: #222;
     }
     .create-btn {
-      margin-top: 32px;
+      margin-top: 24px;
       background: linear-gradient(90deg, #21d397 20%, #ff4242 100%);
       color: #fff;
       font-weight: 800;
-      font-size: 1.25em;
+      font-size: 1.1em;
       border: none;
-      border-radius: 25px;
-      padding: 18px 56px;
-      box-shadow: 0 0 22px #21d39755;
+      border-radius: 20px;
+      padding: 13px 30px;
+      box-shadow: 0 0 14px #21d39755;
       text-transform: uppercase;
       letter-spacing: 1.2px;
       cursor: pointer;
       transition: background 0.13s, box-shadow 0.13s;
+      width: 90vw;
+      max-width: 330px;
+      margin-bottom: 20px;
     }
     .create-btn:hover {
       background: linear-gradient(90deg, #ffbb00 10%, #21d397 90%);
-      box-shadow: 0 0 44px #ffbb00bb;
+      box-shadow: 0 0 30px #ffbb00bb;
       color: #191919;
+    }
+
+    /* -- МЕДИА для экранов до 600px (телефоны) -- */
+    @media (max-width: 600px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 14px 7vw 7px 7vw;
+      }
+      .header-title {
+        font-size: 1.1em;
+        margin-left: 6px;
+      }
+      .profile-avatar { width: 40px; height: 40px;}
+      .profile-name { font-size: 0.97em;}
+    }
+    @media (max-width: 430px) {
+      .lobby-main { margin-top: 9px; gap: 13px;}
+      .games-grid { max-width: 97vw; }
+      .game-card { padding: 14px 5px 10px 5px; }
+      .create-btn { padding: 10px 7vw; font-size: 1em;}
     }
   </style>
 </head>
