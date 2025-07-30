@@ -2,27 +2,35 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Лобби</title>
 </head>
 <body>
   <h1>Добро пожаловать в лобби!</h1>
-  <div class="user-info" id="userInfo" style="display: flex; align-items: center; gap: 10px; margin-top: 20px;"></div>
+  <div id="userInfo"></div>
 
   <script>
-    const firstName = localStorage.getItem("user_first_name");
-    const lastName = localStorage.getItem("user_last_name");
-    const avatar = localStorage.getItem("user_avatar");
-
-    if (firstName && avatar) {
-      const container = document.getElementById("userInfo");
-      container.innerHTML = `
-        <img src="${avatar}" alt="avatar" width="40" height="40" style="border-radius: 50%;" />
-        <span>${firstName} ${lastName}</span>
-      `;
-    } else {
-      console.warn("Данные пользователя не найдены");
+    const token = localStorage.getItem("session_token");
+    if (!token) {
+      location.href = "/";
     }
+
+    fetch("/api/me", {
+      headers: {
+        "Authorization": "Bearer " + token
+      }
+    })
+    .then(res => res.json())
+    .then(user => {
+      document.getElementById("userInfo").innerHTML = `
+        <p>${user.first_name} ${user.last_name}</p>
+        <img src="${user.photo}" width="40" style="border-radius: 50%" />
+      `;
+    })
+    .catch(() => {
+      alert("Не удалось загрузить данные пользователя");
+      location.href = "/";
+    });
   </script>
 </body>
 </html>
