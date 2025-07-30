@@ -3,13 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <title>VK One Tap Login</title>
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      background-color: #0077FF;
+      color: white;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-info img {
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 50px;
+    }
+  </style>
 </head>
 <body>
-  <h1>VK One Tap Login</h1>
-  <div id="vk_container"></div>
+  <div class="header">
+    <div><b>VK One Tap Login</b></div>
+    <div id="user" class="user-info"></div>
+  </div>
 
-  <script type="text/javascript">
+  <div class="container">
+    <div id="vk_button" class="center"></div>
+  </div>
+
+  <script src="https://unpkg.com/@vkid/sdk@2.10.0/dist-sdk/umd/index.js"></script>
+  <script>
     if ('VKIDSDK' in window) {
       const VKID = window.VKIDSDK;
 
@@ -17,47 +62,43 @@
         app: 53969710,
         redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
         responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.ONE_TAP,
-        scope: ''
+        source: VKID.ConfigSource.LOWCODE,
+        scope: 'openid profile',
       });
 
       const oneTap = new VKID.OneTap();
 
       oneTap.render({
-        container: document.getElementById("vk_container"),
+        container: document.getElementById("vk_button"),
         scheme: 'dark',
         showAlternativeLogin: true,
-        oauthList: ['mail_ru']
+        alternativeLoginList: ['mail_ru'],
       })
-      .on(VKID.WidgetEvents.ERROR, vkidOnError)
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
         const code = payload.code;
         const deviceId = payload.device_id;
 
         VKID.Auth.exchangeCode(code, deviceId)
-          .then(vkidOnSuccess)
-          .catch(vkidOnError);
+          .then(function (response) {
+            const user = response.user;
+            if (!user) {
+              alert("Ошибка: данные пользователя отсутствуют.");
+              return;
+            }
+
+            // Сохраняем данные в localStorage
+            localStorage.setItem("user", JSON.stringify(user));
+
+            // Переходим в лобби
+            window.location.href = "/lobby.html";
+          })
+          .catch(function (error) {
+            alert("Ошибка авторизации: " + error.message);
+          });
+      })
+      .on(VKID.WidgetEvents.ERROR, function (error) {
+        alert("VKID Error: " + error.message);
       });
-
-      function vkidOnSuccess(data) {
-        console.log('VKID success:', data);
-
-        if (data && data.user && data.user.first_name && data.user.photo) {
-          localStorage.setItem("vk_user", JSON.stringify({
-            first_name: data.user.first_name,
-            photo: data.user.photo
-          }));
-          window.location.href = "/lobby.html";
-        } else {
-          alert("Ошибка: данные пользователя отсутствуют.");
-          console.error("VKID user data отсутствует:", data);
-        }
-      }
-
-      function vkidOnError(error) {
-        console.error('VKID error:', error);
-        alert('Ошибка авторизации: ' + (error.message || JSON.stringify(error)));
-      }
     }
   </script>
 </body>
