@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -6,18 +7,5 @@
 </head>
 <body>
   <h1>Добро пожаловать в лобби!</h1>
-  <div id="userInfo" style="display: none;"></div>
-  <script>
-    const firstName = localStorage.getItem("user_first_name");
-    const lastName = localStorage.getItem("user_last_name");
-    const avatar = localStorage.getItem("user_avatar");
-
-    if (firstName && avatar) {
-      document.querySelector("h1").innerText = `Привет, ${firstName} ${lastName}!`;
-      const info = document.getElementById("userInfo");
-      info.style.display = "block";
-      info.innerHTML = `<img src="${avatar}" alt="avatar" width="100"/>`;
-    }
-  </script>
 </body>
 </html>

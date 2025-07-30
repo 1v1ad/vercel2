@@ -1,20 +1,40 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>VK One Tap Login</title>
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    .header {
+      background-color: #0077FF;
+      color: white;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    #vk_auth {
+      margin-top: 40px;
+      display: flex;
+      justify-content: center;
+    }
+  </style>
 </head>
 <body>
-  <h1>VK One Tap Login</h1>
-  <div id="vk-id-widget"></div>
-  <p style="text-align:center">или войти через VK ID с использованием данных из сервиса</p>
+  <div class="header">VK One Tap Login</div>
+  <div id="vk_auth"></div>
+
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0"></script>
   <script>
-    new VKIDSDK.Widget({
-      app: 53969710,
-      redirectUrl: window.location.origin + "/vk-callback.html",
-      widgetDomId: "vk-id-widget",
-      displayMode: "button",
+    window.VKIDSDK.Widgets.OneTapAuthWidget("vk_auth", {
+      app_id: 53969710,
+      state: "random_state_string",
+      redirect_url: "https://sweet-twilight-63a9b6.netlify.app/vk-callback.html"
     });
   </script>
 </body>

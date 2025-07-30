@@ -1,29 +1,16 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <title>Vk Callback</title>
-  <script>
-    (async () => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const userData = JSON.parse(decodeURIComponent(params.get("user")));
-
-        if (!userData || !userData.first_name || !userData.photo) {
-          alert("Ошибка: данные пользователя отсутствуют.");
-          return;
-        }
-
-        localStorage.setItem("user_first_name", userData.first_name);
-        localStorage.setItem("user_last_name", userData.last_name);
-        localStorage.setItem("user_avatar", userData.photo);
-
-        window.location.href = "/lobby.html";
-      } catch (err) {
-        alert("Ошибка авторизации: " + err.message);
-      }
-    })();
-  </script>
+  <meta charset="UTF-8" />
+  <title>VK Callback</title>
 </head>
-<body></body>
+<body>
+  <h2>VK Callback: проверка</h2>
+  <pre id="output">Загрузка...</pre>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById("output").textContent = decodeURIComponent(params.get("user") || "Нет данных");
+  </script>
+</body>
 </html>
