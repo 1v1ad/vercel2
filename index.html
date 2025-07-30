@@ -2,62 +2,67 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VK One Tap Login</title>
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0"></script>
   <style>
     body {
+      background-color: #111;
       margin: 0;
-      background-color: #1a1a1a;
       font-family: sans-serif;
-      color: white;
+      color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
-    .card {
-      background-color: #2c2c2c;
-      padding: 30px;
+    .container {
+      background-color: #222;
+      padding: 40px;
       border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
       text-align: center;
-      width: 300px;
     }
-    .subtitle {
-      font-size: 12px;
-      color: #ccc;
-      margin: 10px 0 20px 0;
-    }
-    #vk_container {
-      margin-bottom: 10px;
+    .desc {
+      font-size: 0.9rem;
+      color: #aaa;
+      margin-top: 10px;
     }
   </style>
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0"></script>
-  <script>
-    window.onload = function () {
-      const app = new VKIDSDK({
-        app: 53969710,
-        redirectUrl: window.location.origin + "/vk-callback.html",
-        state: "login",
-      });
-      app.renderAuthButton(document.getElementById("vk_container"), {
-        displayMode: "default",
-        callback: (response) => {
-          // КОСТЫЛЬ НА ВРЕМЯ ОТСУТСТВИЯ BACKEND
-          alert('Вы успешно вошли');
-          window.location.href = "lobby.html";
-        },
-        onError: (error) => {
-          alert("Ошибка авторизации: " + JSON.stringify(error));
-        }
-      });
-    }
-  </script>
 </head>
 <body>
-  <div class="card">
-    <h2>VK One Tap Login</h2>
-    <div id="vk_container"></div>
-    <div class="subtitle">или войти через VK ID с использованием данных из сервиса</div>
+  <div class="container">
+    <h1>VK One Tap Login</h1>
+    <div class="desc">или войти через VK ID с использованием данных из сервиса</div>
+    <div id="vk_button_container" style="margin-top: 20px;"></div>
   </div>
+
+  <script>
+    const appId = 53969710;
+    const redirectUri = window.location.origin + "/vk-callback.html";
+
+    window.vkAsyncInit = function () {
+      VKID.Config.set({
+        app: appId,
+        redirectUrl: redirectUri,
+        state: "any-custom-state",
+        showAlways: true
+      });
+      VKID.Auth.widget("vk_button_container", {
+        lang: "ru"
+      }).then((result) => {
+        if (result.status === "success") {
+          alert("Вы успешно вошли");
+          const user = result.user;
+          localStorage.setItem("user_first_name", user.first_name);
+          localStorage.setItem("user_last_name", user.last_name);
+          localStorage.setItem("user_avatar", user.photo);
+          window.location.href = "/lobby.html";
+        }
+      }).catch((err) => {
+        console.error("VK Auth error:", err);
+      });
+    };
+  </script>
 </body>
 </html>
