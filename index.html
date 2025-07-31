@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>VK One Tap Login</title>
+  <title>VK Login | GGRoom</title>
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
@@ -64,7 +65,6 @@
       z-index: 2;
       width: 100%;
     }
-    /* — Mobile — */
     @media (max-width: 600px) {
       .vk-container-wrap { padding-top: 18vw; }
       .vk-login-box {
@@ -94,20 +94,18 @@
         app: 53969710,
         redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
         responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.ONE_TAP,
+        source: VKID.ConfigSource.WIDGET,
         scope: ''
       });
 
-      const oneTap = new VKID.OneTap();
+      const widget = new VKID.Widget();
 
-      oneTap.render({
+      widget.render({
         container: document.getElementById("vk_container"),
-        scheme: 'dark',
-        showAlternativeLogin: true,
-        oauthList: ['mail_ru']
+        scheme: 'dark'
       })
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+      .on(VKID.WidgetEvents.SUCCESS, function (payload) {
         const code = payload.code;
         const deviceId = payload.device_id;
 
