@@ -1,122 +1,82 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>VK Login | GGRoom</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VK One Tap Login</title>
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
-    html, body {
-      margin: 0; padding: 0;
-      height: 100%; width: 100vw;
-      font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
+    body {
+      margin: 0;
+      background: #181c21;
       min-height: 100vh;
       color: #fff;
-      overflow-x: hidden;
-    }
-    .vk-container-wrap {
-      min-height: 100vh;
+      font-family: system-ui, sans-serif;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding-top: 56px;
     }
-    .vk-login-box {
-      background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
-      border-radius: 36px;
-      box-shadow:
-        0 4px 28px 8px #000a,
-        0 0 32px #ffbb0040 inset;
-      padding: 54px 36px 38px 36px;
+    .card {
+      background: #232833;
+      max-width: 340px;
+      width: 96vw;
+      margin: 0 auto;
+      padding: 28px 16px 24px 16px;
+      border-radius: 18px;
+      box-shadow: 0 6px 32px #0006;
       display: flex;
       flex-direction: column;
       align-items: center;
-      border: 3.5px solid #ffbb00e0;
-      position: relative;
-      min-width: 330px;
-      max-width: 97vw;
     }
-    .vk-login-box::before {
-      content: "";
-      position: absolute;
-      top: 18px; left: 18px; right: 18px;
-      height: 28px;
-      background: linear-gradient(90deg, #fff4 15%, #fff1 85%, transparent);
-      border-radius: 18px 18px 50px 50px;
-      opacity: 0.24;
-      z-index: 1;
+    h1 {
+      font-size: 1.35rem;
+      margin-bottom: 16px;
+      letter-spacing: .03em;
     }
-    .vk-login-title {
-      font-size: 2em;
-      font-weight: 800;
-      color: #fa4242;
-      letter-spacing: 1.1px;
-      text-shadow: 0 0 8px #42040480;
-      margin-bottom: 24px;
-      margin-top: 4px;
+    .desc {
+      color: #b6bcc4;
+      font-size: 0.95rem;
+      margin-bottom: 18px;
       text-align: center;
     }
     #vk_container {
-      margin-top: 14px;
-      z-index: 2;
       width: 100%;
-    }
-    @media (max-width: 600px) {
-      .vk-container-wrap { padding-top: 18vw; }
-      .vk-login-box {
-        padding: 38px 8vw 24px 8vw;
-        min-width: 0;
-        border-radius: 24px;
-      }
-      .vk-login-title { font-size: 1.2em; }
-    }
-    @media (max-width: 390px) {
-      .vk-login-box { padding: 21px 3vw 13px 3vw;}
+      display: flex;
+      justify-content: center;
     }
   </style>
 </head>
 <body>
-  <div class="vk-container-wrap">
-    <div class="vk-login-box">
-      <div class="vk-login-title">Вход через VK</div>
-      <div id="vk_container"></div>
-    </div>
+  <div class="card">
+    <h1>Вход через VK ID</h1>
+    <div class="desc">Авторизуйтесь для входа в систему</div>
+    <div id="vk_container"></div>
   </div>
-  <script type="text/javascript">
+  <script>
     if ('VKIDSDK' in window) {
       const VKID = window.VKIDSDK;
 
       VKID.Config.init({
         app: 53969710,
-        redirectUrl: '/vk-callback.html',
+        redirectUrl: window.location.origin + "/vk-callback.html",
         responseMode: VKID.ConfigResponseMode.Callback,
-        source: VKID.ConfigSource.WIDGET,
+        source: VKID.ConfigSource.ONE_TAP,
         scope: ''
       });
 
-      const widget = new VKID.Widget();
+      const oneTap = new VKID.OneTap();
 
-      widget.render({
+      oneTap.render({
         container: document.getElementById("vk_container"),
-        scheme: 'dark'
+        scheme: 'dark',
+        showAlternativeLogin: true,
+        oauthList: ['mail_ru']
       })
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
-      .on(VKID.WidgetEvents.SUCCESS, function (payload) {
-        const code = payload.code;
-        const deviceId = payload.device_id;
-
-        VKID.Auth.exchangeCode(code, deviceId)
-          .then(vkidOnSuccess)
-          .catch(vkidOnError);
-      });
-
-      function vkidOnSuccess(data) {
-        console.log('VKID success:', data);
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
+        alert("Вы успешно вошли!");
         window.location.href = "/lobby.html";
-      }
+      });
 
       function vkidOnError(error) {
         console.error('VKID error:', error);
