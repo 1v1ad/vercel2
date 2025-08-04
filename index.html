@@ -91,7 +91,7 @@
     <div class="vk-login-box">
       <div class="vk-login-title">Вход через VK</div>
       <div id="vk_container"></div>
-      <div id="login-message"></div>
+      <div id="login-message">Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код</div>
     </div>
   </div>
   <script type="text/javascript">
@@ -129,11 +129,11 @@
       }
 
       function vkidOnError(error) {
-        let msg = '';
+        let msg = 'Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код';
         if (error && error.text === 'timeout') {
-          msg = "⏳ Не удалось быстро войти.<br>Попробуйте ещё раз или войдите вручную.";
-        } else {
-          msg = "Ошибка авторизации.<br>Попробуйте снова или выберите вход вручную.";
+          msg = "⏳ Не удалось быстро войти.<br>Попробуйте ещё раз или войдите вручную.<br><br>Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код";
+        } else if (error) {
+          msg = "Ошибка авторизации.<br>Попробуйте снова.<br><br>Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код";
         }
         document.getElementById("login-message").innerHTML = msg;
       }
