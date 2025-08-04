@@ -1,97 +1,64 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VK One Tap Login</title>
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
-  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    html, body {
-      margin: 0; padding: 0;
-      height: 100%; width: 100vw;
-      font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
+    body {
+      margin: 0;
+      background: #181c21;
       min-height: 100vh;
       color: #fff;
-    }
-    .vk-container-wrap {
-      min-height: 100vh;
+      font-family: system-ui, sans-serif;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding-top: 64px;
     }
-    .vk-login-box {
-      background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
-      border-radius: 36px;
-      box-shadow:
-        0 4px 28px 8px #000a,
-        0 0 32px #ffbb0040 inset;
-      padding: 48px 20px 36px 20px;
+    .card {
+      background: #232833;
+      max-width: 340px;
+      width: 96vw;
+      margin: 0 auto;
+      padding: 28px 16px 24px 16px;
+      border-radius: 18px;
+      box-shadow: 0 6px 32px #0006;
       display: flex;
       flex-direction: column;
       align-items: center;
-      border: 3.5px solid #ffbb00e0;
-      position: relative;
-      min-width: 0;
-      width: 100%;
-      max-width: 410px;
-      box-sizing: border-box;
     }
-    .vk-login-box::before {
-      content: "";
-      position: absolute;
-      top: 18px; left: 18px; right: 18px;
-      height: 32px;
-      background: linear-gradient(90deg, #fff4 15%, #fff1 85%, transparent);
-      border-radius: 20px 20px 90px 90px;
-      opacity: 0.24;
-      z-index: 1;
+    h1 {
+      font-size: 1.35rem;
+      margin-bottom: 16px;
+      letter-spacing: .03em;
     }
-    .vk-login-title {
-      font-size: 2em;
-      font-weight: 800;
-      color: #fa4242;
-      letter-spacing: 1.5px;
-      text-shadow: 0 0 8px #42040480;
-      margin-bottom: 26px;
-      margin-top: 6px;
+    .desc {
+      color: #b6bcc4;
+      font-size: 0.95rem;
+      margin-bottom: 18px;
+      text-align: center;
     }
     #vk_container {
-      margin-top: 16px;
-      z-index: 2;
       width: 100%;
-    }
-    @media (max-width: 600px) {
-      .vk-login-box {
-        padding: 32px 8px 24px 8px;
-        border-radius: 20px;
-        min-width: 0;
-        width: 100vw;
-        max-width: 98vw;
-      }
-      .vk-login-title {
-        font-size: 1.3em;
-      }
+      display: flex;
+      justify-content: center;
     }
   </style>
 </head>
 <body>
-  <div class="vk-container-wrap">
-    <div class="vk-login-box">
-      <div class="vk-login-title">Вход через VK</div>
-      <div id="vk_container"></div>
-    </div>
+  <div class="card">
+    <h1>Вход через VK ID</h1>
+    <div class="desc">Авторизуйтесь для входа в систему</div>
+    <div id="vk_container"></div>
   </div>
-  <script type="text/javascript">
+  <script>
     if ('VKIDSDK' in window) {
       const VKID = window.VKIDSDK;
 
       VKID.Config.init({
         app: 53969710,
-        redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
+        redirectUrl: window.location.origin + "/vk-callback.html",
         responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.ONE_TAP,
         scope: ''
@@ -107,18 +74,9 @@
       })
       .on(VKID.WidgetEvents.ERROR, vkidOnError)
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, function (payload) {
-        const code = payload.code;
-        const deviceId = payload.device_id;
-
-        VKID.Auth.exchangeCode(code, deviceId)
-          .then(vkidOnSuccess)
-          .catch(vkidOnError);
-      });
-
-      function vkidOnSuccess(data) {
-        console.log('VKID success:', data);
+        alert("Вы успешно вошли!");
         window.location.href = "/lobby.html";
-      }
+      });
 
       function vkidOnError(error) {
         console.error('VKID error:', error);
@@ -128,4 +86,3 @@
   </script>
 </body>
 </html>
-
