@@ -1,11 +1,45 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>VK Callback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%; width: 100vw;
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .callback-box {
+      background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
+      border-radius: 28px;
+      box-shadow: 0 4px 24px 4px #000a, 0 0 32px #ffbb0040 inset;
+      padding: 34px 12vw;
+      border: 3.5px solid #ffbb00e0;
+      text-align: center;
+      font-size: 1.15em;
+      font-weight: 600;
+      max-width: 99vw;
+      box-sizing: border-box;
+    }
+    @media (max-width: 600px) {
+      .callback-box {
+        padding: 24px 4vw;
+        border-radius: 16px;
+        font-size: 1em;
+      }
+    }
+  </style>
 </head>
-<body style="background: #232833; color: #fff; font-family: system-ui,sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh;">
-  <h2>Авторизация завершена</h2>
+<body>
+  <div class="callback-box">
+    <h2>Авторизация завершена</h2>
+    <p>Это окно можно закрыть.</p>
+  </div>
 </body>
 </html>
