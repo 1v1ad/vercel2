@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>VK One Tap Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -64,6 +64,14 @@
       z-index: 2;
       width: 100%;
     }
+    #login-message {
+      margin-top: 14px;
+      color: #ffbb00;
+      font-size: 1em;
+      min-height: 22px;
+      text-align: center;
+      line-height: 1.4;
+    }
     @media (max-width: 600px) {
       .vk-login-box {
         padding: 32px 8px 24px 8px;
@@ -83,6 +91,7 @@
     <div class="vk-login-box">
       <div class="vk-login-title">Вход через VK</div>
       <div id="vk_container"></div>
+      <div id="login-message"></div>
     </div>
   </div>
   <script type="text/javascript">
@@ -116,16 +125,19 @@
       });
 
       function vkidOnSuccess(data) {
-        console.log('VKID success:', data);
         window.location.href = "/lobby.html";
       }
 
       function vkidOnError(error) {
-        console.error('VKID error:', error);
-        alert('Ошибка авторизации: ' + (error.message || JSON.stringify(error)));
+        let msg = '';
+        if (error && error.text === 'timeout') {
+          msg = "⏳ Не удалось быстро войти.<br>Попробуйте ещё раз или войдите вручную.";
+        } else {
+          msg = "Ошибка авторизации.<br>Попробуйте снова или выберите вход вручную.";
+        }
+        document.getElementById("login-message").innerHTML = msg;
       }
     }
   </script>
 </body>
 </html>
-
