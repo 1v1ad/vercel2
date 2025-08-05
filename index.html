@@ -1,57 +1,149 @@
-<!-- ... [всё до скрипта без изменений] ... -->
-<script type="text/javascript">
-  if ('VKIDSDK' in window) {
-    const VKID = window.VKIDSDK;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>VK One Tap Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%; width: 100vw;
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .vk-container-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 64px;
+    }
+    .vk-login-box {
+      background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
+      border-radius: 36px;
+      box-shadow:
+        0 4px 28px 8px #000a,
+        0 0 32px #ffbb0040 inset;
+      padding: 48px 20px 36px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 3.5px solid #ffbb00e0;
+      position: relative;
+      min-width: 0;
+      width: 100%;
+      max-width: 410px;
+      box-sizing: border-box;
+    }
+    .vk-login-box::before {
+      content: "";
+      position: absolute;
+      top: 18px; left: 18px; right: 18px;
+      height: 32px;
+      background: linear-gradient(90deg, #fff4 15%, #fff1 85%, transparent);
+      border-radius: 20px 20px 90px 90px;
+      opacity: 0.24;
+      z-index: 1;
+    }
+    .vk-login-title {
+      font-size: 2em;
+      font-weight: 800;
+      color: #fa4242;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 8px #42040480;
+      margin-bottom: 26px;
+      margin-top: 6px;
+    }
+    #vk_container {
+      margin-top: 16px;
+      z-index: 2;
+      width: 100%;
+    }
+    #login-message {
+      margin-top: 14px;
+      color: #ffbb00;
+      font-size: 1em;
+      min-height: 22px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    @media (max-width: 600px) {
+      .vk-login-box {
+        padding: 32px 8px 24px 8px;
+        border-radius: 20px;
+        min-width: 0;
+        width: 100vw;
+        max-width: 98vw;
+      }
+      .vk-login-title {
+        font-size: 1.3em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="vk-container-wrap">
+    <div class="vk-login-box">
+      <div class="vk-login-title">Вход через VK</div>
+      <div id="vk_container"></div>
+      <div id="login-message">Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код</div>
+    </div>
+  </div>
+  <script type="text/javascript">
+    if ('VKIDSDK' in window) {
+      const VKID = window.VKIDSDK;
 
-    VKID.Config.init({
-      app: 53969710,
-      redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
-      responseMode: VKID.ConfigResponseMode.Callback,
-      source: VKID.ConfigSource.ONE_TAP,
-      scope: ''
-    });
-
-    const oneTap = new VKID.OneTap();
-
-    oneTap.render({
-      container: document.getElementById("vk_container"),
-      scheme: 'dark',
-      showAlternativeLogin: true,
-      oauthList: ['mail_ru']
-    })
-    .on(VKID.WidgetEvents.ERROR, vkidOnError)
-    .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async function (payload) {
-      const code = payload.code;
-      const deviceId = payload.device_id;
-
-      // Отправляем на backend для обмена на JWT и профиль
-      const resp = await fetch("https://vercel2pr.onrender.com/api/auth/vk-callback", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ code, deviceId })
+      VKID.Config.init({
+        app: 53969710,
+        redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html',
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.ONE_TAP,
+        scope: ''
       });
-      if (resp.ok) {
-        const { token, user } = await resp.json();
-        localStorage.setItem("authToken", token);
-        window.location.href = "/lobby.html";
-      } else {
-        vkidOnError({ text: "Ошибка авторизации. Попробуйте снова." });
-      }
-    });
 
-    function vkidOnSuccess(data) {
-      // НЕ нужен — теперь логика только через backend!
-    }
+      const oneTap = new VKID.OneTap();
 
-    function vkidOnError(error) {
-      let msg = 'Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код';
-      if (error && error.text === 'timeout') {
-        msg = "⏳ Не удалось быстро войти.<br>Попробуйте ещё раз или войдите вручную.<br><br>Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код";
-      } else if (error) {
-        msg = "Ошибка авторизации.<br>Попробуйте снова.<br><br>Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код";
+      oneTap.render({
+        container: document.getElementById("vk_container"),
+        scheme: 'dark',
+        showAlternativeLogin: true,
+        oauthList: ['mail_ru']
+      })
+      .on(VKID.WidgetEvents.ERROR, vkidOnError)
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async function (payload) {
+        const code = payload.code;
+        const deviceId = payload.device_id;
+
+        // Запрос к backend для получения JWT и профиля пользователя
+        const resp = await fetch("https://vercel2pr.onrender.com/api/auth/vk-callback", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ code, deviceId })
+        });
+        if (resp.ok) {
+          const { token, user } = await resp.json();
+          localStorage.setItem("authToken", token);
+          window.location.href = "/lobby.html";
+        } else {
+          vkidOnError({ text: "Ошибка авторизации. Попробуйте снова." });
+        }
+      });
+
+      function vkidOnError(error) {
+        let msg = 'Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код';
+        if (error && error.text === 'timeout') {
+          msg = "⏳ Не удалось быстро войти.<br>Попробуйте ещё раз или войдите вручную.<br><br>Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код";
+        } else if (error) {
+          msg = "Ошибка авторизации.<br>Попробуйте снова.<br><br>Нажмите <b>«Войти с VK ID»</b>, а затем введите полученный от ВКонтакте код";
+        }
+        document.getElementById("login-message").innerHTML = msg;
       }
-      document.getElementById("login-message").innerHTML = msg;
     }
-  }
-</script>
-<!-- ... -->
+  </script>
+</body>
+</html>
