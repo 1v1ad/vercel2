@@ -42,34 +42,42 @@ document.addEventListener('DOMContentLoaded', () => {
   VKID.Config.init({
     app: APP_ID,
     redirectUrl: REDIRECT,
-    source: VKID.ConfigSource.ONE_TAP                // пытаемся One Tap
+    source: VKID.ConfigSource.ONE_TAP
   });
 
-  /* кнопка: если One Tap недоступен, sdk автоматически покажет blue-button */
+  /* кнопка One Tap (если недоступен — отрисуется fallback-синяя) */
   new VKID.OneTap().render({
     container: document.getElementById('vk_container'),
-    scheme:'dark',
-    buttonStyles:{height:44,borderRadius:12,
-      backgroundColor:'#0054ff',hoverColor:'#0e63ff',
-      activeColor:'#0048db',textColor:'#ffffff'}
+    scheme: 'dark',
+    showAlternativeLogin: false,
+    buttonStyles:{
+      height:44,borderRadius:12,
+      backgroundColor:'#0054ff',
+      hoverColor:'#0e63ff',
+      activeColor:'#0048db',
+      textColor:'#ffffff'
+    }
   });
 
-  /* единое событие для обеих схем авторизации */
-  VKID.Events.subscribe(VKID.AuthEvents.AUTH_COMPLETE, sendCode);
+  /* ─── ЕДИНАЯ подписка для One Tap И blue-button ─── */
+  VKID.Auth.subscribe(VKID.AuthEvents.AUTH_COMPLETE, sendCode);
 
-  VKID.Events.subscribe(VKID.WidgetEvents.ERROR, e => {
-    document.getElementById('msg').textContent = 'Ошибка: '+(e?.text||'unknown');
-  });
+  VKID.WidgetEvents &&
+    VKID.Events.subscribe(VKID.WidgetEvents.ERROR, e => {
+      document.getElementById('msg').textContent =
+        'Ошибка: ' + (e?.text || 'unknown');
+    });
 });
 
-async function sendCode({ detail:{ code, device_id, code_verifier } }) {
+/* exchange code → JWT */
+async function sendCode({ code, device_id, code_verifier }) {
   try{
-    const r = await fetch(`${API}/api/auth/vk-callback`,{
-      method:'POST',
+    const r = await fetch(`${API}/api/auth/vk-callback`, {
+      method :'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ code,
-                            deviceId    : device_id,
-                            codeVerifier: code_verifier })
+      body   :JSON.stringify({ code,
+                               deviceId    : device_id,
+                               codeVerifier: code_verifier })
     });
     if(!r.ok){
       const e = await r.json().catch(()=>({}));
