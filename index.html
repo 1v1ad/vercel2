@@ -4,9 +4,25 @@
   <meta charset="UTF-8">
   <title>VK One Tap Login</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- актуальный SDK -->
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+
+  <!-- стили остались вашими -->
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
-  <style>/* … ваши стили, они без изменений … */</style>
+  <style>
+    html,body{margin:0;padding:0;height:100%;width:100vw;font-family:'Inter',Arial,sans-serif;
+      background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff}
+    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:64px}
+    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d 100%);border-radius:36px;
+      box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;border:3.5px solid #ffbb00e0;
+      padding:48px 20px 36px;display:flex;flex-direction:column;align-items:center;max-width:410px;width:100%;position:relative}
+    .box::before{content:"";position:absolute;top:18px;left:18px;right:18px;height:32px;
+      background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);border-radius:20px 20px 90px 90px;opacity:.24;z-index:1}
+    h1{margin:6px 0 26px;font:800 2em 'Inter',sans-serif;letter-spacing:1.5px;color:#fa4242;text-shadow:0 0 8px #42040480}
+    #vk_container{margin-top:16px;z-index:2;width:100%}
+    #msg{margin-top:14px;color:#ffbb00;font-size:1em;min-height:22px;text-align:center;line-height:1.4}
+    @media(max-width:600px){.box{padding:32px 8px 24px;border-radius:20px;max-width:98vw}h1{font-size:1.3em}}
+  </style>
 </head>
 <body>
   <div class="wrap">
@@ -18,25 +34,26 @@
   </div>
 
   <script>
-  const API    = 'https://vercel2pr.onrender.com';
-  const APP_ID = 54008517;
+  const API    = 'https://vercel2pr.onrender.com';                    // ваш бек
+  const APP_ID = 54008517;                                           // VK app_id
+  const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html'; // ⚠️ тот же URI в настройках VK-приложения
 
   document.addEventListener('DOMContentLoaded', () => {
     const VKID = window.VKIDSDK;
 
-    /* ← добавили redirectUrl — больше ошибок не будет */
     VKID.Config.init({
       app: APP_ID,
-      redirectUrl: location.href,
+      redirectUrl: REDIRECT,                // ← обязательный, совпадает с VK
       source: VKID.ConfigSource.ONE_TAP
+      // pkce:false          // если нужно убрать PKCE
     });
 
     new VKID.OneTap().render({
       container: document.getElementById('vk_container'),
       scheme: 'dark',
-      showAlternativeLogin: false
+      showAlternativeLogin: false           // альтернативные кнопки не нужны
     })
-    .on(VKID.WidgetEvents.ERROR,          showError)
+    .on(VKID.WidgetEvents.ERROR,            showError)
     .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, onSuccess);
   });
 
