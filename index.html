@@ -4,74 +4,38 @@
   <meta charset="UTF-8">
   <title>Вход через VK ID</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-
-  <!-- VK ID SDK v2.6 -->
-  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
-
-  <!-- Ваши шрифты и стили -->
+  <script src="https://unpkg.com/@vkontakte/vk-id-sdk@2.6.2/dist/vkid.umd.min.js"></script>
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
-    /* Скопируйте сюда весь блок <style> из вашего оригинала: */
     html,body{margin:0;height:100%;font-family:'Inter',Arial,sans-serif;
       background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff}
     .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
-    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d); /* …и всё остальное… */}
+    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d);padding:2em;border-radius:20px;text-align:center}
+    h1{font-size:1.5em;margin-bottom:1em}
+    button{background:#ffcc00;border:none;padding:0.5em 1.5em;font-size:1em;border-radius:8px;cursor:pointer}
+    #msg{margin-top:1em;color:#ff6666}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="box">
-      <h1>Вход через VK ID</h1>
+      <h1>Войти с VK ID</h1>
       <div id="msg"></div>
       <button id="login-btn">Войти через VK</button>
     </div>
   </div>
-
   <script>
-    // Функция обмена code → token
-    async function sendCode(code, deviceId) {
-      const API = 'https://vercel2pr.onrender.com';
-      try {
-        const resp = await fetch(`${API}/api/auth/vk-callback`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code,
-            deviceId,
-            codeVerifier: localStorage.getItem('vk_code_verifier')
-          })
-        });
-        if (!resp.ok) {
-          const err = await resp.json().catch(() => ({}));
-          return show('Ошибка: ' + (err.error_description || err.error || resp.status));
-        }
-        const { token } = await resp.json();
-        localStorage.setItem('authToken', token);
-        location.href = '/lobby.html';
-      } catch (e) {
-        show('Сбой сети: ' + e.message);
-      }
-    }
-
-    function show(text) {
-      document.getElementById('msg').textContent = text;
-    }
-
-    // Инициализация SDK
-    VKAuth.init({
-      appId: 'ВАШ_APP_ID',
-      redirectUri: location.origin + '/vk-callback.html',
-      mode: 'popup',
-      onAuth: async ({ code, device_id }) => {
-        // сохраним verifier, чтобы потом передать на бэкенд
-        localStorage.setItem('vk_code_verifier', VKAuth.getCodeVerifier());
-        await sendCode(code, device_id);
-      }
+    VKID.Config.init({
+      app: '53969710',  // ← ваш VK App ID
+      redirectUrl: location.origin + '/vk-callback.html',
+      source: VKID.ConfigSource.POPUP
     });
 
-    document
-      .getElementById('login-btn')
-      .addEventListener('click', () => VKAuth.login().catch(err => show('VKAuth.login error: ' + err.message)));
+    document.getElementById('login-btn').addEventListener('click', () => {
+      VKID.Auth.login().catch(err => {
+        document.getElementById('msg').textContent = 'Ошибка входа: ' + err.message;
+      });
+    });
   </script>
 </body>
 </html>

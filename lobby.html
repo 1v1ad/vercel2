@@ -2,26 +2,24 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Лобби — PvP Chance</title>
+  <title>Лобби</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Скопируйте сюда весь блок <style> из вашего оригинального lobby.html */
+    body{margin:0;font-family:'Inter',Arial,sans-serif;background:#18181f;color:#fff;padding:2em}
+    .profile{max-width:400px;margin:auto;text-align:center}
+    img{border-radius:50%;width:100px;height:100px}
+    h2,p{margin:0.5em 0}
+    button{margin-top:1em;background:#ffcc00;border:none;padding:0.5em 1.5em;font-size:1em;border-radius:8px;cursor:pointer}
   </style>
 </head>
 <body>
-  <!-- Скопируйте сюда вашу разметку из оригинального lobby.html:
-       контейнеры, элементы с id="userAva", "userName", "userVKID", "userBalance" и т.д. -->
-  <!-- Например: -->
-  <!--
-  <div class="lobby-wrap">
+  <div class="profile">
     <img id="userAva" src="" alt="Аватар">
     <h2 id="userName"></h2>
     <p id="userVKID"></p>
     <div id="userBalance"></div>
     <button id="logout-btn">Выйти</button>
   </div>
-  -->
-
   <script>
     const API = 'https://vercel2pr.onrender.com';
     const token = localStorage.getItem('authToken');
@@ -41,11 +39,10 @@
           return;
         }
         const p = await resp.json();
-        // Ваша функция рендеринга (или скопируйте renderProfile из оригинала)
         document.getElementById('userAva').src = p.avatar;
         document.getElementById('userName').textContent = `${p.firstName} ${p.lastName}`;
         document.getElementById('userVKID').textContent = 'VK ID: ' + p.vk_id;
-        document.getElementById('userBalance').textContent = p.balance;
+        document.getElementById('userBalance').textContent = 'Баланс: ' + p.balance;
       } catch (e) {
         console.error(e);
         localStorage.removeItem('authToken');

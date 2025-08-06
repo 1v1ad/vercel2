@@ -5,17 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>VK Callback</title>
   <style>
-    /* Скопируйте сюда ваши стили из оригинального vk-callback.html */
     html,body{margin:0;height:100%;display:flex;align-items:center;justify-content:center;
       background:#18181f;color:#ffbb00;font-family:Arial,sans-serif;text-align:center}
   </style>
 </head>
 <body>
   <p id="message">Авторизация завершена.<br>Идёт перенаправление...</p>
-
-  <!-- чтобы SDK не подхватился во всплывашке -->
-  <script>window.VKIDSDKInit = () => {};</script>
-
   <script>
     (async () => {
       const params = new URLSearchParams(location.search);
@@ -38,7 +33,6 @@
         }
         const { token } = await resp.json();
         localStorage.setItem('authToken', token);
-        // делаем переход
         if (window.opener) {
           window.opener.location.href = '/lobby.html';
           setTimeout(() => window.close(), 100);
