@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ─── ЕДИНАЯ подписка для One Tap И blue-button ─── */
-  VKID.Auth.subscribe(VKID.AuthEvents.AUTH_COMPLETE, sendCode);
+  VKID.Auth.subscribe(VKID.Auth.Events.AUTH_COMPLETE, sendCode);
 
   VKID.WidgetEvents &&
     VKID.Events.subscribe(VKID.WidgetEvents.ERROR, e => {
