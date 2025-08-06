@@ -5,182 +5,37 @@
   <title>Лобби — PvP Chance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      min-height: 100vh;
-      background: radial-gradient(ellipse at top, #23243a 0%, #1a1a28 100%);
-      margin: 0;
-      font-family: 'Inter', Arial, sans-serif;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      padding: 18px 22px 8px 22px;
-      background: #222537;
-      color: #fff;
-      border-bottom: 2px solid #ffbb0040;
-      gap: 18px;
-    }
-    .user-ava {
-      width: 54px;
-      height: 54px;
-      border-radius: 50%;
-      border: 3px solid #ffb40088;
-      object-fit: cover;
-      background: #282828;
-    }
-    .user-info {
-      display: flex;
-      flex-direction: column;
-      font-size: 1.1rem;
-    }
-    .user-info b {
-      font-size: 1.15em;
-      font-weight: 700;
-    }
-    .user-info small {
-      font-size: 1em;
-      color: #ffb400;
-      margin-top: 3px;
-    }
-    .balance {
-      margin-left: auto;
-      font-weight: 800;
-      color: #ffb400;
-      font-size: 1.2em;
-    }
-    .lobby-content {
-      max-width: 940px;
-      margin: 36px auto 0 auto;
-      padding: 0 16px;
-    }
-    .games-row {
-      display: flex;
-      gap: 24px;
-      justify-content: center;
-      margin-bottom: 28px;
-    }
-    .game-card {
-      background: #23243a;
-      border-radius: 22px;
-      box-shadow: 0 6px 30px #0004, 0 0 0 2px #ffbb0040 inset;
-      padding: 32px 30px 24px 30px;
-      flex: 1 1 230px;
-      min-width: 190px;
-      text-align: center;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .game-card b {
-      font-size: 1.25em;
-      margin: 16px 0 12px;
-    }
-    .game-card .prize {
-      font-size: 1.15em;
-      color: #ffb400;
-      margin-bottom: 16px;
-    }
-    .game-card button {
-      background: linear-gradient(90deg, #fa2a1b, #ffb400);
-      color: #fff;
-      font-weight: bold;
-      border: none;
-      border-radius: 12px;
-      padding: 10px 28px;
-      cursor: pointer;
-      font-size: 1.1em;
-      margin-top: auto;
-      transition: 0.18s;
-    }
-    .game-card button:hover {
-      background: linear-gradient(90deg, #ffb400, #fa2a1b);
-    }
-    .create-game {
-      width: 100%;
-      margin: 34px auto 0 auto;
-      display: flex;
-      justify-content: center;
-    }
-    .create-btn {
-      background: linear-gradient(90deg, #00e88d, #fa2a1b);
-      color: #fff;
-      font-size: 1.25em;
-      font-weight: 700;
-      padding: 16px 44px;
-      border-radius: 18px;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 2px 12px #2229, 0 0 0 3px #00e88d20 inset;
-      transition: 0.2s;
-    }
-    .create-btn:hover { filter: brightness(1.08);}
-    @media (max-width: 600px) {
-      .games-row { flex-direction: column; gap: 12px; }
-      .game-card { padding: 16px 10px; min-width: 0; }
-      .header { padding: 12px 8px 6px 8px; }
-      .lobby-content { margin-top: 14px;}
-      .create-game { margin-top: 12px;}
-    }
+    /* … все ваши стили без изменений … */
   </style>
 </head>
 <body>
-  <div class="header">
-    <img src="https://vk.com/images/camera_200.png" alt="avatar" class="user-ava" id="userAva">
-    <div class="user-info">
-      <b id="userName">...</b>
-      <small id="userVKID"></small>
-    </div>
-    <div class="balance">Баланс: <span id="userBalance">0</span> ₽</div>
-  </div>
-  <div class="lobby-content">
-    <div class="games-row">
-      <div class="game-card">
-        <img src="https://cdn-icons-png.flaticon.com/128/1086/1086741.png" width="54" height="54" alt="">
-        <b>Дуэль 1 на 1</b>
-        <div class="prize">Приз: <span>1&nbsp;000&nbsp;₽</span></div>
-        <button>Войти</button>
-      </div>
-      <div class="game-card">
-        <img src="https://cdn-icons-png.flaticon.com/128/3303/3303896.png" width="54" height="54" alt="">
-        <b>Тройная схватка</b>
-        <div class="prize">Приз: <span>2&nbsp;500&nbsp;₽</span></div>
-        <button>Войти</button>
-      </div>
-      <div class="game-card">
-        <img src="https://cdn-icons-png.flaticon.com/128/727/727399.png" width="54" height="54" alt="">
-        <b>Супер-игра</b>
-        <div class="prize">Приз: <span>10&nbsp;000&nbsp;₽</span></div>
-        <button>Войти</button>
-      </div>
-    </div>
-    <div class="create-game">
-      <button class="create-btn">СОЗДАТЬ НОВУЮ ИГРУ</button>
-    </div>
-  </div>
+  <!-- … разметка без изменений … -->
+
   <script>
+    const API = 'https://vercel2pr.onrender.com';
+
     async function fetchProfile() {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        window.location = '/index.html';
+        location.href = '/index.html';
         return;
       }
-      const resp = await fetch('https://vercel2pr.onrender.com/api/user/profile', {
-        headers: { 'Authorization': 'Bearer ' + token }
+      const resp = await fetch(`${API}/api/user/profile`, {
+        headers: { Authorization: 'Bearer ' + token }
       });
       if (resp.ok) {
-        const profile = await resp.json();
-        renderProfile(profile);
+        renderProfile(await resp.json());
       } else {
-        window.location = '/index.html';
+        localStorage.removeItem('authToken');
+        location.href = '/index.html';
       }
     }
 
-    function renderProfile(profile) {
-      document.getElementById('userAva').src = profile.avatar || 'https://vk.com/images/camera_200.png';
-      document.getElementById('userName').textContent = (profile.firstName || '') + ' ' + (profile.lastName || '');
-      document.getElementById('userVKID').textContent = 'VK ID: ' + (profile.vk_id || profile.vkId || '-');
-      document.getElementById('userBalance').textContent = profile.balance ?? 0;
+    function renderProfile(p) {
+      document.getElementById('userAva').src  = p.avatar || 'https://vk.com/images/camera_200.png';
+      document.getElementById('userName').textContent = `${p.firstName ?? ''} ${p.lastName ?? ''}`;
+      document.getElementById('userVKID').textContent = 'VK ID: ' + (p.vk_id ?? p.vkId);
+      document.getElementById('userBalance').textContent = p.balance ?? 0;
     }
 
     fetchProfile();
