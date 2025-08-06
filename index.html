@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Вход через VK ID</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- SDK VK ID (v 2.6) -->
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
 
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
@@ -32,20 +34,22 @@
   </div>
 
 <script>
+/* ─────────── настройки ─────────── */
 const API      = 'https://vercel2pr.onrender.com';
 const APP_ID   = 54008517;
 const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
 
+/* ─────────── инициализация ─────────── */
 document.addEventListener('DOMContentLoaded', () => {
   const VKID = window.VKIDSDK;
 
   VKID.Config.init({
     app: APP_ID,
     redirectUrl: REDIRECT,
-    source: VKID.ConfigSource.ONE_TAP
+    source: VKID.ConfigSource.ONE_TAP        // попытка One-Tap: если недоступно, будет fallback-кнопка
   });
 
-  /* кнопка One Tap (если недоступен — отрисуется fallback-синяя) */
+  /* кнопка (One Tap / blue-button) */
   new VKID.OneTap().render({
     container: document.getElementById('vk_container'),
     scheme: 'dark',
@@ -59,38 +63,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* ─── ЕДИНАЯ подписка для One Tap И blue-button ─── */
-  VKID.Auth.subscribe(VKID.Auth.Events.AUTH_COMPLETE, sendCode);
+  /* ───── универсальная подписка  (One Tap  +  fallback-кнопка) ───── */
+  const AUTH_COMPLETE = (VKID.AuthEventType && VKID.AuthEventType.AUTH_COMPLETE)
+                     || (VKID.AuthEvents    && VKID.AuthEvents.AUTH_COMPLETE);
 
-  VKID.WidgetEvents &&
-    VKID.Events.subscribe(VKID.WidgetEvents.ERROR, e => {
-      document.getElementById('msg').textContent =
-        'Ошибка: ' + (e?.text || 'unknown');
-    });
+  VKID.Auth.subscribe(AUTH_COMPLETE, ({ detail }) => sendCode(detail));
+
+  /* вывод ошибок рендера (например, пользователь закрыл окно VK) */
+  VKID.Events.subscribe?.(VKID.WidgetEvents.ERROR, e => show('Ошибка: '+(e?.text||'unknown')));
 });
 
-/* exchange code → JWT */
+/* ─────────── обмен code → JWT ─────────── */
 async function sendCode({ code, device_id, code_verifier }) {
-  try{
+  try {
     const r = await fetch(`${API}/api/auth/vk-callback`, {
       method :'POST',
       headers:{'Content-Type':'application/json'},
-      body   :JSON.stringify({ code,
-                               deviceId    : device_id,
-                               codeVerifier: code_verifier })
+      body   :JSON.stringify({
+        code,
+        deviceId    : device_id,
+        codeVerifier: code_verifier          // придёт только для One-Tap
+      })
     });
-    if(!r.ok){
+    if (!r.ok) {
       const e = await r.json().catch(()=>({}));
-      return show(e.error_description||e.error||'fail');
+      return show('Ошибка: '+(e.error_description||e.error||r.status));
     }
     const { token } = await r.json();
     localStorage.setItem('authToken', token);
     location.href = '/lobby.html';
-  }catch(e){ show(e.message); }
+  } catch (e) {
+    show('Сбой сети: '+e.message);
+  }
 }
-function show(t){
-  document.getElementById('msg').textContent = 'Ошибка: '+t;
-}
+
+/* лаконичный вывод сообщения */
+function show(text){ document.getElementById('msg').textContent = text; }
 </script>
 </body>
 </html>
