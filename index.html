@@ -5,76 +5,78 @@
 <title>Вход через VK ID</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="stylesheet" href="css/index.css" />
+
+<!-- SDK One-Tap -->
 <script src="https://unpkg.com/@vkid/sdk@2.6/dist/umd/index.js" defer></script>
+
 <script defer>
 /* === конфигурация === */
-const APP_ID      = 54008517;                                // id приложения VK ID
-const REDIRECT    = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
-const API         = 'https://vercel2pr.onrender.com/api';
+const APP_ID   = 54008517;
+const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
+const API      = 'https://vercel2pr.onrender.com/api';
 
 document.addEventListener('DOMContentLoaded', () => {
   const VKID = window.VKIDSDK;
 
   /* 1. инициализируем SDK */
-  VKID.Config.init({ app: APP_ID, redirectURI: REDIRECT,
-                     source: VKID.ConfigSource.ONE_TAP });
+  VKID.Config.init({
+    app: APP_ID,
+    redirectURI: REDIRECT,
+    source: VKID.ConfigSource.ONE_TAP
+  });
 
-  /* 2. рендер One-Tap-кнопку */
+  /* 2. рендерим кнопку One-Tap */
   new VKID.OneTap().render({
     container: document.getElementById('vk_container'),
     scheme   : 'dark',
-    buttonStyles: {
-      height: 44, borderRadius: 12,
-      backgroundColor: '#0054FF', hoverColor:'#0E63FF',
-      activeColor   : '#0048DD', textColor:'#FFFFFF'
+    showAlternativeLogin:false,
+    buttonStyles:{
+      height:44,borderRadius:12,
+      backgroundColor:'#0054FF',hoverColor:'#0E63FF',
+      activeColor:'#0048DD',textColor:'#FFFFFF'
     }
   });
 
-  /* 3. «универсальная» подписка на событие AUTH_COMPLETE */
+  /* 3. подписка на успешную авторизацию */
   safeAuthSubscribe('AUTH_COMPLETE', ({ detail }) => sendCode(detail));
 
-  /* вывод ошибок виджета */
+  /* вывод возможных ошибок от виджета */
   VKID.Events.subscribe(
-    VKID.WidgetEvents.ERROR,  e => show(`Ошибка: ${e?.text||'unknown'}`)
+    VKID.WidgetEvents.ERROR,
+    e => show(`Ошибка: ${e?.text||'unknown'}`)
   );
 });
 
 /* ---------- helpers ---------- */
-function safeAuthSubscribe(eventName, cb) {
+function safeAuthSubscribe(eventName, cb){
   const { Auth } = window.VKIDSDK || {};
   if (!Auth || !Auth.subscribe) return;
 
-  /* порядок (cb,event) vs (event,cb) менялся в разных версиях SDK */
-  try { Auth.subscribe(eventName, cb); }
-  catch {
-    try { Auth.subscribe(cb, eventName); }  // обратный порядок
-    catch(e){ console.warn('VKID.Auth.subscribe failed', e); }
-  }
+  try{ Auth.subscribe(eventName, cb); }
+  catch{ try{ Auth.subscribe(cb, eventName); }catch(e){} }
 }
 
-/* отправляем code на backend */
 async function sendCode({ code, device_id:deviceId, code_verifier:codeVerifier }){
   show('Загрузка …');
-  try {
+  try{
     const r = await fetch(`${API}/auth/vk-callback`,{
-      method :'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body   : JSON.stringify({ code, deviceId, codeVerifier })
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ code, deviceId, codeVerifier })
     });
-    if (!r.ok) throw await r.json();
+    if(!r.ok) throw await r.json();
     const { token } = await r.json();
     localStorage.setItem('authToken', token);
     location.href = '/lobby.html';
-  } catch(e){
+  }catch(e){
     show(`Ошибка авторизации: ${JSON.stringify(e)}`);
   }
 }
 
-/* компактный вывод сообщений */
-function show(text){ (document.getElementById('msg')||{}).textContent = text; }
+function show(t){ const m=document.getElementById('msg'); if(m) m.textContent=t; }
 </script>
+
 <style>
-/* чуточку минимального оформления — чтобы всё было «как раньше» */
 body{background:#1c1b23;color:#ffb840;font:16px/1.4 Inter,Arial,sans-serif;
      display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
 .box{background:#2a2733;padding:36px 48px;border:4px solid #ffb840;border-radius:12px;
@@ -85,10 +87,13 @@ h1{margin:0 0 24px;font-size:28px;color:#ff4242}
 </head>
 
 <body>
-<div class="box">
-  <h1>Вход через VK</h1>
-  <div id="vk_container"></div>
-  <p id="msg"></p>
-</div>
+  <div class="box">
+    <h1>Вход через VK</h1>
+
+    <!-- В ЭТОТ div SDK вставит кнопку. Удалять нельзя! -->
+    <div id="vk_container"></div>
+
+    <p id="msg"></p>
+  </div>
 </body>
 </html>
