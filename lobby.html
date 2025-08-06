@@ -1,14 +1,26 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Лобби</title>
+  <meta charset="UTF-8">
+  <title>Лобби — PvP Chance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Скопируйте сюда весь блок <style> из вашего оригинального lobby.html */
+  </style>
 </head>
 <body>
-  <h1>Добро пожаловать в лобби!</h1>
-  <div id="profile"></div>
-  <button id="logout-btn">Выйти</button>
+  <!-- Скопируйте сюда вашу разметку из оригинального lobby.html:
+       контейнеры, элементы с id="userAva", "userName", "userVKID", "userBalance" и т.д. -->
+  <!-- Например: -->
+  <!--
+  <div class="lobby-wrap">
+    <img id="userAva" src="" alt="Аватар">
+    <h2 id="userName"></h2>
+    <p id="userVKID"></p>
+    <div id="userBalance"></div>
+    <button id="logout-btn">Выйти</button>
+  </div>
+  -->
 
   <script>
     const API = 'https://vercel2pr.onrender.com';
@@ -18,7 +30,6 @@
       throw new Error('Нет токена');
     }
 
-    // Получаем профиль
     async function fetchProfile() {
       try {
         const resp = await fetch(`${API}/api/user/profile`, {
@@ -29,14 +40,14 @@
           location.href = '/index.html';
           return;
         }
-        const profile = await resp.json();
-        document.getElementById('profile').innerHTML = `
-          <img src="${profile.avatar}" width="50" height="50" alt="avatar">
-          <strong>${profile.firstName} ${profile.lastName}</strong>
-          <p>Баланс: ${profile.balance}</p>
-        `;
+        const p = await resp.json();
+        // Ваша функция рендеринга (или скопируйте renderProfile из оригинала)
+        document.getElementById('userAva').src = p.avatar;
+        document.getElementById('userName').textContent = `${p.firstName} ${p.lastName}`;
+        document.getElementById('userVKID').textContent = 'VK ID: ' + p.vk_id;
+        document.getElementById('userBalance').textContent = p.balance;
       } catch (e) {
-        console.error('fetchProfile error:', e);
+        console.error(e);
         localStorage.removeItem('authToken');
         location.href = '/index.html';
       }
