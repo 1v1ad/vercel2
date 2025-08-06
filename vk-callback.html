@@ -1,53 +1,52 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>VK Callback</title>
+  <style>
+    /* Скопируйте сюда ваши стили из оригинального vk-callback.html */
+    html,body{margin:0;height:100%;display:flex;align-items:center;justify-content:center;
+      background:#18181f;color:#ffbb00;font-family:Arial,sans-serif;text-align:center}
+  </style>
 </head>
 <body>
-  <p>Идёт обработка авторизации...</p>
+  <p id="message">Авторизация завершена.<br>Идёт перенаправление...</p>
+
+  <!-- чтобы SDK не подхватился во всплывашке -->
+  <script>window.VKIDSDKInit = () => {};</script>
 
   <script>
     (async () => {
-      const API = 'https://vercel2pr.onrender.com'; // ваш бэкенд
-      const params = new URLSearchParams(window.location.search);
-      const code       = params.get('code');
-      const deviceId   = params.get('device_id');
+      const params = new URLSearchParams(location.search);
+      const code = params.get('code');
+      const deviceId = params.get('device_id');
       const codeVerifier = localStorage.getItem('vk_code_verifier');
-
       if (!code) {
-        document.body.textContent = 'Нет кода авторизации в URL';
+        document.getElementById('message').textContent = 'Нет кода авторизации в URL';
         return;
       }
-
       try {
-        // 1) Обмен кода на JWT
-        const resp = await fetch(`${API}/api/auth/vk-callback`, {
+        const resp = await fetch('https://vercel2pr.onrender.com/api/auth/vk-callback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code, deviceId, codeVerifier })
         });
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({}));
-          throw new Error(err.error_description || err.error || `Status ${resp.status}`);
+          throw new Error(err.error_description || err.error || resp.status);
         }
         const { token } = await resp.json();
-
-        // 2) Сохраняем токен и редиректим
         localStorage.setItem('authToken', token);
-
-        // Если запущено в popup — редиректим родителя и закрываем
+        // делаем переход
         if (window.opener) {
           window.opener.location.href = '/lobby.html';
-          setTimeout(() => window.close(), 200);
+          setTimeout(() => window.close(), 100);
         } else {
-          // иначе — в том же окне
           location.href = '/lobby.html';
         }
       } catch (e) {
-        console.error('[vk-callback] Ошибка:', e);
-        document.body.textContent = 'Ошибка авторизации: ' + e.message;
+        document.getElementById('message').textContent = 'Ошибка авторизации: ' + e.message;
       }
     })();
   </script>
