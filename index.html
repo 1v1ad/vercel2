@@ -3,22 +3,18 @@
 <head>
   <meta charset="utf-8"/>
   <title>Вход через VK ID</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <!-- ✓ Внешние файлы можно убрать — всё нужное в <style> ниже -->
-  <!-- <link rel="stylesheet" href="css/index.css"> -->
-
-  <!-- ✓ Единственный скрипт VK ID One-Tap -->
-  <script src="https://unpkg.com/@vkid/sdk@2.6/dist/umd/index.js"
-          defer crossorigin="anonymous"></script>
+  <!-- 🎯 БЕЗ  crossorigin  + другой CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@vkid/sdk@2.6/dist/umd/index.js" defer></script>
 
   <style>
-    /* минимальная стилизация, всё в одном файле */
     *{box-sizing:border-box}
     html,body{height:100%;margin:0}
     body{
       display:flex;align-items:center;justify-content:center;
-      background:#1c1b23;color:#ffb840;font:16px/1.4 Inter,Arial,sans-serif}
+      background:#1c1b23;color:#ffb840;
+      font:16px/1.4 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
     .box{
       width:380px;padding:36px 48px;text-align:center;
       background:#2a2733;border:4px solid #ffb840;border-radius:12px;
@@ -28,29 +24,27 @@
   </style>
 </head>
 <body>
-
   <div class="box">
     <h1>Вход через VK</h1>
-    <!-- !!! без этого div кнопка не появится -->
     <div id="vk_container"></div>
     <p id="msg"></p>
   </div>
 
   <script defer>
-  /* ======= конфигурация ======= */
-  const APP_ID   = 54008517;                                      // VK-ID приложения
+  /* ---------- конфиг ---------- */
+  const APP_ID   = 54008517;
   const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
   const API_URL  = 'https://vercel2pr.onrender.com/api';
 
   document.addEventListener('DOMContentLoaded', () => {
-    /* 1. Инициализируем SDK */
+    /* 1. init SDK */
     VKID.Config.init({
-      app: APP_ID,
-      redirectURI: REDIRECT,
-      source: VKID.ConfigSource.ONE_TAP
+      app:        APP_ID,
+      redirectURI:REDIRECT,
+      source:     VKID.ConfigSource.ONE_TAP
     });
 
-    /* 2. Рисуем кнопку One-Tap */
+    /* 2. one-tap button */
     new VKID.OneTap().render({
       container: document.getElementById('vk_container'),
       scheme:'dark',
@@ -60,45 +54,41 @@
         activeColor:'#0048DD',textColor:'#FFFFFF'}
     });
 
-    /* 3. Подписываемся на успешную авторизацию */
-    safeAuthSubscribe('AUTH_COMPLETE', ({ detail }) => sendCode(detail));
+    /* 3. listen AUTH_COMPLETE */
+    safeAuthSubscribe('AUTH_COMPLETE', ({detail}) => sendCode(detail));
 
-    /* 4. Ошибки виджета */
+    /* 4. widget errors */
     VKID.Events.subscribe(
       VKID.WidgetEvents.ERROR,
-      e => show(`Ошибка: ${e?.text||'unknown'}`)
+      e=>show(`Ошибка виджета: ${e?.text||'unknown'}`)
     );
   });
 
-  /* ---------- helpers ---------- */
+  /* -------- helpers -------- */
   function safeAuthSubscribe(evt, cb){
-    const { Auth={} } = VKID;
-    if (!Auth.subscribe) return;         // метод отсутствует — старая версия
-    try{  Auth.subscribe(evt, cb);  }    // (event, cb)
-    catch{ try{ Auth.subscribe(cb, evt);}catch{} }  // (cb, event)
+    const {Auth={}}=VKID;
+    if(!Auth.subscribe)return;
+    try{ Auth.subscribe(evt, cb);}catch{ try{Auth.subscribe(cb, evt);}catch{} }
   }
 
-  async function sendCode({ code, device_id:deviceId, code_verifier:codeVerifier }){
+  async function sendCode({code,device_id:deviceId,code_verifier:codeVerifier}){
     show('Загрузка …');
     try{
       const r = await fetch(`${API_URL}/auth/vk-callback`,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ code, deviceId, codeVerifier })
+        body:JSON.stringify({code,deviceId,codeVerifier})
       });
       if(!r.ok) throw await r.json();
-      const { token } = await r.json();
-      localStorage.setItem('authToken', token);
-      location.href = '/lobby.html';
+      const {token}=await r.json();
+      localStorage.setItem('authToken',token);
+      location.href='/lobby.html';
     }catch(e){
       show(`Ошибка авторизации: ${JSON.stringify(e)}`);
     }
   }
 
-  function show(t){
-    const el = document.getElementById('msg');
-    if (el) el.textContent = t;
-  }
+  const show=t=>{const el=document.getElementById('msg');if(el)el.textContent=t};
   </script>
 </body>
 </html>
