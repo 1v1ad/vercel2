@@ -1,27 +1,17 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8"/>
-  <title>Вход через VK ID</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-
-  <!-- 🎯 БЕЗ  crossorigin  + другой CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@vkid/sdk@2.6/dist/umd/index.js" defer></script>
-
-  <style>
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0}
-    body{
-      display:flex;align-items:center;justify-content:center;
-      background:#1c1b23;color:#ffb840;
-      font:16px/1.4 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
-    .box{
-      width:380px;padding:36px 48px;text-align:center;
-      background:#2a2733;border:4px solid #ffb840;border-radius:12px;
-      box-shadow:0 0 28px rgba(255,184,64,.25)}
-    h1{margin:0 0 24px;color:#ff4242;font-size:26px}
-    #msg{margin-top:24px;font-size:15px}
-  </style>
+<meta charset="utf-8">
+<title>VK ID Login</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html,body{height:100%;margin:0;background:#1c1b23;color:#ffb840;
+display:flex;align-items:center;justify-content:center;font:16px system-ui}
+.box{padding:40px 48px;background:#26242f;border:4px solid #ffb840;
+border-radius:12px;box-shadow:0 0 26px rgba(255,184,64,.25);text-align:center}
+h1{margin:0 0 28px;color:#ff4242;font-size:26px}
+#msg{margin-top:24px}
+</style>
 </head>
 <body>
   <div class="box">
@@ -30,65 +20,45 @@
     <p id="msg"></p>
   </div>
 
-  <script defer>
-  /* ---------- конфиг ---------- */
-  const APP_ID   = 54008517;
-  const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
-  const API_URL  = 'https://vercel2pr.onrender.com/api';
+<!-- 1️⃣ СВОЙ (локальный) экземпляр SDK: кладём файл в /sdk/ -->
+<script type="module">
+import VKID from '/sdk/vkid-sdk.es.js';   /* 👈 путь внутри Netlify */
 
-  document.addEventListener('DOMContentLoaded', () => {
-    /* 1. init SDK */
-    VKID.Config.init({
-      app:        APP_ID,
-      redirectURI:REDIRECT,
-      source:     VKID.ConfigSource.ONE_TAP
+const APP_ID   = 54008517;
+const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
+const API      = 'https://vercel2pr.onrender.com/api';
+
+VKID.Config.init({app:APP_ID,redirectURI:REDIRECT,source:VKID.ConfigSource.ONE_TAP});
+
+new VKID.OneTap().render({
+  container:document.getElementById('vk_container'),
+  scheme:'dark',
+  buttonStyles:{height:44,borderRadius:12,
+    backgroundColor:'#0054FF',hoverColor:'#0E63FF',
+    activeColor:'#0048DD',textColor:'#FFFFFF'}
+});
+
+safeSub('AUTH_COMPLETE',({detail})=>sendCode(detail));
+
+VKID.Events.subscribe(VKID.WidgetEvents.ERROR,e=>show(e.text||'widget error'));
+
+function safeSub(ev,cb){const {Auth={}}=VKID;if(!Auth.subscribe)return;
+  try{Auth.subscribe(ev,cb);}catch{try{Auth.subscribe(cb,ev);}catch{}}}
+
+async function sendCode({code,device_id:deviceId,code_verifier:codeVerifier}){
+  show('Загрузка …');
+  try{
+    const r=await fetch(`${API}/auth/vk-callback`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code,deviceId,codeVerifier})
     });
-
-    /* 2. one-tap button */
-    new VKID.OneTap().render({
-      container: document.getElementById('vk_container'),
-      scheme:'dark',
-      buttonStyles:{
-        height:44,borderRadius:12,
-        backgroundColor:'#0054FF',hoverColor:'#0E63FF',
-        activeColor:'#0048DD',textColor:'#FFFFFF'}
-    });
-
-    /* 3. listen AUTH_COMPLETE */
-    safeAuthSubscribe('AUTH_COMPLETE', ({detail}) => sendCode(detail));
-
-    /* 4. widget errors */
-    VKID.Events.subscribe(
-      VKID.WidgetEvents.ERROR,
-      e=>show(`Ошибка виджета: ${e?.text||'unknown'}`)
-    );
-  });
-
-  /* -------- helpers -------- */
-  function safeAuthSubscribe(evt, cb){
-    const {Auth={}}=VKID;
-    if(!Auth.subscribe)return;
-    try{ Auth.subscribe(evt, cb);}catch{ try{Auth.subscribe(cb, evt);}catch{} }
-  }
-
-  async function sendCode({code,device_id:deviceId,code_verifier:codeVerifier}){
-    show('Загрузка …');
-    try{
-      const r = await fetch(`${API_URL}/auth/vk-callback`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({code,deviceId,codeVerifier})
-      });
-      if(!r.ok) throw await r.json();
-      const {token}=await r.json();
-      localStorage.setItem('authToken',token);
-      location.href='/lobby.html';
-    }catch(e){
-      show(`Ошибка авторизации: ${JSON.stringify(e)}`);
-    }
-  }
-
-  const show=t=>{const el=document.getElementById('msg');if(el)el.textContent=t};
-  </script>
+    if(!r.ok) throw await r.json();
+    const {token}=await r.json();
+    localStorage.setItem('authToken',token);
+    location.href='/lobby.html';
+  }catch(e){show('Ошибка: '+JSON.stringify(e))}
+}
+const show=t=>document.getElementById('msg').textContent=t;
+</script>
 </body>
 </html>
