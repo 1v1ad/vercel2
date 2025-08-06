@@ -2,41 +2,42 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>VK callback</title>
+<title>VK ID callback</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;display:flex;align-items:center;justify-content:center;
+     height:100vh;color:#ffb840;background:#ffffff;font:18px/1.4 Inter,Arial,sans-serif}
+</style>
+</head>
+<body><span id="msg">Загрузка …</span>
 
 <script>
+const API = 'https://vercel2pr.onrender.com/api';
+
 (async () => {
-  const qs   = new URLSearchParams(location.search);
-  const code = qs.get('code');
-  if (!code) return document.body.textContent = 'Нет кода авторизации';
+  const params = Object.fromEntries(new URL(location.href).searchParams);
+  const { code, device_id:deviceId, code_verifier:codeVerifier } = params;
 
-  try {
-    const r = await fetch(
-      'https://vercel2pr.onrender.com/api/auth/vk-callback',
-      {
-        method :'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({
-          code,
-          deviceId    : qs.get('device_id'),
-          codeVerifier: qs.get('code_verifier')
-        })
-      });
-    if (!r.ok) throw await r.text();
+  if (!code){ show('Нет code в callback URL'); return; }
 
+  try{
+    const r = await fetch(`${API}/auth/vk-callback`,{
+      method :'POST',
+      headers:{'Content-Type':'application/json'},
+      body   : JSON.stringify({ code, deviceId, codeVerifier })
+    });
+    if (!r.ok) throw await r.json();
     const { token } = await r.json();
     localStorage.setItem('authToken', token);
-
-    document.body.textContent = 'Авторизация завершена, переходим…';
-    setTimeout(() => location.href = '/lobby.html', 500);
-
-  } catch (e) {
-    document.body.textContent = 'Ошибка авторизации: ' + e;
+    show('Авторизация завершена');
+    setTimeout(()=> window.close(), 400);          // закроется, если открыт в новом tab
+    setTimeout(()=> location.href='/lobby.html', 800); // иначе — переходим
+  }catch(e){
+    show(`Ошибка авторизации: ${JSON.stringify(e)}`);
   }
 })();
+
+function show(t){ document.getElementById('msg').textContent = t; }
 </script>
-</head>
-<body style="font:18px/1.4 Arial;text-align:center;margin-top:40vh;color:#ffbb00">
-Загрузка …
 </body>
 </html>
