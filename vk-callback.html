@@ -5,36 +5,38 @@
 <title>VK callback</title>
 
 <script>
-/*  Ждём, когда браузер построит <body>, чтобы к нему обращаться  */
-document.addEventListener('DOMContentLoaded', () => {
+(async () => {
   const qs   = new URLSearchParams(location.search);
   const code = qs.get('code');
+  if (!code) return document.body.textContent = 'Нет кода авторизации';
 
-  /* отправляем данные в окно-родитель и закрываемся */
-  if (code && window.opener) {
-    window.opener.postMessage(
+  try {
+    const r = await fetch(
+      'https://vercel2pr.onrender.com/api/auth/vk-callback',
       {
-        type  : 'LOGIN_SUCCESS',
-        detail: {
+        method :'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
           code,
-          device_id    : qs.get('device_id'),
-          code_verifier: qs.get('code_verifier')
-        }
-      },
-      '*'   /*  при желании укажите точный origin: https://sweet-twilight-63a9b6.netlify.app */
-    );
+          deviceId    : qs.get('device_id'),
+          codeVerifier: qs.get('code_verifier')
+        })
+      });
+    if (!r.ok) throw await r.text();
+
+    const { token } = await r.json();
+    localStorage.setItem('authToken', token);
+
+    document.body.textContent = 'Авторизация завершена, переходим…';
+    setTimeout(() => location.href = '/lobby.html', 500);
+
+  } catch (e) {
+    document.body.textContent = 'Ошибка авторизации: ' + e;
   }
-
-  /* короткое сообщение пользователю */
-  document.body.innerHTML =
-    '<div style="font:16px/1.4 Arial,sans-serif;color:#ffbb00;'
-  + 'text-align:center;margin-top:42vh">'
-  + 'Авторизация завершена<br>Это окно закроется автоматически…'
-  + '</div>';
-
-  setTimeout(() => window.close(), 600);
-});
+})();
 </script>
 </head>
-<body></body>
+<body style="font:18px/1.4 Arial;text-align:center;margin-top:40vh;color:#ffbb00">
+Загрузка …
+</body>
 </html>
