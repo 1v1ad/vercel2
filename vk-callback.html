@@ -1,19 +1,19 @@
-<!DOCTYPE html><meta charset="utf-8">
-<style>
-  html,body{margin:0;height:100%;display:flex;align-items:center;justify-content:center;
-            background:#18181f;color:#ffbb00;font-family:Arial,sans-serif;text-align:center}
-</style>
-<p>Авторизация завершена.<br>Можете закрыть окно.</p>
-
-<!-- блокируем автозапуск SDK во всплывашке -->
-<script>window.VKIDSDKInit = () => {};</script>
-
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>VK callback</title>
 <script>
-/* если окно открыто как всплывающее — сразу в лобби родителя */
-if (window.opener) {
-  window.opener.location.href = '/lobby.html';
-  setTimeout(()=>window.close(), 100);
-} else {
-  location.href = '/lobby.html';   /* авторизация шла в том же табе */
-}
+/*   Страница получает ?code=… от VK
+     Отправляем его в окно-родитель и закрываемся              */
+(function () {
+  const params = new URLSearchParams(location.search);
+  const code   = params.get('code');
+  if (code && window.opener) {
+    window.opener.postMessage(
+      { type:'LOGIN_SUCCESS', detail:{ code } },
+      '*'                       // свой домен → https://sweet-…
+    );
+  }
+  document.body.textContent = 'Авторизация завершена…';
+  setTimeout(() => window.close(), 400);
+})();
 </script>
