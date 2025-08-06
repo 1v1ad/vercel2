@@ -1,19 +1,40 @@
 <!DOCTYPE html>
+<html lang="ru">
+<head>
 <meta charset="utf-8">
 <title>VK callback</title>
+
 <script>
-/*   Страница получает ?code=… от VK
-     Отправляем его в окно-родитель и закрываемся              */
-(function () {
-  const params = new URLSearchParams(location.search);
-  const code   = params.get('code');
+/*  Ждём, когда браузер построит <body>, чтобы к нему обращаться  */
+document.addEventListener('DOMContentLoaded', () => {
+  const qs   = new URLSearchParams(location.search);
+  const code = qs.get('code');
+
+  /* отправляем данные в окно-родитель и закрываемся */
   if (code && window.opener) {
     window.opener.postMessage(
-      { type:'LOGIN_SUCCESS', detail:{ code } },
-      '*'                       // свой домен → https://sweet-…
+      {
+        type  : 'LOGIN_SUCCESS',
+        detail: {
+          code,
+          device_id    : qs.get('device_id'),
+          code_verifier: qs.get('code_verifier')
+        }
+      },
+      '*'   /*  при желании укажите точный origin: https://sweet-twilight-63a9b6.netlify.app */
     );
   }
-  document.body.textContent = 'Авторизация завершена…';
-  setTimeout(() => window.close(), 400);
-})();
+
+  /* короткое сообщение пользователю */
+  document.body.innerHTML =
+    '<div style="font:16px/1.4 Arial,sans-serif;color:#ffbb00;'
+  + 'text-align:center;margin-top:42vh">'
+  + 'Авторизация завершена<br>Это окно закроется автоматически…'
+  + '</div>';
+
+  setTimeout(() => window.close(), 600);
+});
 </script>
+</head>
+<body></body>
+</html>
