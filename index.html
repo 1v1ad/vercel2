@@ -7,7 +7,20 @@
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
 
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
-  <style>/* стили «коробки» оставлены без изменений */</style>
+  <style>
+    html,body{margin:0;height:100%;font-family:'Inter',Arial,sans-serif;
+      background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d);
+      border:3.5px solid #ffbb00e0;border-radius:36px;
+      padding:48px 20px 36px;max-width:420px;width:92%;text-align:center;
+      box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;position:relative}
+    .box::before{content:"";position:absolute;top:18px;left:18px;right:18px;height:30px;border-radius:22px;
+      background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);opacity:.24}
+    h1{margin:0 0 26px;font:800 2em 'Inter',sans-serif;color:#fa4242;text-shadow:0 0 8px #42040480}
+    #vk_container{margin-top:16px}
+    #msg{margin-top:14px;min-height:22px;font-size:15px;color:#ffbb00}
+  </style>
 </head>
 <body>
   <div class="wrap">
@@ -29,30 +42,34 @@ document.addEventListener('DOMContentLoaded', () => {
   VKID.Config.init({
     app: APP_ID,
     redirectUrl: REDIRECT,
-    source: VKID.ConfigSource.ONE_TAP
+    source: VKID.ConfigSource.ONE_TAP                // пытаемся One Tap
   });
 
+  /* кнопка: если One Tap недоступен, sdk автоматически покажет blue-button */
   new VKID.OneTap().render({
     container: document.getElementById('vk_container'),
-    scheme: 'dark',
-    showAlternativeLogin: false,
+    scheme:'dark',
     buttonStyles:{height:44,borderRadius:12,
       backgroundColor:'#0054ff',hoverColor:'#0e63ff',
       activeColor:'#0048db',textColor:'#ffffff'}
-  })
-  .on(VKID.WidgetEvents.ERROR,  e=>show(e.text))
-  /* ← единственный обмен */
-  .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, sendCode);
+  });
+
+  /* единое событие для обеих схем авторизации */
+  VKID.Events.subscribe(VKID.AuthEvents.AUTH_COMPLETE, sendCode);
+
+  VKID.Events.subscribe(VKID.WidgetEvents.ERROR, e => {
+    document.getElementById('msg').textContent = 'Ошибка: '+(e?.text||'unknown');
+  });
 });
 
-async function sendCode({ code, device_id, code_verifier }) {
-  try {
-    const r = await fetch(`${API}/api/auth/vk-callback`, {
-      method :'POST',
+async function sendCode({ detail:{ code, device_id, code_verifier } }) {
+  try{
+    const r = await fetch(`${API}/api/auth/vk-callback`,{
+      method:'POST',
       headers:{'Content-Type':'application/json'},
-      body   :JSON.stringify({ code,
-                               deviceId    : device_id,
-                               codeVerifier: code_verifier })
+      body:JSON.stringify({ code,
+                            deviceId    : device_id,
+                            codeVerifier: code_verifier })
     });
     if(!r.ok){
       const e = await r.json().catch(()=>({}));
@@ -61,9 +78,11 @@ async function sendCode({ code, device_id, code_verifier }) {
     const { token } = await r.json();
     localStorage.setItem('authToken', token);
     location.href = '/lobby.html';
-  } catch(e){ show(e.message); }
+  }catch(e){ show(e.message); }
 }
-function show(t){ document.getElementById('msg').textContent = 'Ошибка: '+t; }
+function show(t){
+  document.getElementById('msg').textContent = 'Ошибка: '+t;
+}
 </script>
 </body>
 </html>
