@@ -3,106 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <title>VK One Tap Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- актуальный SDK VK ID -->
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
-
-  <!-- шрифт и ваши стили остались без изменений -->
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
     html,body{margin:0;padding:0;height:100%;width:100vw;font-family:'Inter',Arial,sans-serif;
-      background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff;}
-    .vk-container-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;
-      justify-content:center;padding-top:64px;}
-    .vk-login-box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d 100%);border-radius:36px;
-      box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;padding:48px 20px 36px;border:3.5px solid #ffbb00e0;
-      display:flex;flex-direction:column;align-items:center;max-width:410px;width:100%;position:relative;}
-    .vk-login-box::before{content:"";position:absolute;top:18px;left:18px;right:18px;height:32px;
-      background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);border-radius:20px 20px 90px 90px;
-      opacity:.24;z-index:1;}
-    .vk-login-title{font-size:2em;font-weight:800;color:#fa4242;letter-spacing:1.5px;
-      text-shadow:0 0 8px #42040480;margin:6px 0 26px;}
-    #vk_container{margin-top:16px;z-index:2;width:100%;}
-    #login-message{margin-top:14px;color:#ffbb00;font-size:1em;min-height:22px;text-align:center;line-height:1.4;}
-    @media(max-width:600px){.vk-login-box{padding:32px 8px 24px;border-radius:20px;max-width:98vw;}
-      .vk-login-title{font-size:1.3em;}}
+      background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff}
+    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:64px}
+    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d 100%);border-radius:36px;
+      box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;border:3.5px solid #ffbb00e0;
+      padding:48px 20px 36px;display:flex;flex-direction:column;align-items:center;max-width:410px;width:100%;position:relative}
+    .box::before{content:"";position:absolute;top:18px;left:18px;right:18px;height:32px;
+      background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);border-radius:20px 20px 90px 90px;opacity:.24;z-index:1}
+    h1{margin:6px 0 26px;font:800 2em 'Inter',sans-serif;letter-spacing:1.5px;color:#fa4242;text-shadow:0 0 8px #42040480}
+    #vk_container{margin-top:16px;z-index:2;width:100%}
+    #msg{margin-top:14px;color:#ffbb00;font-size:1em;min-height:22px;text-align:center;line-height:1.4}
+    @media(max-width:600px){.box{padding:32px 8px 24px;border-radius:20px;max-width:98vw}h1{font-size:1.3em}}
   </style>
 </head>
 <body>
-  <div class="vk-container-wrap">
-    <div class="vk-login-box">
-      <div class="vk-login-title">Вход через VK</div>
+  <div class="wrap">
+    <div class="box">
+      <h1>Вход через VK</h1>
       <div id="vk_container"></div>
-      <div id="login-message">
-        Нажмите <b>«Войти с VK ID»</b>, а затем подтвердите вход
-      </div>
+      <div id="msg">Нажмите <b>«Войти с VK ID»</b>, а затем подтвердите вход</div>
     </div>
   </div>
 
   <script>
-  /* —————————————————  настройка  ————————————————— */
-  const API = 'https://vercel2pr.onrender.com';   // адрес вашего бэка
-  const APP_ID = 54008517;                       // VK app_id
+  const API  = 'https://vercel2pr.onrender.com';
+  const APP_ID = 54008517;
 
-  if ('VKIDSDK' in window) {
+  document.addEventListener('DOMContentLoaded', () => {
     const VKID = window.VKIDSDK;
+    VKID.Config.init({ app: APP_ID, source: VKID.ConfigSource.ONE_TAP });
 
-    /* 1. инициализация: БЕЗ redirectUrl / responseMode → один вызов кода */
-    VKID.Config.init({
-      app:    APP_ID,
-      source: VKID.ConfigSource.ONE_TAP
-      // pkce: false  // раскомментируйте, если захотите полностью отключить PKCE
-    });
-
-    /* 2. рисуем кнопку One-Tap */
-    const widget = new VKID.OneTap();
-    widget.render({
+    /*  ─────────── рендерим One-Tap без альтернативного логина ─────────── */
+    new VKID.OneTap().render({
       container: document.getElementById('vk_container'),
       scheme: 'dark',
-      showAlternativeLogin: true,
-      oauthList: ['mail_ru']
+      showAlternativeLogin: false,      // ← убрали требование redirectUrl
     })
-    .on(VKID.WidgetEvents.ERROR,  onError)
+    .on(VKID.WidgetEvents.ERROR,  showError)
     .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, onSuccess);
-  }
+  });
 
-  /* —————————————  успешная авторизация  ————————————— */
   async function onSuccess({ code, device_id, code_verifier }) {
     try {
-      const resp = await fetch(`${API}/api/auth/vk-callback`, {
-        method : 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body   : JSON.stringify({
-          code,
-          deviceId    : device_id,
-          codeVerifier: code_verifier      // придёт пустым, если pkce:false
-        })
+      const r = await fetch(`${API}/api/auth/vk-callback`, {
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ code, deviceId:device_id, codeVerifier:code_verifier })
       });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        return onError({ text: err.error_description || err.error });
+      if(!r.ok){
+        const e=await r.json().catch(()=>({}));return showError({text:e.error_description||e.error});
       }
-
-      const { token } = await resp.json();
+      const { token } = await r.json();
       localStorage.setItem('authToken', token);
       location.href = '/lobby.html';
-
-    } catch (e) {
-      onError({ text: e.message });
-    }
+    } catch(e){ showError({text:e.message}) }
   }
-
-  /* —————————————  вывод ошибки  ————————————— */
-  function onError(err) {
-    let msg = 'Ошибка авторизации. Попробуйте снова.';
-    if (err?.text === 'timeout') {
-      msg = '⏳ Не удалось быстро войти. Попробуйте ещё раз.';
-    } else if (err?.text) {
-      msg = err.text;
-    }
-    document.getElementById('login-message').innerHTML = msg;
+  function showError(e){
+    document.getElementById('msg').textContent =
+      e?.text||'Ошибка авторизации. Попробуйте снова.';
   }
   </script>
 </body>
