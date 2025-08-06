@@ -4,20 +4,24 @@
   <meta charset="UTF-8">
   <title>Вход через VK ID</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- VK ID SDK -->
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
 
-  <!-- стили «коробки» + тёмного фона -->
+  <!-- ваша фирменная «коробка» + фон -->
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
-    html,body{margin:0;height:100%;font-family:'Inter',Arial,sans-serif;background:#18181f;color:#fff}
+    html,body{margin:0;height:100%;font-family:'Inter',Arial,sans-serif;
+      background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff}
     .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
-    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d);border:3px solid #ffbb00e0;border-radius:36px;
-      padding:44px 20px 34px;box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;max-width:420px;width:92%;text-align:center;position:relative}
+    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d 100%);border:3.5px solid #ffbb00e0;
+      border-radius:36px;padding:48px 20px 36px;box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;
+      max-width:410px;width:92%;text-align:center;position:relative}
     .box::before{content:"";position:absolute;top:18px;left:18px;right:18px;height:30px;border-radius:22px;
       background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);opacity:.24}
-    h1{margin:0 0 24px;font:800 2em/1 'Inter',sans-serif;color:#fa4242;text-shadow:0 0 8px #42040480}
-    #vk_container{margin-top:14px}
+    h1{margin:6px 0 26px;font:800 2em 'Inter',sans-serif;color:#fa4242;text-shadow:0 0 8px #42040480}
+    #vk_container{margin-top:16px}
     #msg{margin-top:14px;font-size:15px;color:#ffbb00;min-height:22px}
+    @media(max-width:600px){.box{padding:32px 8px 24px}.wrap{padding:0 6px}h1{font-size:1.3em}}
   </style>
 </head>
 <body>
@@ -30,19 +34,20 @@
   </div>
 
 <script>
-const API     = 'https://vercel2pr.onrender.com';                 // ваш бек
-const APP_ID  = 54008517;                                         // VK app_id
+/* ===== НАСТРОЙКИ ===== */
+const API    = 'https://vercel2pr.onrender.com';   // ваш бек
+const APP_ID = 54008517;                           // id приложения VK
 
 document.addEventListener('DOMContentLoaded', () => {
   const VKID = window.VKIDSDK;
 
-  /* инициализация (redirectUrl не нужен, код отправляем сами) */
+  /* 1. инициализируем SDK — redirect / responseMode НЕ нужны */
   VKID.Config.init({
-    app: APP_ID,
+    app:    APP_ID,
     source: VKID.ConfigSource.ONE_TAP
   });
 
-  /* тёмная кнопка One-Tap */
+  /* 2. рисуем тёмную кнопку One-Tap */
   new VKID.OneTap().render({
     container: document.getElementById('vk_container'),
     scheme: 'dark',
@@ -55,32 +60,36 @@ document.addEventListener('DOMContentLoaded', () => {
       textColor:'#ffffff'
     }
   })
-  .on(VKID.WidgetEvents.ERROR,  showError)
+  .on(VKID.WidgetEvents.ERROR,          showError)
   .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, sendCode);
 });
 
-/* отправляем код на бэк (единственный запрос) */
+/* 3. отправляем code (+ device_id, verifier) — ровно ОДИН запрос */
 async function sendCode({ code, device_id, code_verifier }) {
   try {
     const r = await fetch(`${API}/api/auth/vk-callback`, {
       method :'POST',
       headers:{'Content-Type':'application/json'},
-      body   :JSON.stringify({ code, deviceId:device_id, codeVerifier:code_verifier })
+      body   :JSON.stringify({ code, deviceId: device_id, codeVerifier: code_verifier })
     });
 
     if (!r.ok) {
-      const e = await r.json().catch(()=>({})); return showError({text:e.error||e.error_description});
+      const e = await r.json().catch(()=>({}));
+      return showError({ text: e.error_description || e.error || 'fail' });
     }
+
     const { token } = await r.json();
     localStorage.setItem('authToken', token);
     location.href = '/lobby.html';
-  } catch(e){ showError({text:e.message}); }
+  } catch (e) { showError({ text: e.message }); }
 }
 
+/* компактный вывод ошибок */
 function showError(e){
-  document.getElementById('msg').textContent =
-    e?.text || 'Ошибка авторизации. Попробуйте снова.';
+  document.getElementById('msg').innerHTML =
+    (e?.text || 'Ошибка авторизации. Попробуйте снова.');
 }
 </script>
 </body>
 </html>
+
