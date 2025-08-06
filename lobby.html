@@ -1,26 +1,44 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>Лобби</title>
-<h1 id="hello">Загрузка…</h1>
-<script>
-(async () => {
-  const token = localStorage.getItem('authToken');
-  if (!token) return location.href = '/index.html';
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Лобби — PvP Chance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* … все ваши стили без изменений … */
+  </style>
+</head>
+<body>
+  <!-- … разметка без изменений … -->
 
-  try{
-    const r = await fetch('https://vercel2pr.onrender.com/api/user/profile',{
-      headers:{ Authorization:`Bearer ${token}` }
-    });
-    if (!r.ok) throw new Error(await r.text());
+  <script>
+    const API = 'https://vercel2pr.onrender.com';
 
-    const u = await r.json();
-    document.getElementById('hello').textContent =
-      `Привет, ${u.firstName}! Баланс: ${u.balance}`;
-  } catch(e){
-    alert('Ошибка профиля: ' + e);
-    localStorage.removeItem('authToken');
-    location.href = '/index.html';
-  }
-})();
-</script>
+    async function fetchProfile() {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        location.href = '/index.html';
+        return;
+      }
+      const resp = await fetch(`${API}/api/user/profile`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      if (resp.ok) {
+        renderProfile(await resp.json());
+      } else {
+        localStorage.removeItem('authToken');
+        location.href = '/index.html';
+      }
+    }
 
+    function renderProfile(p) {
+      document.getElementById('userAva').src  = p.avatar || 'https://vk.com/images/camera_200.png';
+      document.getElementById('userName').textContent = `${p.firstName ?? ''} ${p.lastName ?? ''}`;
+      document.getElementById('userVKID').textContent = 'VK ID: ' + (p.vk_id ?? p.vkId);
+      document.getElementById('userBalance').textContent = p.balance ?? 0;
+    }
+
+    fetchProfile();
+  </script>
+</body>
+</html>

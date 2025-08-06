@@ -1,64 +1,123 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<title>VK ID Login</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-html,body{height:100%;margin:0;background:#1c1b23;color:#ffb840;
-display:flex;align-items:center;justify-content:center;font:16px system-ui}
-.box{padding:40px 48px;background:#26242f;border:4px solid #ffb840;
-border-radius:12px;box-shadow:0 0 26px rgba(255,184,64,.25);text-align:center}
-h1{margin:0 0 28px;color:#ff4242;font-size:26px}
-#msg{margin-top:24px}
-</style>
+  <meta charset="UTF-8">
+  <title>Вход через VK ID</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <!-- VK ID SDK v2.6 -->
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
+
+  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
+  <style>
+    html,body{margin:0;height:100%;font-family:'Inter',Arial,sans-serif;
+      background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d);
+      border:3.5px solid #ffbb00e0;border-radius:36px;
+      padding:48px 20px 36px;max-width:420px;width:92%;text-align:center;
+      box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;position:relative}
+    .box:before{content:"";position:absolute;top:18px;left:18px;right:18px;height:30px;border-radius:22px;
+      background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);opacity:.24}
+    h1{margin:0 0 26px;font:800 2em 'Inter',sans-serif;color:#fa4242;text-shadow:0 0 8px #42040480}
+    #vk_container{margin-top:16px}
+    #msg{margin-top:14px;min-height:22px;font-size:15px;color:#ffbb00}
+  </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Вход через VK</h1>
-    <div id="vk_container"></div>
-    <p id="msg"></p>
+  <div class="wrap">
+    <div class="box">
+      <h1>Вход через VK</h1>
+      <div id="vk_container"></div>
+      <div id="msg">Нажмите <b>«Войти с VK ID»</b>, затем подтвердите вход</div>
+    </div>
   </div>
 
-<!-- 1️⃣ СВОЙ (локальный) экземпляр SDK: кладём файл в /sdk/ -->
-<script type="module">
-import VKID from '/sdk/vkid-sdk.es.js';   /* 👈 путь внутри Netlify */
-
+<script>
+/* ——— конфиг ——— */
+const API      = 'https://vercel2pr.onrender.com';
 const APP_ID   = 54008517;
 const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
-const API      = 'https://vercel2pr.onrender.com/api';
 
-VKID.Config.init({app:APP_ID,redirectURI:REDIRECT,source:VKID.ConfigSource.ONE_TAP});
+/* ——— init ——— */
+document.addEventListener('DOMContentLoaded', () => {
+  const VKID = window.VKIDSDK;
 
-new VKID.OneTap().render({
-  container:document.getElementById('vk_container'),
-  scheme:'dark',
-  buttonStyles:{height:44,borderRadius:12,
-    backgroundColor:'#0054FF',hoverColor:'#0E63FF',
-    activeColor:'#0048DD',textColor:'#FFFFFF'}
+  VKID.Config.init({
+    app: APP_ID,
+    redirectUrl: REDIRECT,
+    source: VKID.ConfigSource.ONE_TAP
+  });
+
+  new VKID.OneTap().render({
+    container: document.getElementById('vk_container'),
+    scheme:'dark',
+    showAlternativeLogin:false,
+    buttonStyles:{
+      height:44,borderRadius:12,
+      backgroundColor:'#0054ff',hoverColor:'#0e63ff',
+      activeColor:'#0048db',textColor:'#ffffff'}
+  });
+
+  /* пробуем оба события – хватит одного срабатывания */
+  multiAuthSubscribe(['LOGIN_SUCCESS','AUTH_COMPLETE'],
+                     ({ detail }) => sendCode(detail));
+
+  if (VKID.Events && VKID.Events.subscribe) {
+    VKID.Events.subscribe(
+      VKID.WidgetEvents.ERROR,
+      e => show('Ошибка: ' + (e?.text || 'unknown'))
+    );
+  }
 });
 
-safeSub('AUTH_COMPLETE',({detail})=>sendCode(detail));
+/* ——— подписка с повтором до успеха ——— */
+function multiAuthSubscribe(eventList, cb){
+  const { Auth } = window.VKIDSDK || {};
+  if (!Auth?.subscribe) return;
 
-VKID.Events.subscribe(VKID.WidgetEvents.ERROR,e=>show(e.text||'widget error'));
-
-function safeSub(ev,cb){const {Auth={}}=VKID;if(!Auth.subscribe)return;
-  try{Auth.subscribe(ev,cb);}catch{try{Auth.subscribe(cb,ev);}catch{}}}
-
-async function sendCode({code,device_id:deviceId,code_verifier:codeVerifier}){
-  show('Загрузка …');
-  try{
-    const r=await fetch(`${API}/auth/vk-callback`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({code,deviceId,codeVerifier})
-    });
-    if(!r.ok) throw await r.json();
-    const {token}=await r.json();
-    localStorage.setItem('authToken',token);
-    location.href='/lobby.html';
-  }catch(e){show('Ошибка: '+JSON.stringify(e))}
+  const tried = new Set();
+  const timer = setInterval(() => {
+    for (const ev of eventList){
+      if (tried.has(ev)) continue;
+      try {
+        Auth.subscribe(ev, cb);        // (event, cb)
+        tried.add(ev);
+      } catch {
+        try {
+          Auth.subscribe(cb, ev);      // (cb, event)
+          tried.add(ev);
+        } catch {/* ждём и повторим */}
+      }
+    }
+    if (tried.size === eventList.length) clearInterval(timer);
+  }, 200);                             // каждые 200 мс
 }
-const show=t=>document.getElementById('msg').textContent=t;
+
+/* ——— обмен code → JWT ——— */
+async function sendCode({ code, device_id, code_verifier }){
+  try{
+    const r = await fetch(`${API}/api/auth/vk-callback`,{
+      method :'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ code,
+                            deviceId:device_id,
+                            codeVerifier:code_verifier })
+    });
+
+    if(!r.ok){
+      const e = await r.json().catch(()=>({}));
+      return show('Ошибка: ' + (e.error_description||e.error||r.status));
+    }
+    const { token } = await r.json();
+    localStorage.setItem('authToken', token);
+    location.href = '/lobby.html';
+
+  }catch(e){ show('Сбой сети: ' + e.message); }
+}
+
+/* вывод сообщения */
+function show(t){ document.getElementById('msg').textContent = t; }
 </script>
 </body>
 </html>
