@@ -2,44 +2,61 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>VK Callback</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
+  <title>Авторизация завершается…</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    html, body {
-      margin: 0; padding: 0;
-      height: 100%; width: 100vw;
-      font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
-      color: #fff;
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .callback-box {
-      background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
-      border-radius: 28px;
-      box-shadow: 0 4px 24px 4px #000a, 0 0 32px #ffbb0040 inset;
-      padding: 34px 12vw;
-      border: 3.5px solid #ffbb00e0;
-      text-align: center;
-      font-size: 1.15em;
-      font-weight: 600;
-      max-width: 99vw;
-      box-sizing: border-box;
-    }
-    @media (max-width: 600px) {
-      .callback-box {
-        padding: 24px 4vw;
-        border-radius: 16px;
-        font-size: 1em;
-      }
-    }
+    html,body{margin:0;padding:0;height:100%;display:flex;align-items:center;justify-content:center;
+      background:#1c1b22;color:#ffbb00;font-family:Arial,sans-serif}
+    .box{border:3px solid #ffbb00;border-radius:32px;padding:48px 32px;box-shadow:0 0 24px #000a;
+      background:#2d2836;text-align:center}
+    h1{margin:0 0 12px;font-size:1.4em}
   </style>
 </head>
 <body>
-  <div class="callback-box">
-    <h2>Авторизация завершена</h2>
-    <p>Это окно можно закрыть.</p>
+  <div class="box">
+    <h1>Авторизация завершается…</h1>
+    Подождите пару секунд.
   </div>
+
+<script>
+(async () => {
+  /* 1. разбираем query-string */
+  const params = new URLSearchParams(location.search);
+  const code         = params.get('code');
+  const deviceId     = params.get('device_id');
+  const codeVerifier = params.get('code_verifier');   // может быть null, если pkce:false
+
+  if (!code || !deviceId) {
+    document.querySelector('h1').textContent = 'Ошибка: нет кода';
+    return;
+  }
+
+  /* 2. шлём на backend */
+  try {
+    const resp = await fetch('https://vercel2pr.onrender.com/api/auth/vk-callback', {
+      method :'POST',
+      headers:{'Content-Type':'application/json'},
+      body   :JSON.stringify({ code, deviceId, codeVerifier })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({error:'fail'}));
+      document.querySelector('h1').textContent = 'Ошибка: ' + (err.error_description || err.error);
+      return;
+    }
+
+    const { token } = await resp.json();
+
+    /* 3. кладём JWT и переходим в лобби */
+    if (window.opener) {
+      window.opener.localStorage.setItem('authToken', token);
+      window.opener.location.href = '/lobby.html';
+    }
+    window.close();           // закрыть всплывашку
+  } catch (e) {
+    document.querySelector('h1').textContent = 'Сбой сети: ' + e.message;
+  }
+})();
+</script>
 </body>
 </html>
