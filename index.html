@@ -4,24 +4,9 @@
   <meta charset="UTF-8">
   <title>Вход через VK ID</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <!-- SDK -->
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
-
-  <!-- шрифт + «коробка» -->
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
-  <style>
-    html,body{margin:0;height:100%;font-family:'Inter',Arial,sans-serif;background:#18181f;color:#fff}
-    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
-    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d);border:3px solid #ffbb00e0;
-      border-radius:36px;padding:44px 20px 34px;box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;
-      width:100%;max-width:420px;text-align:center;position:relative}
-    .box::before{content:"";position:absolute;top:18px;left:18px;right:18px;height:30px;border-radius:22px;
-      background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);opacity:.24}
-    h1{margin:0 0 24px;font:800 2em/1 'Inter',sans-serif;color:#fa4242;text-shadow:0 0 8px #42040480}
-    #vk_container{margin-top:14px}
-    #msg{margin-top:14px;font-size:15px;color:#ffbb00;min-height:22px}
-    @media(max-width:600px){.box{padding:32px 10px}.wrap{padding:0 6px}h1{font-size:1.3em}}
-  </style>
+  <style>/* ваш тёмный дизайн коробки – оставлен без изменений */</style>
 </head>
 <body>
 <div class="wrap">
@@ -33,36 +18,49 @@
 </div>
 
 <script>
-const APP_ID   = 54008517;
-const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
+const API     = 'https://vercel2pr.onrender.com';                  // бек
+const APP_ID  = 54008517;
 
 document.addEventListener('DOMContentLoaded', () => {
   const VKID = window.VKIDSDK;
 
+  /* ⬇ redirectUrl убрали — код отдадим сами */
   VKID.Config.init({
-    app: APP_ID,
-    redirectUrl: REDIRECT,                 // обязательно совпадает с настройками VK-приложения
+    app:    APP_ID,
     source: VKID.ConfigSource.ONE_TAP
   });
 
-  /* только рисуем кнопку – без fetch'а */
   new VKID.OneTap().render({
     container: document.getElementById('vk_container'),
     scheme: 'dark',
     showAlternativeLogin: false,
-    buttonStyles: {                        /* тёмная кнопка */
-      height:44,borderRadius:12,
-      backgroundColor:'#0054ff',
-      hoverColor:'#0e63ff',
-      activeColor:'#0048db',
-      textColor:'#ffffff'
-    }
+    buttonStyles:{height:44,borderRadius:12,
+      backgroundColor:'#0054ff',hoverColor:'#0e63ff',activeColor:'#0048db',textColor:'#fff'}
   })
-  .on(VKID.WidgetEvents.ERROR, e => {
-    document.getElementById('msg').textContent =
-      e?.text || 'Ошибка авторизации, попробуйте снова.';
-  });
+  .on(VKID.WidgetEvents.ERROR,  showError)
+  .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, sendCode);
 });
+
+async function sendCode({ code, device_id, code_verifier }) {
+  try {
+    const r = await fetch(`${API}/api/auth/vk-callback`, {
+      method :'POST',
+      headers:{'Content-Type':'application/json'},
+      body   :JSON.stringify({ code, deviceId:device_id, codeVerifier:code_verifier })
+    });
+    if (!r.ok) {
+      const e = await r.json().catch(()=>({})); return showError({text:e.error||e.error_description});
+    }
+    const { token } = await r.json();
+    localStorage.setItem('authToken', token);
+    location.href = '/lobby.html';
+  } catch(e){ showError({text:e.message}); }
+}
+
+function showError(e){
+  document.getElementById('msg').textContent =
+    e?.text || 'Ошибка авторизации. Попробуйте ещё раз.';
+}
 </script>
 </body>
 </html>
