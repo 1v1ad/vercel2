@@ -5,115 +5,91 @@
   <title>Вход через VK ID</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <!-- VK ID SDK -->
- <script>
-const API     = 'https://vercel2pr.onrender.com';
-const APP_ID  = 54008517;
-const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/';   // ← 1️⃣
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
 
-document.addEventListener('DOMContentLoaded', () => {
-  const VKID = window.VKIDSDK;
+  <!-- Дизайн «коробки» -->
+  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
+  <style>
+    html,body{margin:0;height:100%;font-family:'Inter',Arial,sans-serif;
+      background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d);
+      border:3.5px solid #ffbb00e0;border-radius:36px;
+      padding:48px 20px 36px;max-width:420px;width:92%;text-align:center;
+      box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;position:relative}
+    .box::before{content:"";position:absolute;top:18px;left:18px;right:18px;height:30px;border-radius:22px;
+      background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);opacity:.24}
+    h1{margin:0 0 26px;font:800 2em 'Inter',sans-serif;color:#fa4242;text-shadow:0 0 8px #42040480}
+    #vk_container{margin-top:16px}
+    #msg{margin-top:14px;min-height:22px;font-size:15px;color:#ffbb00}
+    @media(max-width:600px){.box{padding:32px 8px 24px}h1{font-size:1.3em}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="box">
+      <h1>Вход через VK</h1>
+      <div id="vk_container"></div>
+      <div id="msg">Нажмите <b>«Войти с VK ID»</b>, затем подтвердите вход</div>
+    </div>
+  </div>
 
-  /* redirectUrl ОБЯЗАТЕЛЕН */
-  VKID.Config.init({
-    app: APP_ID,
-    redirectUrl: REDIRECT,                // ← 2️⃣
-    source: VKID.ConfigSource.ONE_TAP
-  });
+  <!-- Логика -->
+  <script>
+    const API        = 'https://vercel2pr.onrender.com';                 // URL бэка
+    const APP_ID     = 54008517;                                         // VK app_id
+    const REDIRECT   = 'https://sweet-twilight-63a9b6.netlify.app/';     // записан в VK-панели
 
-  new VKID.OneTap().render({
-    container: document.getElementById('vk_container'),
-    scheme: 'dark',
-    showAlternativeLogin: false,
-    buttonStyles:{
-      height:44,borderRadius:12,
-      backgroundColor:'#0054ff',
-      hoverColor:'#0e63ff',
-      activeColor:'#0048db',
-      textColor:'#ffffff'
-    }
-  })
-  .on(VKID.WidgetEvents.ERROR,          showError)
-  .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, sendCode);
-});
+    document.addEventListener('DOMContentLoaded', () => {
+      const VKID = window.VKIDSDK;
 
-async function sendCode({ code, device_id, code_verifier }) {
-  try {
-    const r = await fetch(`${API}/api/auth/vk-callback`, {
-      method :'POST',
-      headers:{'Content-Type':'application/json'},
-      body   :JSON.stringify({ code, deviceId: device_id, codeVerifier: code_verifier })
-    });
-    if (!r.ok) {
-      const e = await r.json().catch(()=>({}));
-      return showError({text:e.error_description||e.error});
-    }
-    const { token } = await r.json();
-    localStorage.setItem('authToken', token);
-    location.href = '/lobby.html';
-  } catch(e){ showError({text:e.message}); }
-}
-function showError(e){
-  document.getElementById('msg').textContent =
-    e?.text || 'Ошибка авторизации. Попробуйте снова.';
-}
-</script>
+      /* 1. Инициализация */
+      VKID.Config.init({
+        app: APP_ID,
+        redirectUrl: REDIRECT,            // обязателен
+        source: VKID.ConfigSource.ONE_TAP
+      });
 
-/* ===== НАСТРОЙКИ ===== */
-const API    = 'https://vercel2pr.onrender.com';   // ваш бек
-const APP_ID = 54008517;                           // id приложения VK
-
-document.addEventListener('DOMContentLoaded', () => {
-  const VKID = window.VKIDSDK;
-
-  /* 1. инициализируем SDK — redirect / responseMode НЕ нужны */
-  VKID.Config.init({
-    app:    APP_ID,
-    source: VKID.ConfigSource.ONE_TAP
-  });
-
-  /* 2. рисуем тёмную кнопку One-Tap */
-  new VKID.OneTap().render({
-    container: document.getElementById('vk_container'),
-    scheme: 'dark',
-    showAlternativeLogin: false,
-    buttonStyles:{
-      height:44,borderRadius:12,
-      backgroundColor:'#0054ff',
-      hoverColor:'#0e63ff',
-      activeColor:'#0048db',
-      textColor:'#ffffff'
-    }
-  })
-  .on(VKID.WidgetEvents.ERROR,          showError)
-  .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, sendCode);
-});
-
-/* 3. отправляем code (+ device_id, verifier) — ровно ОДИН запрос */
-async function sendCode({ code, device_id, code_verifier }) {
-  try {
-    const r = await fetch(`${API}/api/auth/vk-callback`, {
-      method :'POST',
-      headers:{'Content-Type':'application/json'},
-      body   :JSON.stringify({ code, deviceId: device_id, codeVerifier: code_verifier })
+      /* 2. Отрисовываем тёмную кнопку */
+      new VKID.OneTap().render({
+        container: document.getElementById('vk_container'),
+        scheme: 'dark',
+        showAlternativeLogin: false,
+        buttonStyles:{
+          height:44,borderRadius:12,
+          backgroundColor:'#0054ff',
+          hoverColor:'#0e63ff',
+          activeColor:'#0048db',
+          textColor:'#ffffff'
+        }
+      })
+      .on(VKID.WidgetEvents.ERROR,          showError)
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, sendCode);
     });
 
-    if (!r.ok) {
-      const e = await r.json().catch(()=>({}));
-      return showError({ text: e.error_description || e.error || 'fail' });
+    /* 3. Отправляем code → бэк (один запрос) */
+    async function sendCode({ code, device_id, code_verifier }) {
+      try{
+        const r = await fetch(`${API}/api/auth/vk-callback`, {
+          method :'POST',
+          headers:{'Content-Type':'application/json'},
+          body   :JSON.stringify({ code, deviceId:device_id, codeVerifier:code_verifier })
+        });
+        if(!r.ok){
+          const e = await r.json().catch(()=>({}));
+          return showError({ text:e.error_description||e.error||'fail'});
+        }
+        const { token } = await r.json();
+        localStorage.setItem('authToken', token);
+        location.href = '/lobby.html';
+      }catch(e){ showError({ text:e.message }); }
     }
 
-    const { token } = await r.json();
-    localStorage.setItem('authToken', token);
-    location.href = '/lobby.html';
-  } catch (e) { showError({ text: e.message }); }
-}
-
-/* компактный вывод ошибок */
-function showError(e){
-  document.getElementById('msg').innerHTML =
-    (e?.text || 'Ошибка авторизации. Попробуйте снова.');
-}
-</script>
+    function showError(e){
+      document.getElementById('msg').textContent =
+        e?.text || 'Ошибка авторизации. Попробуйте снова.';
+    }
+  </script>
 </body>
 </html>
 
