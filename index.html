@@ -4,8 +4,6 @@
   <meta charset="UTF-8">
   <title>Вход через VK ID</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-
-  <!-- VK ID SDK (v 2.6) -->
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
 
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
@@ -17,7 +15,7 @@
       border:3.5px solid #ffbb00e0;border-radius:36px;
       padding:48px 20px 36px;max-width:420px;width:92%;text-align:center;
       box-shadow:0 4px 28px 8px #000a,0 0 32px #ffbb0040 inset;position:relative}
-    .box::before{content:"";position:absolute;top:18px;left:18px;right:18px;height:30px;border-radius:22px;
+    .box:before{content:"";position:absolute;top:18px;left:18px;right:18px;height:30px;border-radius:22px;
       background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent);opacity:.24}
     h1{margin:0 0 26px;font:800 2em 'Inter',sans-serif;color:#fa4242;text-shadow:0 0 8px #42040480}
     #vk_container{margin-top:16px}
@@ -34,22 +32,22 @@
   </div>
 
 <script>
-/* ─────────── конфиг ─────────── */
-const API      = 'https://vercel2pr.onrender.com';           // ваш бекенд
+/* ───── конфигурация ───── */
+const API      = 'https://vercel2pr.onrender.com';
 const APP_ID   = 54008517;
 const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
 
-/* ─────────── инициализация ─────────── */
+/* ───── инициализация ───── */
 document.addEventListener('DOMContentLoaded', () => {
   const VKID = window.VKIDSDK;
 
   VKID.Config.init({
     app: APP_ID,
     redirectUrl: REDIRECT,
-    source: VKID.ConfigSource.ONE_TAP            // пытаемся One-Tap
+    source: VKID.ConfigSource.ONE_TAP
   });
 
-  /* кнопка One-Tap (если недоступно — отрисуется синяя fallback-кнопка) */
+  /* кнопка One-Tap (если недоступна → синяя fallback-кнопка) */
   new VKID.OneTap().render({
     container: document.getElementById('vk_container'),
     scheme:'dark',
@@ -60,41 +58,56 @@ document.addEventListener('DOMContentLoaded', () => {
       activeColor:'#0048db',textColor:'#ffffff'}
   });
 
-  /* ─── единая подписка (работает и для One-Tap и для синей кнопки) ─── */
-  VKID.Auth.subscribe('AUTH_COMPLETE', ({ detail }) => sendCode(detail));
+  /* ─── универсальная подписка ─── */
+  safeAuthSubscribe('AUTH_COMPLETE', ({ detail }) => sendCode(detail));
 
   /* вывод ошибок виджета */
-  VKID.Events.subscribe?.(VKID.WidgetEvents.ERROR,
-    e => show('Ошибка: ' + (e?.text || 'unknown')));
+  VKID.Events.subscribe?.(
+    VKID.WidgetEvents.ERROR,
+    e => show('Ошибка: ' + (e?.text || 'unknown'))
+  );
 });
 
-/* ─────────── обмен code → JWT ─────────── */
-async function sendCode({ code, device_id, code_verifier }) {
-  try {
-    const r = await fetch(`${API}/api/auth/vk-callback`, {
+/* безопасная подписка: вызывается только если метод есть,
+   и автоматически подбирает порядок аргументов */
+function safeAuthSubscribe(eventName, cb){
+  const { Auth } = window.VKIDSDK || {};
+  if (!Auth?.subscribe) return;
+
+  try {                       // (event, cb)
+    Auth.subscribe(eventName, cb);
+  } catch{
+    try {                     // (cb, event)
+      Auth.subscribe(cb, eventName);
+    } catch(e){
+      console.warn('VKID.Auth.subscribe failed:', e);
+    }
+  }
+}
+
+/* ───── обмен code → JWT ───── */
+async function sendCode({ code, device_id, code_verifier }){
+  try{
+    const r = await fetch(`${API}/api/auth/vk-callback`,{
       method :'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        code,
-        deviceId    : device_id,
-        codeVerifier: code_verifier           // приходит только у One-Tap
-      })
+      body:JSON.stringify({ code,
+                            deviceId    : device_id,
+                            codeVerifier: code_verifier })
     });
 
-    if (!r.ok) {
+    if(!r.ok){
       const e = await r.json().catch(()=>({}));
-      return show('Ошибка: ' + (e.error_description || e.error || r.status));
+      return show('Ошибка: ' + (e.error_description||e.error||r.status));
     }
-
     const { token } = await r.json();
     localStorage.setItem('authToken', token);
     location.href = '/lobby.html';
-
-  } catch (e) { show('Сбой сети: ' + e.message); }
+  }catch(e){ show('Сбой сети: ' + e.message); }
 }
 
 /* компактный вывод сообщения */
-function show(txt){ document.getElementById('msg').textContent = txt; }
+function show(t){ document.getElementById('msg').textContent = t; }
 </script>
 </body>
 </html>
