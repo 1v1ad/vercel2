@@ -5,7 +5,7 @@
   <title>Вход через VK ID</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <!-- VK ID SDK v 2.6  -->
+  <!-- VK ID SDK v2.6  -->
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
 
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
@@ -34,12 +34,12 @@
   </div>
 
 <script>
-/* ——— конфигурация ——— */
+/* ——------  конфигурация  -------- */
 const API      = 'https://vercel2pr.onrender.com';
 const APP_ID   = 54008517;
 const REDIRECT = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
 
-/* ——— инициализация SDK ——— */
+/* ——------  инициализация  -------- */
 document.addEventListener('DOMContentLoaded', () => {
   const VKID = window.VKIDSDK;
 
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     source: VKID.ConfigSource.ONE_TAP
   });
 
-  /* кнопка One-Tap (fallback — синяя button_widget) */
+  /* кнопка One-Tap / fallback-кнопка */
   new VKID.OneTap().render({
     container: document.getElementById('vk_container'),
     scheme:'dark',
@@ -60,10 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
       activeColor:'#0048db',textColor:'#ffffff'}
   });
 
-  /* универсальная подписка: One-Tap + синяя кнопка */
+  /* универсальная подписка */
   safeAuthSubscribe('AUTH_COMPLETE', ({ detail }) => sendCode(detail));
 
-  /* вывод ошибок виджета (если метод уже существует) */
+  /* вывод ошибок виджета (если объект уже загружен) */
   if (VKID.Events && VKID.Events.subscribe) {
     VKID.Events.subscribe(
       VKID.WidgetEvents.ERROR,
@@ -72,32 +72,46 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-/* безопасная подписка: проверяет метод и порядок аргументов */
+/* ——------  безопасная подписка  --------
+   пытается подписаться каждые 100 мс,
+   максимум 2 секунды */
 function safeAuthSubscribe(eventName, cb){
   const { Auth } = window.VKIDSDK || {};
-  if (!Auth?.subscribe) return;
+  if (!Auth?.subscribe) return;               // SDK ещё не готов
 
-  try {               // (event, cb)
-    Auth.subscribe(eventName, cb);
-  } catch {
-    try {             // (cb, event)
-      Auth.subscribe(cb, eventName);
-    } catch(e){
-      console.warn('VKID.Auth.subscribe failed:', e);
+  let elapsed = 0;
+  const STEP  = 100;   // мс
+  const LIMIT = 2000;  // мс
+
+  const timer = setInterval(() => {
+    try {                               // (event, cb)
+      Auth.subscribe(eventName, cb);
+      clearInterval(timer);
+    } catch {
+      try {                             // (cb, event)
+        Auth.subscribe(cb, eventName);
+        clearInterval(timer);
+      } catch (e) {
+        elapsed += STEP;
+        if (elapsed >= LIMIT) {
+          clearInterval(timer);
+          console.warn('VKID.Auth.subscribe failed:', e);
+        }
+      }
     }
-  }
+  }, STEP);
 }
 
-/* ——— обмен code → JWT ——— */
+/* ——------  обмен code → JWT  -------- */
 async function sendCode({ code, device_id, code_verifier }){
   try{
     const r = await fetch(`${API}/api/auth/vk-callback`,{
       method :'POST',
       headers:{'Content-Type':'application/json'},
-      body   :JSON.stringify({
+      body:JSON.stringify({
         code,
         deviceId    : device_id,
-        codeVerifier: code_verifier          // придёт только у One-Tap
+        codeVerifier: code_verifier   // только для One Tap
       })
     });
 
@@ -112,7 +126,7 @@ async function sendCode({ code, device_id, code_verifier }){
   }catch(e){ show('Сбой сети: ' + e.message); }
 }
 
-/* лаконичный вывод сообщения */
+/* компактный вывод сообщения пользователю */
 function show(txt){ document.getElementById('msg').textContent = txt; }
 </script>
 </body>
