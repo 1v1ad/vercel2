@@ -1,8 +1,73 @@
-<!DOCTYPE html><meta charset="utf-8">
-<style>
-  html,body{margin:0;height:100%;display:flex;align-items:center;justify-content:center;
-    background:#18181f;color:#ffbb00;font-family:Arial,sans-serif;text-align:center}
-</style>
-<p>Авторизация завершена.<br>Окно можно закрыть.</p>
-<script>window.VKIDSDKInit = () => {};</script>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Авторизация…</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    html,body{margin:0;height:100%;display:flex;align-items:center;justify-content:center;
+      background:#18181f;color:#ffbb00;font-family:Arial,sans-serif;text-align:center}
+    #box{max-width:420px}
+  </style>
+</head>
+<body>
+  <div id="box">Авторизация завершается…</div>
 
+<script>
+(async () => {
+  /* ─── 1. достаём параметры из URL ─── */
+  const qs  = new URLSearchParams(location.search);
+  const code         = qs.get('code');
+  const deviceId     = qs.get('device_id');
+  const codeVerifier = qs.get('code_verifier');
+
+  if (!code || !deviceId) {
+    document.getElementById('box').textContent =
+      'Ошибка: не получен code / device_id';
+    return;
+  }
+
+  /* если токен уже есть (главное окно успело), просто в лобби */
+  if (window.opener && window.opener.localStorage.getItem('authToken')) {
+    window.opener.location.href = '/lobby.html';
+    window.close();
+    return;
+  }
+
+  /* ─── 2. меняем code → JWT ─── */
+  try {
+    const resp = await fetch('https://vercel2pr.onrender.com/api/auth/vk-callback', {
+      method :'POST',
+      headers:{'Content-Type':'application/json'},
+      body   :JSON.stringify({ code, deviceId, codeVerifier })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({error:'Internal error'}));
+      document.getElementById('box').textContent =
+        'Ошибка: ' + (err.error_description||err.error);
+      return;
+    }
+
+    const { token } = await resp.json();
+
+    /* ─── 3. сохраняем токен и уходим в лобби ─── */
+    if (window.opener) {
+      window.opener.localStorage.setItem('authToken', token);
+      window.opener.location.href = '/lobby.html';
+      window.close();
+    } else {
+      localStorage.setItem('authToken', token);
+      location.href = '/lobby.html';
+    }
+
+  } catch (e) {
+    document.getElementById('box').textContent = 'Сбой сети: ' + e.message;
+  }
+})();
+</script>
+
+<!-- блокируем автоматическую инициализацию SDK во всплывашке -->
+<script>window.VKIDSDKInit = () => {};</script>
+</body>
+</html>
