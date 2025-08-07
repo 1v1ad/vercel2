@@ -2,60 +2,117 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Лобби</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Лобби | GGRoom</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
-    body{margin:0;font-family:'Inter',Arial,sans-serif;background:#18181f;color:#fff;padding:2em}
-    .profile{max-width:400px;margin:auto;text-align:center}
-    img{border-radius:50%;width:100px;height:100px}
-    h2,p{margin:0.5em 0}
-    button{margin-top:1em;background:#ffcc00;border:none;padding:0.5em 1.5em;font-size:1em;border-radius:8px;cursor:pointer}
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%; width: 100vw;
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
+      color: #fff; min-height: 100vh; box-sizing: border-box;
+    }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 28px 8vw 12px; background: rgba(16,16,24,0.95);
+      flex-wrap: wrap; box-sizing: border-box;
+    }
+    .profile { display: flex; align-items: center; gap: 16px; }
+    .profile-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 3px solid #ffbb00; box-shadow: 0 0 8px #ffbb00a0, 0 0 0 2.5px #231818;
+      background: #333 center/cover no-repeat;
+    }
+    .profile-info { display: flex; flex-direction: column; }
+    .profile-name { font-size: 1.07em; font-weight: 700; letter-spacing: 0.3px; word-break: break-all; max-width: 160px; }
+    .profile-balance { color: #ffbb00; font-size: 1.01em; margin-top: 2px; font-weight: 500; text-shadow: 0 0 5px #19110099; }
+    .header-title { font-size: 1.4em; font-weight: 800; color: #fa4242; letter-spacing: 2px; text-shadow: 0 0 8px #42040480; margin-left: 12px; }
+    .lobby-main { display: flex; flex-direction: column; align-items: center; gap: 26px; margin-top: 18px; min-height: 60vh; padding-bottom: 24px; width: 100vw; box-sizing: border-box; }
+    .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 22px; width: 94vw; max-width: 1100px; margin: 0 auto; box-sizing: border-box; }
+    .game-card {
+      background: linear-gradient(145deg, #26232e 60%, #4d371d 100%);
+      border-radius: 24px;
+      box-shadow: 0 2px 12px 2px #000a, 0 0 24px #ffbb0040 inset, 0 5px 24px #fa42421a;
+      padding: 20px 10px 18px; display: flex; flex-direction: column; align-items: center;
+      border: 2.2px solid #ffbb00e0; position: relative; overflow: hidden;
+      transition: transform 0.16s, box-shadow 0.18s; min-width: 0; box-sizing: border-box;
+    }
+    .game-card::before {
+      content: ""; position: absolute; top: 8px; left: 8px; right: 8px; height: 20px;
+      background: linear-gradient(90deg, #fff4 25%, #fff1 65%, transparent);
+      border-radius: 14px 14px 55px 55px; opacity: 0.26; z-index: 1;
+    }
+    .game-card:hover { transform: translateY(-4px) scale(1.025); box-shadow: 0 7px 26px #ffbb0030, 0 0 24px #fa4242bb inset; border-color: #ff4444ee; }
+    .game-icon { width: 56px; height: 56px; margin-bottom: 12px; border-radius: 50%; box-shadow: 0 0 14px #fa424250, 0 0 0 3px #fff3; background: linear-gradient(135deg, #fff3c0 10%, #ffcf62 100%); display: flex; align-items: center; justify-content: center; font-size: 1.6em; color: #fa4242; border: 1.5px solid #ffbb0066; z-index: 2; }
+    .game-title { font-size: 1.07em; font-weight: 700; margin-bottom: 7px; letter-spacing: 0.4px; text-shadow: 0 2px 8px #000a; text-align: center; }
+    .game-prize { color: #ffbb00; font-size: 1.03em; font-weight: 600; margin-bottom: 9px; text-shadow: 0 0 7px #ffbb0040; }
+    .game-btn { background: linear-gradient(90deg, #ff4242 60%, #ffa502 100%); color: #fff; border: none; outline: none; padding: 11px 18px; border-radius: 13px; font-size: 1em; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 0 8px #fa424299; cursor: pointer; transition: background 0.13s, box-shadow 0.13s; margin-top: 7px; }
+    .game-btn:hover { background: linear-gradient(90deg, #ffbb00 40%, #ff4242 100%); box-shadow: 0 0 16px #ffbb00cc; }
+    .create-btn { margin-top: 18px; background: linear-gradient(90deg, #21d397 20%, #ff4242 100%); color: #fff; font-weight: 800; font-size: 1.1em; border: none; border-radius: 16px; padding: 12px 18vw; box-shadow: 0 0 12px #21d39755; text-transform: uppercase; letter-spacing: 0.6px; cursor: pointer; transition: background 0.13s, box-shadow 0.13s; }
+    .create-btn:hover { background: linear-gradient(90deg, #ffbb00 10%, #21d397 90%); box-shadow: 0 0 28px #ffbb00bb; color: #191919; }
+    @media (max-width: 900px) { .games-grid { gap: 14px; width: 99vw; } .header { padding-left: 3vw; padding-right: 3vw; } }
+    @media (max-width: 600px) {
+      .header { flex-direction: column; align-items: flex-start; padding: 14px 2vw 7px; }
+      .header-title { margin: 10px 0 0 0; font-size: 1.07em; }
+      .lobby-main { margin-top: 8px; gap: 12px; width: 100vw; padding-bottom: 12px; }
+      .games-grid { grid-template-columns: 1fr; gap: 10px; width: 99vw; }
+      .game-card { border-radius: 13px; padding: 13px 6px; }
+      .game-icon { width: 38px; height: 38px; font-size: 1.1em; }
+      .create-btn { padding: 11px 3vw; font-size: 1em; border-radius: 10px; margin-top: 8px; }
+    }
   </style>
-</head>
-<body>
-  <div class="profile">
-    <img id="userAva" src="" alt="Аватар">
-    <h2 id="userName"></h2>
-    <p id="userVKID"></p>
-    <div id="userBalance"></div>
-    <button id="logout-btn">Выйти</button>
-  </div>
+
   <script>
-    const API = 'https://vercel2pr.onrender.com';
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      location.href = '/index.html';
-      throw new Error('Нет токена');
-    }
+    const BACKEND_URL = 'https://vercel2pr.onrender.com'; // ← твой Render
 
-    async function fetchProfile() {
-      try {
-        const resp = await fetch(`${API}/api/user/profile`, {
-          headers: { Authorization: 'Bearer ' + token }
-        });
-        if (!resp.ok) {
-          localStorage.removeItem('authToken');
-          location.href = '/index.html';
-          return;
+    fetch(`${BACKEND_URL}/api/me`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(u => {
+        document.querySelector('.profile-name').textContent =
+          [u?.first_name, u?.last_name].filter(Boolean).join(' ') || 'Игрок';
+        if (u?.avatar) {
+          document.querySelector('.profile-avatar').style.backgroundImage = `url('${u.avatar}')`;
         }
-        const p = await resp.json();
-        document.getElementById('userAva').src = p.avatar;
-        document.getElementById('userName').textContent = `${p.firstName} ${p.lastName}`;
-        document.getElementById('userVKID').textContent = 'VK ID: ' + p.vk_id;
-        document.getElementById('userBalance').textContent = 'Баланс: ' + p.balance;
-      } catch (e) {
-        console.error(e);
-        localStorage.removeItem('authToken');
-        location.href = '/index.html';
-      }
-    }
-
-    document.getElementById('logout-btn').addEventListener('click', () => {
-      localStorage.removeItem('authToken');
-      location.href = '/index.html';
-    });
-
-    fetchProfile();
+      })
+      .catch(() => location.href = '/index.html');
   </script>
+</head>
+
+<body>
+  <div class="header">
+    <div class="profile">
+      <div class="profile-avatar"></div>
+      <div class="profile-info">
+        <div class="profile-name">Загрузка…</div>
+        <div class="profile-balance">Баланс: <b>—</b></div>
+      </div>
+    </div>
+    <div class="header-title">GGROOM</div>
+  </div>
+
+  <main class="lobby-main">
+    <div class="games-grid">
+      <div class="game-card">
+        <div class="game-icon">🎲</div>
+        <div class="game-title">Дуэль 1 на 1</div>
+        <div class="game-prize">Приз: 1 000 ₽</div>
+        <button class="game-btn">Войти</button>
+      </div>
+      <div class="game-card">
+        <div class="game-icon">👥</div>
+        <div class="game-title">Тройная схватка</div>
+        <div class="game-prize">Приз: 2 500 ₽</div>
+        <button class="game-btn">Войти</button>
+      </div>
+      <div class="game-card">
+        <div class="game-icon">💎</div>
+        <div class="game-title">Супер-игра</div>
+        <div class="game-prize">Приз: 10 000 ₽</div>
+        <button class="game-btn">Войти</button>
+      </div>
+    </div>
+    <button class="create-btn">Создать новую игру</button>
+  </main>
 </body>
 </html>

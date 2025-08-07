@@ -2,40 +2,135 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Вход через VK ID</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <script src="https://unpkg.com/@vkontakte/vk-id-sdk@2.6.2/dist/vkid.umd.min.js"></script>
+  <title>VK One Tap Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
-    html,body{margin:0;height:100%;font-family:'Inter',Arial,sans-serif;
-      background:linear-gradient(135deg,#18181f 0%,#292734 100%);color:#fff}
-    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
-    .box{background:linear-gradient(150deg,#26232e 60%,#3d2e1d);padding:2em;border-radius:20px;text-align:center}
-    h1{font-size:1.5em;margin-bottom:1em}
-    button{background:#ffcc00;border:none;padding:0.5em 1.5em;font-size:1em;border-radius:8px;cursor:pointer}
-    #msg{margin-top:1em;color:#ff6666}
+    html, body {
+      margin: 0; padding: 0;
+      height: 100%; width: 100vw;
+      font-family: 'Inter', Arial, sans-serif;
+      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .vk-container-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 64px;
+    }
+    .vk-login-box {
+      background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
+      border-radius: 36px;
+      box-shadow: 0 4px 28px 8px #000a, 0 0 32px #ffbb0040 inset;
+      padding: 48px 20px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 3.5px solid #ffbb00e0;
+      position: relative;
+      width: 100%;
+      max-width: 410px;
+      box-sizing: border-box;
+    }
+    .vk-login-box::before {
+      content: "";
+      position: absolute;
+      top: 18px; left: 18px; right: 18px;
+      height: 32px;
+      background: linear-gradient(90deg, #fff4 15%, #fff1 85%, transparent);
+      border-radius: 20px 20px 90px 90px;
+      opacity: 0.24;
+      z-index: 1;
+    }
+    .vk-login-title {
+      font-size: 2em;
+      font-weight: 800;
+      color: #fa4242;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 8px #42040480;
+      margin: 6px 0 26px;
+    }
+    #vk_container { margin-top: 16px; z-index: 2; width: 100%; }
+    #login-message {
+      margin-top: 14px;
+      color: #ffbb00;
+      font-size: 1em;
+      min-height: 22px;
+      text-align: center;
+      line-height: 1.4;
+    }
+    @media (max-width: 600px) {
+      .vk-login-box { padding: 32px 8px 24px; border-radius: 20px; width: 100vw; max-width: 98vw; }
+      .vk-login-title { font-size: 1.3em; }
+    }
   </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="box">
-      <h1>Войти с VK ID</h1>
-      <div id="msg"></div>
-      <button id="login-btn">Войти через VK</button>
+  <div class="vk-container-wrap">
+    <div class="vk-login-box">
+      <div class="vk-login-title">Вход через VK ID</div>
+      <div id="vk_container"></div>
+      <div id="login-message" class="login-message"></div>
     </div>
   </div>
-  <script>
-    VKID.Config.init({
-      app: '53969710',  // ← ваш VK App ID
-      redirectUrl: location.origin + '/vk-callback.html',
-      source: VKID.ConfigSource.POPUP
-    });
 
-    document.getElementById('login-btn').addEventListener('click', () => {
-      VKID.Auth.login().catch(err => {
-        document.getElementById('msg').textContent = 'Ошибка входа: ' + err.message;
+  <script>
+    const BACKEND_URL = 'https://vercel2pr.onrender.com'; // ← твой Render
+
+    function showMessage(html) {
+      document.getElementById('login-message').innerHTML = html;
+    }
+
+    if (!('VKIDSDK' in window)) {
+      showMessage('Не удалось загрузить VK SDK. Обновите страницу.');
+    } else {
+      const VKID = window.VKIDSDK;
+
+      VKID.Config.init({
+        app: 54008517,                                   // ← твой VK_CLIENT_ID
+        responseMode: VKID.ConfigResponseMode.Callback,  // код через callback
+        source: VKID.ConfigSource.ONE_TAP,
+        scope: ''
       });
-    });
+
+      const oneTap = new VKID.OneTap();
+
+      oneTap
+        .render({
+          container: document.getElementById('vk_container'),
+          scheme: 'dark',
+          showAlternativeLogin: true,
+          oauthList: ['mail_ru']
+        })
+        .on(VKID.WidgetEvents.ERROR, (err) => {
+          console.error('VK OneTap error:', err);
+          showMessage('Ошибка авторизации. Попробуйте снова.');
+        })
+        .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async ({ code }) => {
+          try {
+            const r = await fetch(`${BACKEND_URL}/api/auth/vk`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ code })
+            });
+            const data = await r.json();
+            if (!r.ok || !data.ok) {
+              throw new Error(data?.error || 'vk_exchange_failed');
+            }
+            location.href = '/lobby.html';
+          } catch (e) {
+            console.error('Auth exchange failed:', e);
+            showMessage('Не удалось войти. Проверьте сеть и попробуйте ещё раз.');
+          }
+        });
+    }
   </script>
 </body>
 </html>
