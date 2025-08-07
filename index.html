@@ -42,7 +42,7 @@
 
       VKID.Config.init({
         app: 54008517,
-        redirectUrl: 'https://sweet-twilight-63a9b6.netlify.app',                 // ← добавили (обязателен для SDK)
+        redirectUrl: 'https://vercel2pr.onrender.com/api/auth/vk/callback', // <— ДОЛЖНО совпадать с REDIRECT_URI на бэке и в VK (обязателен для SDK)
         responseMode: VKID.ConfigResponseMode.Callback,      // код получаем через callback
         source: VKID.ConfigSource.ONE_TAP,
         scope: ''
