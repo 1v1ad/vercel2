@@ -7,33 +7,18 @@
   <script src="https://unpkg.com/@vkid/sdk@2.6.0/dist-sdk/umd/index.js"></script>
   <link href="https://fonts.googleapis.com/css?family=Inter:700,400&display=swap" rel="stylesheet">
   <style>
-    html, body {
-      margin: 0; padding: 0;
-      height: 100%; width: 100vw;
-      font-family: 'Inter', Arial, sans-serif;
-      background: linear-gradient(135deg, #18181f 0%, #292734 100%);
-      min-height: 100vh; color: #fff;
-    }
-    .vk-container-wrap {
-      min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; padding-top: 64px;
-    }
-    .vk-login-box {
-      background: linear-gradient(150deg, #26232e 60%, #3d2e1d 100%);
-      border-radius: 36px;
-      box-shadow: 0 4px 28px 8px #000a, 0 0 32px #ffbb0040 inset;
-      padding: 48px 20px 36px; display: flex; flex-direction: column; align-items: center;
-      border: 3.5px solid #ffbb00e0; position: relative; width: 100%; max-width: 410px; box-sizing: border-box;
-    }
-    .vk-login-box::before { content: ""; position: absolute; top: 18px; left: 18px; right: 18px; height: 32px;
-      background: linear-gradient(90deg, #fff4 15%, #fff1 85%, transparent); border-radius: 20px 20px 90px 90px; opacity: .24; z-index: 1; }
-    .vk-login-title { font-size: 2em; font-weight: 800; color: #fa4242; letter-spacing: 1.5px; text-shadow: 0 0 8px #42040480; margin: 6px 0 26px; }
-    #vk_container { margin-top: 16px; z-index: 2; width: 100%; }
-    #login-message { margin-top: 14px; color: #ffbb00; font-size: 1em; min-height: 22px; text-align: center; line-height: 1.4; }
-    @media (max-width: 600px) {
-      .vk-login-box { padding: 32px 8px 24px; border-radius: 20px; width: 100vw; max-width: 98vw; }
-      .vk-login-title { font-size: 1.3em; }
-    }
+    html, body { margin:0; padding:0; height:100%; width:100vw; font-family:Inter,Arial,sans-serif;
+      background:linear-gradient(135deg,#18181f 0%,#292734 100%); min-height:100vh; color:#fff; }
+    .vk-container-wrap { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding-top:64px; }
+    .vk-login-box { background:linear-gradient(150deg,#26232e 60%,#3d2e1d 100%); border-radius:36px;
+      box-shadow:0 4px 28px 8px #000a, 0 0 32px #ffbb0040 inset; padding:48px 20px 36px; display:flex; flex-direction:column; align-items:center;
+      border:3.5px solid #ffbb00e0; position:relative; width:100%; max-width:410px; box-sizing:border-box; }
+    .vk-login-box::before { content:""; position:absolute; top:18px; left:18px; right:18px; height:32px;
+      background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent); border-radius:20px 20px 90px 90px; opacity:.24; z-index:1; }
+    .vk-login-title { font-size:2em; font-weight:800; color:#fa4242; letter-spacing:1.5px; text-shadow:0 0 8px #42040480; margin:6px 0 26px; }
+    #vk_container { margin-top:16px; z-index:2; width:100%; }
+    #login-message { margin-top:14px; color:#ffbb00; font-size:1em; min-height:22px; text-align:center; line-height:1.4; }
+    @media (max-width:600px){ .vk-login-box{ padding:32px 8px 24px; border-radius:20px; width:100vw; max-width:98vw; } .vk-login-title{ font-size:1.3em; } }
   </style>
 </head>
 
@@ -47,27 +32,40 @@
   </div>
 
   <script>
-    // === Настройки (проверь адреса!) ===
-    const BACKEND_URL = 'https://vercel2pr.onrender.com'; // твой Render
+    // === проверь адреса! ===
+    const BACKEND_URL = 'https://vercel2pr.onrender.com';
     const REDIRECT_URL = 'https://vercel2pr.onrender.com/api/auth/vk/callback'; // = REDIRECT_URI на бэке и в VK
 
-    const msg = (html) => { document.getElementById('login-message').innerHTML = html; };
+    const $msg = document.getElementById('login-message');
+    const say = (html) => { $msg.innerHTML = html; };
+
+    // 1) Прогреваем бэкенд как можно раньше
+    let backendReady = false;
+    (async () => {
+      try {
+        const r = await fetch(`${BACKEND_URL}/health`, { cache: 'no-store' });
+        backendReady = r.ok;
+        if (backendReady) say('Сервер готов. Авторизуйтесь через VK ID.');
+      } catch {
+        // молчим, виджет всё равно отрисуем; просто может понадобиться второй клик
+      }
+    })();
 
     if (!('VKIDSDK' in window)) {
-      msg('Не удалось загрузить VK SDK. Обновите страницу.');
+      say('Не удалось загрузить VK SDK. Обновите страницу.');
     } else {
       const VKID = window.VKIDSDK;
 
       VKID.Config.init({
         app: 54008517,
-        redirectUrl: REDIRECT_URL,                         // важен точный адрес
-        responseMode: VKID.ConfigResponseMode.Callback,    // получаем code через callback
+        redirectUrl: REDIRECT_URL,                         // должен совпадать и с REDIRECT_URI на бэке, и в VK
+        responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.ONE_TAP,
         scope: ''
       });
 
       const oneTap = new VKID.OneTap();
-      let used = false; // защита от повторного обмена (single-use code)
+      let used = false;
 
       oneTap
         .render({
@@ -78,11 +76,14 @@
         })
         .on(VKID.WidgetEvents.ERROR, (err) => {
           console.error('VK OneTap error:', err);
-          msg('Ошибка авторизации. Попробуйте снова.');
+          say('Ошибка авторизации. Попробуйте снова.');
         })
         .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async ({ code }) => {
-          if (used) return;            // не отправляем code повторно
+          if (used) return;
           used = true;
+
+          // если бэкенд ещё просыпается — предупредим
+          if (!backendReady) say('Сервер просыпается… если не войдёт с первого раза — нажмите ещё раз.');
 
           try {
             const r = await fetch(`${BACKEND_URL}/api/auth/vk`, {
@@ -92,16 +93,18 @@
               body: JSON.stringify({ code })
             });
 
-            // пытаемся быстрее редиректить, чтобы не ловить "expired"
             if (!r.ok) {
+              // дёргаем текст ошибки, чтобы понять, не "протух ли код"
               const data = await r.json().catch(() => ({}));
               throw new Error(data?.error || 'vk_exchange_failed');
             }
+
             location.href = '/lobby.html';
           } catch (e) {
             console.error('Auth exchange failed:', e);
-            used = false; // разрешим попробовать ещё раз
-            msg('Не удалось войти. Проверьте сеть и попробуйте ещё раз.');
+            // сервер мог только что проснуться → код уже истёк
+            used = false;
+            say('Не удалось войти. Сервер проснулся — попробуйте ещё раз.');
           }
         });
     }
