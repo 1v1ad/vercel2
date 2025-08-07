@@ -11,8 +11,8 @@
       background:linear-gradient(135deg,#18181f 0%,#292734 100%); min-height:100vh; color:#fff; }
     .vk-container-wrap { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding-top:64px; }
     .vk-login-box { background:linear-gradient(150deg,#26232e 60%,#3d2e1d 100%); border-radius:36px;
-      box-shadow:0 4px 28px 8px #000a, 0 0 32px #ffbb0040 inset; padding:48px 20px 36px; display:flex; flex-direction:column; align-items:center;
-      border:3.5px solid #ffbb00e0; position:relative; width:100%; max-width:410px; box-sizing:border-box; }
+      box-shadow:0 4px 28px 8px #000a, 0 0 32px #ffbb0040 inset; padding:48px 20px 36px;
+      display:flex; flex-direction:column; align-items:center; border:3.5px solid #ffbb00e0; position:relative; width:100%; max-width:410px; box-sizing:border-box; }
     .vk-login-box::before { content:""; position:absolute; top:18px; left:18px; right:18px; height:32px;
       background:linear-gradient(90deg,#fff4 15%,#fff1 85%,transparent); border-radius:20px 20px 90px 90px; opacity:.24; z-index:1; }
     .vk-login-title { font-size:2em; font-weight:800; color:#fa4242; letter-spacing:1.5px; text-shadow:0 0 8px #42040480; margin:6px 0 26px; }
@@ -21,34 +21,28 @@
     @media (max-width:600px){ .vk-login-box{ padding:32px 8px 24px; border-radius:20px; width:100vw; max-width:98vw; } .vk-login-title{ font-size:1.3em; } }
   </style>
 </head>
-
 <body>
   <div class="vk-container-wrap">
     <div class="vk-login-box">
       <div class="vk-login-title">Вход через VK ID</div>
       <div id="vk_container"></div>
-      <div id="login-message" class="login-message"></div>
+      <div id="login-message"></div>
     </div>
   </div>
 
   <script>
-    // === проверь адреса! ===
     const BACKEND_URL = 'https://vercel2pr.onrender.com';
-    const REDIRECT_URL = 'https://vercel2pr.onrender.com/api/auth/vk/callback'; // = REDIRECT_URI на бэке и в VK
+    const REDIRECT_URL = 'https://vercel2pr.onrender.com/api/auth/vk/callback';
 
-    const $msg = document.getElementById('login-message');
-    const say = (html) => { $msg.innerHTML = html; };
+    const say = (html) => { document.getElementById('login-message').innerHTML = html; };
 
-    // 1) Прогреваем бэкенд как можно раньше
+    // прогрев бэка
     let backendReady = false;
     (async () => {
       try {
-        const r = await fetch(`${BACKEND_URL}/health`, { cache: 'no-store' });
-        backendReady = r.ok;
+        backendReady = (await fetch(`${BACKEND_URL}/health`, { cache: 'no-store' })).ok;
         if (backendReady) say('Сервер готов. Авторизуйтесь через VK ID.');
-      } catch {
-        // молчим, виджет всё равно отрисуем; просто может понадобиться второй клик
-      }
+      } catch {}
     })();
 
     if (!('VKIDSDK' in window)) {
@@ -58,7 +52,7 @@
 
       VKID.Config.init({
         app: 54008517,
-        redirectUrl: REDIRECT_URL,                         // должен совпадать и с REDIRECT_URI на бэке, и в VK
+        redirectUrl: REDIRECT_URL,
         responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.ONE_TAP,
         scope: ''
@@ -78,31 +72,28 @@
           console.error('VK OneTap error:', err);
           say('Ошибка авторизации. Попробуйте снова.');
         })
-        .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async ({ code }) => {
+        .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
           if (used) return;
           used = true;
 
-          // если бэкенд ещё просыпается — предупредим
-          if (!backendReady) say('Сервер просыпается… если не войдёт с первого раза — нажмите ещё раз.');
+          const code = payload?.code;
+          const device_id = payload?.device_id || payload?.deviceId; // ← берём у SDK, если даёт
+          if (!backendReady) say('Сервер просыпается… если не войдёт — нажмите ещё раз.');
 
           try {
             const r = await fetch(`${BACKEND_URL}/api/auth/vk`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
-              body: JSON.stringify({ code })
+              body: JSON.stringify({ code, device_id })
             });
-
             if (!r.ok) {
-              // дёргаем текст ошибки, чтобы понять, не "протух ли код"
               const data = await r.json().catch(() => ({}));
               throw new Error(data?.error || 'vk_exchange_failed');
             }
-
             location.href = '/lobby.html';
           } catch (e) {
             console.error('Auth exchange failed:', e);
-            // сервер мог только что проснуться → код уже истёк
             used = false;
             say('Не удалось войти. Сервер проснулся — попробуйте ещё раз.');
           }
