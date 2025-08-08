@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GGRoom — лобби</title>
   <style>
     body{margin:0;background:#0b0f15;color:#fff;font-family:system-ui,Arial}
@@ -20,19 +20,19 @@
   </header>
   <div class="wrap">
     <h2>Лобби</h2>
-    <p>Тут будут комнаты и игры. Пока — проверка профиля и выход.</p>
+    <p>Проверка профиля и выход.</p>
     <button id="logout">Выйти</button>
   </div>
   <script>
     const BACKEND_URL = 'https://vercel2pr.onrender.com';
-
     async function loadMe() {
       const r = await fetch(BACKEND_URL + '/api/user/me', { credentials: 'include' });
       if (!r.ok) { location.href = '/'; return; }
       const { user } = await r.json();
+      // кэшируем имя/аватар для главной кнопки
+      localStorage.setItem('vk_cached_user', JSON.stringify({ firstName: user.firstName, avatar: user.avatar }));
       document.getElementById('userBox').innerHTML =
-        `<img src="${user.avatar}" alt="">
-         <div>${user.firstName} ${user.lastName} · Баланс: ${user.balance}₽</div>`;
+        `<img src="${user.avatar}" alt=""><div>${user.firstName} ${user.lastName} · Баланс: ${user.balance}₽</div>`;
     }
     document.getElementById('logout').onclick = async () => {
       await fetch(BACKEND_URL + '/api/user/logout', { method:'POST', credentials:'include' });

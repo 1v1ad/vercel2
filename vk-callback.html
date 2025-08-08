@@ -1,48 +1,35 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VK Callback</title>
-  <style>
-    body{background:#0b0f15;color:#fff;font-family:system-ui,Arial;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-    .box{background:#121826;border:1px solid #223;padding:24px;border-radius:12px}
-  </style>
+  <style>body{background:#0b0f15;color:#fff;font-family:system-ui,Arial;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+  .box{background:#121826;border:1px solid #223;padding:24px;border-radius:12px}</style>
 </head>
 <body>
   <div class="box" id="box">Завершаем вход...</div>
   <script>
     const BACKEND_URL = 'https://vercel2pr.onrender.com';
-
     (async () => {
       const params = new URLSearchParams(location.search);
       const code = params.get('code');
       const err  = params.get('error');
-
-      if (err) {
-        document.getElementById('box').textContent = 'Ошибка: ' + err;
-        return;
-      }
-      const codeVerifier = sessionStorage.getItem('vk_code_verifier');
-      const deviceId = sessionStorage.getItem('vk_device_id');
-      if (!code || !codeVerifier) {
-        document.getElementById('box').textContent = 'Отсутствуют параметры авторизации.';
-        return;
-      }
+      if (err) { document.getElementById('box').textContent = 'Ошибка: ' + err; return; }
+      if (!code) { document.getElementById('box').textContent = 'Нет кода авторизации.'; return; }
 
       const resp = await fetch(BACKEND_URL + '/api/auth/vk/exchange', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         credentials: 'include',
-        body: JSON.stringify({ code, code_verifier: codeVerifier, device_id: deviceId })
+        body: JSON.stringify({ code }) // без PKCE
       });
-
       if (!resp.ok) {
         const data = await resp.json().catch(()=>({}));
         document.getElementById('box').textContent = 'Ошибка входа: ' + (data.error || resp.status);
         return;
       }
-
+      // Успех — кука установлена бэком
       window.location.href = '/lobby.html';
     })();
   </script>
