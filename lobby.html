@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lobby</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="container">
+    <div class="card">
+      <h1>Привет! Мы сделали это после 10 дней бессонных ночей! 🎉</h1>
+      <p id="userLine" class="muted">Проверяю сессию…</p>
+      <a class="btn-outline" href="./index.html">На главную</a>
+    </div>
+  </main>
+
+  <script>
+    function getApiBase() { return (window.API_BASE) || ''; }
+    fetch(getApiBase() + '/api/user/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const el = document.getElementById('userLine');
+        if (data && data.user) {
+          el.textContent = `Вы вошли как ${data.user.firstName || ''} ${data.user.lastName || ''} (VK ID: ${data.user.vk_id}).`;
+        } else {
+          el.textContent = 'Сессия не найдена. Вернитесь на главную и войдите.';
+        }
+      })
+      .catch(() => document.getElementById('userLine').textContent = 'Ошибка связи с сервером.');
+  </script>
+</body>
+</html>
