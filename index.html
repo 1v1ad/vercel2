@@ -13,12 +13,8 @@
     h1{margin:0 0 18px;text-align:center;color:#ff4040;font-size:28px;font-weight:800}
     .hint{margin-top:10px;text-align:center;color:var(--muted);font-size:12px}
     #onetap-wrap{display:flex;justify-content:center;margin:10px 0}
-    .error{color:#ff6b6b;text-align:center;margin-top:8px;display:none}
+    .error{color:#ff6b6b;text-align:center;margin-top:8px;display:none;white-space:pre-line}
   </style>
-  <!-- VK ID SDK (UMD) — рабочая ссылка -->
-  <script src="https://unpkg.com/@vkid/sdk@3.0.0/dist/umd/index.js" defer></script>
-  <!-- Альтернатива, если unpkg блокируется: -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/@vkid/sdk@3.0.0/dist/umd/index.js" defer></script> -->
 </head>
 <body>
   <div class="card">
@@ -39,22 +35,34 @@
 
     function showError(msg, extra) {
       const el = document.getElementById('err');
-      el.textContent = 'Ошибка входа: ' + msg;
+      el.textContent = 'Ошибка входа: ' + msg + (extra ? '\n' + extra : '');
       el.style.display = 'block';
-      if (extra) console.error(extra);
+      console.error('VKID error:', msg, extra || '');
     }
 
-    window.addEventListener('load', () => {
+    // Последовательно пытаемся загрузить SDK: unpkg -> jsDelivr
+    function loadScriptSequential(urls, done) {
+      if (!urls.length) return done(new Error('Все CDN недоступны'));
+      const url = urls[0];
+      const s = document.createElement('script');
+      s.src = url;
+      s.onload = () => done(null);
+      s.onerror = () => {
+        console.warn('SDK load failed:', url);
+        loadScriptSequential(urls.slice(1), done);
+      };
+      document.head.appendChild(s);
+    }
+
+    function initVKID() {
       const VKID = window.VKID;
-      if (!VKID) {
-        return showError('SDK VKID не загрузился. Проверьте доступ к CDN (unpkg/jsDelivr) или отключите адблокер.');
-      }
+      if (!VKID) return showError('SDK VKID не инициализировался');
 
       try {
         VKID.Config.init({
           app: APP_ID,
           redirectUrl: REDIRECT_URI,
-          responseMode: VKID.ConfigResponseMode.Callback, // SDK вернёт code
+          responseMode: VKID.ConfigResponseMode.Callback,
           source: VKID.ConfigSource.LOWCODE
         });
 
@@ -65,7 +73,7 @@
             showAlternativeLogin: true
           })
           .on(VKID.WidgetEvents.ERROR, (e) =>
-            showError(e?.message || 'Неизвестно', e)
+            showError(e?.message || 'Неизвестно')
           )
           .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
             try {
@@ -86,12 +94,26 @@
               }
               location.href = '/lobby.html';
             } catch (e) {
-              showError(e.message || 'Неизвестно', e);
+              showError(e.message || 'Неизвестно');
             }
           });
       } catch (e) {
-        showError(e.message || 'Инициализация VKID не удалась', e);
+        showError('Инициализация не удалась', e.message);
       }
+    }
+
+    // Старт: загрузка SDK с фолбэком
+    window.addEventListener('load', () => {
+      loadScriptSequential(
+        [
+          'https://unpkg.com/@vkid/sdk@3.0.0/dist/umd/index.js',
+          'https://cdn.jsdelivr.net/npm/@vkid/sdk@3.0.0/dist/umd/index.js'
+        ],
+        (err) => {
+          if (err) return showError('SDK VKID не загрузился. Проверьте доступ к CDN (unpkg/jsDelivr) или отключите адблокер.');
+          initVKID();
+        }
+      );
     });
   </script>
 </body>
