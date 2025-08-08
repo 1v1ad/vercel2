@@ -21,7 +21,6 @@
     <h1>Вход через VK</h1>
 
     <div id="onetap-wrap">
-      <!-- сюда отрендерим кнопку One Tap -->
       <div id="vkid-onetap"></div>
     </div>
 
@@ -33,10 +32,10 @@
   <script src="https://unpkg.com/@vkid/sdk@3/dist-sdk/umd/index.js"></script>
   <script>
     const APP_ID = 54008517;
+    // ВАЖНО: этот URL должен совпадать везде: в VK-консоли, в Render(REDIRECT_URI) и тут
     const REDIRECT_URI = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
     const BACKEND_URL = 'https://vercel2pr.onrender.com';
 
-    // Инициализация SDK
     const VKID = window.VKIDSDK;
     VKID.Config.init({
       app: APP_ID,
@@ -45,7 +44,6 @@
       source: VKID.ConfigSource.LOWCODE
     });
 
-    // Рендер кнопки
     const oneTap = new VKID.OneTap();
     oneTap
       .render({
@@ -53,30 +51,30 @@
         showAlternativeLogin: true
       })
       .on(VKID.WidgetEvents.ERROR, onError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
-        try {
-          const code = payload.code;
-          const deviceId = payload.device_id; // важен для VK
+      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, onLoginSuccess);
 
-          // Отправляем на наш backend: обмен кода на сессию (HttpOnly cookie)
-          const r = await fetch(BACKEND_URL + '/api/auth/vk/exchange', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ code, device_id: deviceId })
-          });
+    async function onLoginSuccess(payload) {
+      try {
+        const code = payload.code;
+        const deviceId = payload.device_id;
 
-          if (!r.ok) {
-            const data = await r.json().catch(()=>({}));
-            throw new Error(data.error || ('HTTP '+r.status));
-          }
+        const r = await fetch(BACKEND_URL + '/api/auth/vk/exchange', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ code, device_id: deviceId }) // PKCE не нужен
+        });
 
-          // Успех — идём в лобби
-          location.href = '/lobby.html';
-        } catch (e) {
-          onError(e);
+        if (!r.ok) {
+          const data = await r.json().catch(()=>({}));
+          throw new Error(data.error || ('HTTP '+r.status));
         }
-      });
+
+        location.href = '/lobby.html';
+      } catch (e) {
+        onError(e);
+      }
+    }
 
     function onError(e) {
       const el = document.getElementById('err');
