@@ -1,1 +1,48 @@
-<index.html content>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GGRoom — вход</title>
+  <style>
+    body{font-family:system-ui,Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#0b0f15;color:#fff;margin:0}
+    .card{background:#121826;border:1px solid #223;max-width:420px;width:92%;padding:24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .title{font-size:22px;margin:0 0 12px}
+    .btn{display:flex;align-items:center;justify-content:center;width:100%;padding:14px 16px;border-radius:10px;background:#2787F5;color:#fff;font-weight:600;border:none;cursor:pointer}
+    .note{opacity:.8;font-size:12px;margin-top:10px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 class="title">Вход через VK</h1>
+    <button id="vk-login" class="btn">Продолжить с VK</button>
+    <div class="note">Продолжая, вы соглашаетесь с правилами сервиса.</div>
+  </div>
+
+  <script src="./js/pkce.js"></script>
+  <script>
+    const VK_CLIENT_ID = 54008517;
+    const REDIRECT_URI = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
+
+    document.getElementById('vk-login').onclick = async () => {
+      const { codeVerifier, codeChallenge } = await PKCE.generate();
+      const deviceId = PKCE.deviceId();
+
+      sessionStorage.setItem('vk_code_verifier', codeVerifier);
+      sessionStorage.setItem('vk_device_id', deviceId);
+
+      const params = new URLSearchParams({
+        client_id: String(VK_CLIENT_ID),
+        redirect_uri: REDIRECT_URI,
+        response_type: 'code',
+        scope: 'offline',
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
+        state: 'vk_onetap'
+      });
+
+      window.location.href = 'https://oauth.vk.com/authorize?' + params.toString();
+    };
+  </script>
+</body>
+</html>
