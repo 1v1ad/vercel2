@@ -5,24 +5,101 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>GGRoom — вход</title>
   <style>
-    body{font-family:system-ui,Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#0b0f15;color:#fff;margin:0}
-    .card{background:#121826;border:1px solid #223;max-width:420px;width:92%;padding:24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .title{font-size:22px;margin:0 0 12px}
-    .btn{display:flex;align-items:center;justify-content:center;width:100%;padding:14px 16px;border-radius:10px;background:#2787F5;color:#fff;font-weight:600;border:none;cursor:pointer}
-    .note{opacity:.8;font-size:12px;margin-top:10px}
+    :root {
+      --bg: #0b0f15;
+      --card: #171923;
+      --border: #2a2f3a;
+      --accent: #ffb300;
+      --vk: #2787F5;
+      --text: #e9eef7;
+      --muted: #a6b0c0;
+      --danger: #ff4d4d;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0; background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display:flex; align-items:center; justify-content:center; padding:16px;
+    }
+    .wrap { width:100%; max-width: 560px; }
+    .card{
+      position:relative;
+      background: radial-gradient(120% 120% at 10% 0%, #1b1f2b 0%, #121622 60%, #0e1220 100%);
+      border:1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 22px;
+      box-shadow:
+        0 0 0 2px rgba(255,179,0,.15) inset,
+        0 20px 40px rgba(0,0,0,.45),
+        0 0 60px rgba(255,179,0,.15);
+      outline: 3px solid rgba(255,179,0,.25);
+      outline-offset: 6px;
+    }
+    .title{
+      margin:0 0 18px;
+      font-size: 28px;
+      font-weight: 800;
+      text-align:center;
+      color:#ff4040; /* как на твоём скрине — красный заголовок */
+      letter-spacing:.3px;
+    }
+    .hint{
+      margin-top:12px; text-align:center; color:var(--muted); font-size:13px;
+    }
+    .btn{
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      width:100%; padding:16px 18px; border:none; cursor:pointer;
+      border-radius: 14px; background: var(--vk); color:#fff; font-weight:700; font-size:16px;
+      box-shadow: 0 12px 24px rgba(39,135,245,.35), 0 0 0 2px rgba(255,255,255,.06) inset;
+      transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .btn:hover{ filter: brightness(1.05); }
+    .btn:active{ transform: translateY(1px); }
+    .vk-icon{
+      width:22px; height:22px; border-radius:6px; background:#fff; color:#2787F5;
+      display:flex; align-items:center; justify-content:center; font-weight:900;
+    }
+    .avatar{
+      width:24px; height:24px; border-radius:50%; background:#00000030;
+      display:none; /* отобразим, когда узнаем имя/аватар из LocalStorage (при повторном визите) */
+    }
+    .badge{
+      display:block; text-align:center; color:#ffc46b; font-size:12px; margin-top:8px;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1 class="title">Вход через VK</h1>
-    <button id="vk-login" class="btn">Продолжить с VK</button>
-    <div class="note">Продолжая, вы соглашаетесь с правилами сервиса.</div>
+  <div class="wrap">
+    <div class="card">
+      <h1 class="title">Вход через VK</h1>
+      <button id="vk-login" class="btn">
+        <span class="vk-icon">vk</span>
+        <span id="vk-caption">Продолжить с VK</span>
+        <img id="vk-ava" class="avatar" alt="">
+      </button>
+      <div class="badge">Нажмите «Войти с VK ID», затем подтвердите вход</div>
+      <div class="hint">Продолжая, вы соглашаетесь с правилами сервиса.</div>
+    </div>
   </div>
 
   <script src="./js/pkce.js"></script>
   <script>
     const VK_CLIENT_ID = 54008517;
     const REDIRECT_URI = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
+
+    // Если у нас уже когда-то был профиль — красивый текст и аватар на кнопке
+    try {
+      const cached = JSON.parse(localStorage.getItem('vk_cached_user') || 'null');
+      if (cached?.firstName) {
+        document.getElementById('vk-caption').textContent = `Продолжить как ${cached.firstName}`;
+      }
+      if (cached?.avatar) {
+        const ava = document.getElementById('vk-ava');
+        ava.src = cached.avatar;
+        ava.style.display = 'block';
+      }
+    } catch {}
 
     document.getElementById('vk-login').onclick = async () => {
       const { codeVerifier, codeChallenge } = await PKCE.generate();
@@ -37,7 +114,7 @@
         response_type: 'code',
         scope: 'offline',
         code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
+        code_challenge_method: 's256',   // 👈 фикс: строчными
         state: 'vk_onetap'
       });
 
