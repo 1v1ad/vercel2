@@ -15,8 +15,6 @@
     #onetap-wrap{display:flex;justify-content:center;margin:10px 0}
     .error{color:#ff6b6b;text-align:center;margin-top:8px;display:none;white-space:pre-line}
   </style>
-  <!-- Локальная копия VK ID SDK -->
-  <script src="/js/vkid.js"></script>
 </head>
 <body>
   <div class="card">
@@ -33,25 +31,34 @@
   <script>
     const APP_ID = 54008517;
     const REDIRECT_URI = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
-    const BACKEND_URL = 'https://vercel2pr.onrender.com';
+    const BACKEND_URL  = 'https://vercel2pr.onrender.com';
 
-    function showError(msg, extra) {
+    function showError(msg) {
       const el = document.getElementById('err');
-      el.textContent = 'Ошибка входа: ' + msg + (extra ? '\n' + extra : '');
+      el.textContent = 'Ошибка входа: ' + msg;
       el.style.display = 'block';
-      console.error('VKID error:', msg, extra || '');
+      console.error(msg);
     }
 
-    (function init() {
-      const VKID = window.VKID;
-      if (!VKID) return showError('Локальный SDK не подключился (файл /js/vkid.js не найден?)');
+    function loadScript(src, onload, onerror) {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = onload;
+      s.onerror = onerror || (() => showError('Не удалось загрузить ' + src));
+      document.head.appendChild(s);
+    }
+
+    function initVK() {
+      const VKID = window.VKIDSDK || window.VKID; // поддержим обе сборки
+      if (!VKID) return showError('VKID SDK не найден (ни VKIDSDK, ни VKID)');
 
       try {
         VKID.Config.init({
           app: APP_ID,
           redirectUrl: REDIRECT_URI,
           responseMode: VKID.ConfigResponseMode.Callback,
-          source: VKID.ConfigSource.LOWCODE
+          source: VKID.ConfigSource.LOWCODE,
+          scope: ''
         });
 
         const oneTap = new VKID.OneTap();
@@ -61,7 +68,7 @@
             showAlternativeLogin: true
           })
           .on(VKID.WidgetEvents.ERROR, (e) =>
-            showError(e?.message || 'Неизвестно')
+            showError(e?.message || 'Ошибка виджета')
           )
           .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
             try {
@@ -73,7 +80,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ code, device_id: deviceId }) // PKCE не нужен
+                body: JSON.stringify({ code, device_id: deviceId })
               });
 
               if (!r.ok) {
@@ -86,9 +93,20 @@
             }
           });
       } catch (e) {
-        showError('Инициализация не удалась', e.message);
+        showError('Инициализация VKID не удалась: ' + (e.message || e));
       }
-    })();
+    }
+
+    // 1) Пытаемся загрузить локально, с cache-busting
+    const cacheBust = '?v=' + Date.now();
+    loadScript('/js/vkid.js' + cacheBust, initVK, () => {
+      // 2) Если локально не вышло — пробуем CDN (любой)
+      loadScript('https://unpkg.com/@vkid/sdk/dist-sdk/umd/index.js', initVK, () => {
+        loadScript('https://cdn.jsdelivr.net/npm/@vkid/sdk/dist-sdk/umd/index.js', initVK, () => {
+          showError('SDK не загрузился ни локально, ни с CDN');
+        });
+      });
+    });
   </script>
 </body>
 </html>
