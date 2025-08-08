@@ -15,21 +15,21 @@
     #onetap-wrap{display:flex;justify-content:center;margin:10px 0}
     .error{color:#ff6b6b;text-align:center;margin-top:8px;display:none;white-space:pre-line}
   </style>
+  <!-- Подключаем локально сохранённый VK ID SDK -->
+  <script src="/js/vkid.js"></script>
 </head>
 <body>
   <div class="card">
     <h1>Вход через VK</h1>
 
-    <div id="onetap-wrap">
-      <div id="vkid-onetap"></div>
-    </div>
+    <div id="onetap-wrap"><div id="vkid-onetap"></div></div>
 
     <div class="hint">Нажмите «Войти с VK ID», затем подтвердите вход. Продолжая, вы соглашаетесь с правилами сервиса.</div>
     <div id="err" class="error"></div>
   </div>
 
   <script>
-    const APP_ID = 54008517;
+    const APP_ID       = 54008517;
     const REDIRECT_URI = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
     const BACKEND_URL  = 'https://vercel2pr.onrender.com';
 
@@ -40,17 +40,10 @@
       console.error(msg);
     }
 
-    function loadScript(src, onload, onerror) {
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = onload;
-      s.onerror = onerror || (() => showError('Не удалось загрузить ' + src));
-      document.head.appendChild(s);
-    }
-
-    function initVK() {
-      const VKID = window.VKIDSDK || window.VKID; // поддержим обе сборки
-      if (!VKID) return showError('VKID SDK не найден (ни VKIDSDK, ни VKID)');
+    (function init() {
+      // SDK может экспортировать VKIDSDK или VKID — поддержим оба
+      const VKID = window.VKIDSDK || window.VKID;
+      if (!VKID) return showError('VKID SDK не найден (проверьте /js/vkid.js)');
 
       try {
         VKID.Config.init({
@@ -58,7 +51,7 @@
           redirectUrl: REDIRECT_URI,
           responseMode: VKID.ConfigResponseMode.Callback,
           source: VKID.ConfigSource.LOWCODE,
-          scope: ''
+          scope: '' // при необходимости
         });
 
         const oneTap = new VKID.OneTap();
@@ -72,6 +65,7 @@
           )
           .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
             try {
+              // только code + device_id → на бэкенд
               const code = payload?.code;
               const deviceId = payload?.device_id;
               if (!code) throw new Error('Не получен code от VKID');
@@ -79,7 +73,7 @@
               const r = await fetch(BACKEND_URL + '/api/auth/vk/exchange', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                credentials: 'include', // чтобы сессионная кука пришла
                 body: JSON.stringify({ code, device_id: deviceId })
               });
 
@@ -87,6 +81,7 @@
                 const data = await r.json().catch(()=>({}));
                 throw new Error(data.error || ('HTTP ' + r.status));
               }
+              // пинаем в лобби
               location.href = '/lobby.html';
             } catch (e) {
               showError(e.message || 'Неизвестно');
@@ -95,18 +90,7 @@
       } catch (e) {
         showError('Инициализация VKID не удалась: ' + (e.message || e));
       }
-    }
-
-    // 1) Пытаемся загрузить локально, с cache-busting
-    const cacheBust = '?v=' + Date.now();
-    loadScript('/js/vkid.js' + cacheBust, initVK, () => {
-      // 2) Если локально не вышло — пробуем CDN (любой)
-      loadScript('https://unpkg.com/@vkid/sdk/dist-sdk/umd/index.js', initVK, () => {
-        loadScript('https://cdn.jsdelivr.net/npm/@vkid/sdk/dist-sdk/umd/index.js', initVK, () => {
-          showError('SDK не загрузился ни локально, ни с CDN');
-        });
-      });
-    });
+    })();
   </script>
 </body>
 </html>
