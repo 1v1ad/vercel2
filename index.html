@@ -76,8 +76,14 @@
           if (used) return;
           used = true;
 
+          // Важно: из OneTap часто приходят code, device_id И code_verifier (PKCE)
           const code = payload?.code;
-          const device_id = payload?.device_id || payload?.deviceId; // ← берём у SDK, если даёт
+          const device_id = payload?.device_id || payload?.deviceId;
+          const code_verifier = payload?.code_verifier || payload?.verifier || payload?.pkce_verifier;
+
+          // Немного логов в devtools, чтобы увидеть, что реально пришло
+          console.debug('VKID LOGIN_SUCCESS payload keys:', Object.keys(payload || {}));
+
           if (!backendReady) say('Сервер просыпается… если не войдёт — нажмите ещё раз.');
 
           try {
@@ -85,7 +91,7 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               credentials: 'include',
-              body: JSON.stringify({ code, device_id })
+              body: JSON.stringify({ code, device_id, code_verifier })
             });
             if (!r.ok) {
               const data = await r.json().catch(() => ({}));
