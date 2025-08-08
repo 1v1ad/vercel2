@@ -15,8 +15,10 @@
     #onetap-wrap{display:flex;justify-content:center;margin:10px 0}
     .error{color:#ff6b6b;text-align:center;margin-top:8px;display:none}
   </style>
-  <!-- VK ID SDK (версия UMD) -->
+  <!-- VK ID SDK (UMD) — рабочая ссылка -->
   <script src="https://unpkg.com/@vkid/sdk@3.0.0/dist/umd/index.js" defer></script>
+  <!-- Альтернатива, если unpkg блокируется: -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/@vkid/sdk@3.0.0/dist/umd/index.js" defer></script> -->
 </head>
 <body>
   <div class="card">
@@ -42,18 +44,17 @@
       if (extra) console.error(extra);
     }
 
-    // ждём, когда загрузится UMD-бандл
     window.addEventListener('load', () => {
-      const VKID = window.VKID; // правильный глобал
+      const VKID = window.VKID;
       if (!VKID) {
-        return showError('SDK VKID не загрузился. Проверьте доступ к unpkg.com/адблокеры.');
+        return showError('SDK VKID не загрузился. Проверьте доступ к CDN (unpkg/jsDelivr) или отключите адблокер.');
       }
 
       try {
         VKID.Config.init({
           app: APP_ID,
           redirectUrl: REDIRECT_URI,
-          responseMode: VKID.ConfigResponseMode.Callback,
+          responseMode: VKID.ConfigResponseMode.Callback, // SDK вернёт code
           source: VKID.ConfigSource.LOWCODE
         });
 
@@ -63,7 +64,9 @@
             container: document.getElementById('vkid-onetap'),
             showAlternativeLogin: true
           })
-          .on(VKID.WidgetEvents.ERROR, (e) => showError(e?.message || 'Неизвестно', e))
+          .on(VKID.WidgetEvents.ERROR, (e) =>
+            showError(e?.message || 'Неизвестно', e)
+          )
           .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
             try {
               const code = payload?.code;
@@ -74,7 +77,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ code, device_id: deviceId })
+                body: JSON.stringify({ code, device_id: deviceId }) // PKCE не нужен
               });
 
               if (!r.ok) {
