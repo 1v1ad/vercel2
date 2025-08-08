@@ -15,6 +15,8 @@
     #onetap-wrap{display:flex;justify-content:center;margin:10px 0}
     .error{color:#ff6b6b;text-align:center;margin-top:8px;display:none;white-space:pre-line}
   </style>
+  <!-- Локальная копия VK ID SDK -->
+  <script src="/js/vkid.js"></script>
 </head>
 <body>
   <div class="card">
@@ -40,23 +42,9 @@
       console.error('VKID error:', msg, extra || '');
     }
 
-    // Последовательно пытаемся загрузить SDK: unpkg -> jsDelivr
-    function loadScriptSequential(urls, done) {
-      if (!urls.length) return done(new Error('Все CDN недоступны'));
-      const url = urls[0];
-      const s = document.createElement('script');
-      s.src = url;
-      s.onload = () => done(null);
-      s.onerror = () => {
-        console.warn('SDK load failed:', url);
-        loadScriptSequential(urls.slice(1), done);
-      };
-      document.head.appendChild(s);
-    }
-
-    function initVKID() {
+    (function init() {
       const VKID = window.VKID;
-      if (!VKID) return showError('SDK VKID не инициализировался');
+      if (!VKID) return showError('Локальный SDK не подключился (файл /js/vkid.js не найден?)');
 
       try {
         VKID.Config.init({
@@ -100,21 +88,7 @@
       } catch (e) {
         showError('Инициализация не удалась', e.message);
       }
-    }
-
-    // Старт: загрузка SDK с фолбэком
-    window.addEventListener('load', () => {
-      loadScriptSequential(
-        [
-          'https://unpkg.com/@vkid/sdk@3.0.0/dist/umd/index.js',
-          'https://cdn.jsdelivr.net/npm/@vkid/sdk@3.0.0/dist/umd/index.js'
-        ],
-        (err) => {
-          if (err) return showError('SDK VKID не загрузился. Проверьте доступ к CDN (unpkg/jsDelivr) или отключите адблокер.');
-          initVKID();
-        }
-      );
-    });
+    })();
   </script>
 </body>
 </html>
