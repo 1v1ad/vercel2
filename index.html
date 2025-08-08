@@ -15,6 +15,8 @@
     #onetap-wrap{display:flex;justify-content:center;margin:10px 0}
     .error{color:#ff6b6b;text-align:center;margin-top:8px;display:none}
   </style>
+  <!-- VK ID SDK (версия UMD) -->
+  <script src="https://unpkg.com/@vkid/sdk@3.0.0/dist/umd/index.js" defer></script>
 </head>
 <body>
   <div class="card">
@@ -28,60 +30,66 @@
     <div id="err" class="error"></div>
   </div>
 
-  <!-- VK ID SDK (One Tap) -->
-  <script src="https://unpkg.com/@vkid/sdk@3/dist-sdk/umd/index.js"></script>
   <script>
     const APP_ID = 54008517;
-    // ВАЖНО: этот URL должен совпадать везде: в VK-консоли, в Render(REDIRECT_URI) и тут
     const REDIRECT_URI = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
     const BACKEND_URL = 'https://vercel2pr.onrender.com';
 
-    const VKID = window.VKIDSDK;
-    VKID.Config.init({
-      app: APP_ID,
-      redirectUrl: REDIRECT_URI,
-      responseMode: VKID.ConfigResponseMode.Callback, // получаем code через redirect
-      source: VKID.ConfigSource.LOWCODE
-    });
+    function showError(msg, extra) {
+      const el = document.getElementById('err');
+      el.textContent = 'Ошибка входа: ' + msg;
+      el.style.display = 'block';
+      if (extra) console.error(extra);
+    }
 
-    const oneTap = new VKID.OneTap();
-    oneTap
-      .render({
-        container: document.getElementById('vkid-onetap'),
-        showAlternativeLogin: true
-      })
-      .on(VKID.WidgetEvents.ERROR, onError)
-      .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, onLoginSuccess);
+    // ждём, когда загрузится UMD-бандл
+    window.addEventListener('load', () => {
+      const VKID = window.VKID; // правильный глобал
+      if (!VKID) {
+        return showError('SDK VKID не загрузился. Проверьте доступ к unpkg.com/адблокеры.');
+      }
 
-    async function onLoginSuccess(payload) {
       try {
-        const code = payload.code;
-        const deviceId = payload.device_id;
-
-        const r = await fetch(BACKEND_URL + '/api/auth/vk/exchange', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ code, device_id: deviceId }) // PKCE не нужен
+        VKID.Config.init({
+          app: APP_ID,
+          redirectUrl: REDIRECT_URI,
+          responseMode: VKID.ConfigResponseMode.Callback,
+          source: VKID.ConfigSource.LOWCODE
         });
 
-        if (!r.ok) {
-          const data = await r.json().catch(()=>({}));
-          throw new Error(data.error || ('HTTP '+r.status));
-        }
+        const oneTap = new VKID.OneTap();
+        oneTap
+          .render({
+            container: document.getElementById('vkid-onetap'),
+            showAlternativeLogin: true
+          })
+          .on(VKID.WidgetEvents.ERROR, (e) => showError(e?.message || 'Неизвестно', e))
+          .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload) => {
+            try {
+              const code = payload?.code;
+              const deviceId = payload?.device_id;
+              if (!code) throw new Error('Не получен code от VKID');
 
-        location.href = '/lobby.html';
+              const r = await fetch(BACKEND_URL + '/api/auth/vk/exchange', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ code, device_id: deviceId })
+              });
+
+              if (!r.ok) {
+                const data = await r.json().catch(()=>({}));
+                throw new Error(data.error || ('HTTP ' + r.status));
+              }
+              location.href = '/lobby.html';
+            } catch (e) {
+              showError(e.message || 'Неизвестно', e);
+            }
+          });
       } catch (e) {
-        onError(e);
+        showError(e.message || 'Инициализация VKID не удалась', e);
       }
-    }
-
-    function onError(e) {
-      const el = document.getElementById('err');
-      el.textContent = 'Ошибка входа: ' + (e?.message || e?.toString?.() || 'неизвестно');
-      el.style.display = 'block';
-      console.error('VKID error:', e);
-    }
+    });
   </script>
 </body>
 </html>
