@@ -7,41 +7,60 @@
   <style>
     :root { --bg:#0b0f15; --card:#121826; --border:#223; --vk:#2787F5; --text:#fff; --muted:#b7c0d0; }
     *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;font-family:system-ui,Arial}
-    .card{width:92%;max-width:560px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px 22px;
-      box-shadow:0 0 60px rgba(255,191,0,.15), 0 20px 40px rgba(0,0,0,.45)}
+    body{
+      margin:0;background:var(--bg);color:var(--text);
+      display:flex;align-items:center;justify-content:center;
+      font-family:system-ui,Arial
+    }
+    .card{
+      width:92%;max-width:560px;background:var(--card);
+      border:1px solid var(--border);border-radius:20px;padding:28px 22px;
+      box-shadow:0 0 60px rgba(255,191,0,.15), 0 20px 40px rgba(0,0,0,.45)
+    }
     h1{margin:0 0 18px;text-align:center;color:#ff4040;font-size:28px;font-weight:800}
-    .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px 18px;border:none;border-radius:14px;background:var(--vk);color:#fff;font-weight:700;font-size:16px;cursor:pointer}
+    .btn{
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      width:100%;padding:16px 18px;border:none;border-radius:14px;
+      background:var(--vk);color:#fff;font-weight:700;font-size:16px;cursor:pointer
+    }
     .btn:hover{filter:brightness(1.05)}
-    .vk-ico{width:22px;height:22px;border-radius:6px;background:#fff;color:#2787F5;display:flex;align-items:center;justify-content:center;font-weight:900}
+    .vk-ico{
+      width:22px;height:22px;border-radius:6px;background:#fff;color:#2787F5;
+      display:flex;align-items:center;justify-content:center;font-weight:900
+    }
     .hint{margin-top:10px;text-align:center;color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Вход через VK</h1>
-    <button id="vk-login" class="btn"><span class="vk-ico">vk</span><span id="caption">Продолжить с VK</span></button>
-    <div class="hint">Нажмите «Войти с VK ID», затем подтвердите вход. Продолжая, вы соглашаетесь с правилами сервиса.</div>
+    <button id="vk-login" class="btn">
+      <span class="vk-ico">vk</span>
+      <span id="caption">Продолжить с VK</span>
+    </button>
+    <div class="hint">
+      Нажмите «Войти с VK ID», затем подтвердите вход. Продолжая, вы соглашаетесь с правилами сервиса.
+    </div>
   </div>
 
   <script>
     const VK_CLIENT_ID = 54008517;
     const REDIRECT_URI = 'https://sweet-twilight-63a9b6.netlify.app/vk-callback.html';
 
-    // Если ранее логинились — показываем имя на кнопке (кэш из лобби)
+    // Если уже логинились — показываем имя на кнопке
     try {
       const cached = JSON.parse(localStorage.getItem('vk_cached_user') || 'null');
       if (cached?.firstName) document.getElementById('caption').textContent = 'Продолжить как ' + cached.firstName;
     } catch {}
 
     document.getElementById('vk-login').onclick = () => {
+      // Минимальный корректный запрос OAuth для web (без PKCE и без scope=offline)
       const params = new URLSearchParams({
         client_id: String(VK_CLIENT_ID),
         redirect_uri: REDIRECT_URI,
         response_type: 'code',
-        scope: 'offline'
+        display: 'page'
       });
-      // Без PKCE: у VK это надёжнее
       window.location.href = 'https://oauth.vk.com/authorize?' + params.toString();
     };
   </script>
