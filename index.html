@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VK ID: вход</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin:0; padding:2rem; display:flex; min-height:100vh; align-items:center; justify-content:center; background:#0b0f17; color:#fff; }
+    .card { width:100%; max-width:420px; background:#121826; border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+    h1 { font-size:20px; margin:0 0 12px; }
+    button { width:100%; padding:14px 16px; font-size:16px; border:none; border-radius:12px; cursor:pointer; }
+    .vk { background:#2787F5; color:#fff; }
+    .muted { color:#9aa3af; font-size:14px; margin-top:12px; }
+    .row { display:flex; gap:8px; margin-top:12px; }
+    input[type=text] { flex:1; padding:10px 12px; border-radius:10px; border:1px solid #253047; background:#0f1626; color:#e5e7eb; }
+    .ok { background:#16a34a; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Вход через VK ID</h1>
+    <p class="muted">Нажми кнопку — перейдёшь на авторизацию VK ID. После подтверждения тебя вернёт обратно.</p>
+    <div class="row">
+      <input id="apiBase" type="text" placeholder="https://vercel2pr.onrender.com" />
+      <button id="save" class="ok">API</button>
+    </div>
+    <div style="height:8px"></div>
+    <button id="login" class="vk">Войти через VK ID</button>
+    <p class="muted" id="status"></p>
+  </div>
+
+  <script>
+    const key = 'api_base';
+    const $api = document.getElementById('apiBase');
+    const $save = document.getElementById('save');
+    const $login = document.getElementById('login');
+    const $status = document.getElementById('status');
+
+    $api.value = localStorage.getItem(key) || 'https://vercel2pr.onrender.com';
+    $save.onclick = () => {
+      localStorage.setItem(key, $api.value.trim());
+      $status.textContent = 'API сохранён';
+    };
+
+    $login.onclick = () => {
+      const api = (localStorage.getItem(key) || $api.value).trim();
+      if (!api) { alert('Укажи API base URL'); return; }
+      window.location.href = api.replace(/\/$/, '') + '/api/auth/vk/start';
+    };
+
+    // After redirect back from backend
+    const params = new URLSearchParams(location.search);
+    if (params.get('logged') === '1') {
+      $status.textContent = 'Готово: авторизован. Проверяю профиль...';
+      const api = (localStorage.getItem(key) || $api.value).trim();
+      fetch(api.replace(/\/$/, '') + '/api/me', { credentials: 'include' })
+        .then(r => r.json()).then(j => {
+          if (j.ok) {
+            $status.textContent = 'Привет, ' + (j.user.first_name || 'игрок') + '!';
+          } else {
+            $status.textContent = 'Сессия не найдена';
+          }
+        }).catch(() => $status.textContent = 'Ошибка запроса');
+    }
+  </script>
+</body>
+</html>
