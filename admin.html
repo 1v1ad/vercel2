@@ -9,7 +9,7 @@
 <body>
   <div class="wrap">
     <div class="card login" id="loginCard">
-      <h1>Админ‑панель</h1>
+      <h1>Админ-панель</h1>
       <p class="muted">Вход по паролю администратора</p>
       <div class="field">
         <label for="password">Пароль</label>
@@ -28,9 +28,7 @@
         </div>
       </div>
 
-      <section class="grid metrics" id="metrics">
-        <!-- динамически -->
-      </section>
+      <section class="grid metrics" id="metrics"></section>
 
       <section class="card table-card">
         <div class="table-header">
@@ -44,13 +42,8 @@
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>VK ID</th>
-                <th>Имя</th>
-                <th>Фамилия</th>
-                <th>Баланс</th>
-                <th>Регистрация</th>
-                <th>Обновлено</th>
+                <th>ID</th><th>VK ID</th><th>Имя</th><th>Фамилия</th>
+                <th>Баланс</th><th>Регистрация</th><th>Обновлено</th>
               </tr>
             </thead>
             <tbody id="usersTbody"></tbody>
@@ -77,12 +70,7 @@
           <table>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>UserID</th>
-                <th>Тип</th>
-                <th>Сумма</th>
-                <th>Meta</th>
-                <th>Время</th>
+                <th>ID</th><th>UserID</th><th>Тип</th><th>Сумма</th><th>Meta</th><th>Время</th>
               </tr>
             </thead>
             <tbody id="txTbody"></tbody>
@@ -93,7 +81,8 @@
   </div>
 
   <script>
-    window.BACKEND_BASE = ""; // если пусто — будет взято из origin или prompt
+    // зашиваем URL бэка
+    window.BACKEND_BASE = "https://vercel2pr.onrender.com";
   </script>
   <script src="./admin.js"></script>
 </body>
