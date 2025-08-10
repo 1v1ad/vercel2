@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GG Room</title>
+  <style>
+    :root{
+      --bg:#0b0d12; --bg2:#11151d; --card:#0f131a; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
+      --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:radial-gradient(1200px 600px at 50% -10%, #171b24 0%, #0b0d12 55%, #090b10 100%);
+      color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display:flex; flex-direction:column;
+    }
+    header{display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)}
+    header b{color:var(--gold); letter-spacing:.4px}
+    .wrap{flex:1; display:grid; place-items:center; padding:40px 16px}
+    .card{
+      width:min(520px,100%); background:linear-gradient(180deg, var(--card), var(--bg2));
+      border-radius:var(--radius); padding:28px 24px; border:1px solid var(--border); position:relative;
+      box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    .card::before{
+      content:""; position:absolute; inset:-1px; border-radius:calc(var(--radius) + 1px);
+      padding:1px; background:linear-gradient(135deg, rgba(247,228,164,.35), rgba(92,76,28,.1) 45%, rgba(247,228,164,.2));
+      -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor; mask-composite:exclude;
+      pointer-events:none; /* чтобы рамка не блокировала клики */
+    }
+    h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800}
+    .lead{margin:0 0 18px; color:var(--muted)}
+    .btn{width:100%; border:0; border-radius:12px; padding:16px 18px; font-size:16px; font-weight:700; cursor:pointer}
+    .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
+    .hint{margin-top:10px; text-align:center; color:var(--muted); font-size:12.5px}
+    .badges{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
+    .badge{border:1px solid var(--border); color:var(--gold); background:rgba(247,228,164,.06); padding:6px 10px; border-radius:999px; font-size:12px}
+    .status{margin-top:12px; color:var(--muted); min-height:1.2em}
+  </style>
+</head>
+<body>
+  <header><b>GG ROOM</b></header>
+
+  <main class="wrap">
+    <section class="card">
+      <h1>Войдите и начните выигрывать</h1>
+      <p class="lead">Авторизация через VK&nbsp;ID. После входа отправим вас в лобби.</p>
+
+      <button class="btn vk" id="login">Войти через VK ID</button>
+      <div class="hint">Если «Продолжить как …» не появилось — нажмите кнопку выше.</div>
+
+      <p class="status" id="status"></p>
+
+      <div class="badges">
+        <div class="badge">WSOP Online</div>
+        <div class="badge">Гарантии призов</div>
+        <div class="badge">Турниры 24/7</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API = 'https://vercel2pr.onrender.com';
+
+    // Кнопка авторизации
+    document.getElementById('login').onclick = () => {
+      window.location.href = API + '/api/auth/vk/start';
+    };
+
+    // Автоматический переход в лобби после успешного возврата (?logged=1)
+    (function handleLoggedRedirect(){
+      const params = new URLSearchParams(location.search);
+      if (params.get('logged') === '1') {
+        const st = document.getElementById('status');
+        st.textContent = 'Готово: авторизован. Переходим в лобби...';
+        // Чуть-чуть подождём, чтобы пользователь увидел статус
+        setTimeout(() => { window.location.href = '/lobby.html'; }, 500);
+      }
+    })();
+  </script>
+</body>
+</html>
