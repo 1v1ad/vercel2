@@ -3,100 +3,128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Вход через VK ID</title>
+  <title>GGRoom — Вход</title>
+  <meta name="color-scheme" content="dark" />
   <style>
-    :root { color-scheme: dark; }
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-      background:#0b0f17; color:#fff;
+    /* ====== GG-style theme (чёрный, графит, золотой акцент, лёгкий неон) ====== */
+    :root{
+      --bg:#0b0d12;
+      --bg2:#11151d;
+      --card:#0f131a;
+      --gold:#d7b35c;
+      --gold-2:#f4d88a;
+      --accent:#e53935;        /* можно сделать красной кнопку позже */
+      --vk:#2787F5;
+      --text:#e8eaf0;
+      --muted:#98a2b3;
+      --border:rgba(255,255,255,.06);
+      --glow:0 0 30px rgba(215,179,92,.25);
+      --radius:18px;
     }
-    .card { width:100%; max-width:420px; background:#121826; border-radius:16px; padding:24px;
-      box-shadow:0 10px 30px rgba(0,0,0,0.4); }
-    h1 { font-size:22px; margin:0 0 8px; }
-    p.muted { color:#9aa3af; font-size:14px; margin:0 0 16px; }
-    .btn { width:100%; padding:14px 16px; font-size:16px; border:none; border-radius:12px; cursor:pointer; }
-    .vk { background:#2787F5; color:#fff; }
-    .hint { color:#9aa3af; font-size:12px; margin-top:10px; text-align:center; }
-    .hide { display:none; }
-    #status { color:#9aa3af; font-size:14px; margin-top:12px; min-height:1em; }
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; background:radial-gradient(1200px 600px at 50% -10%, #171b24 0%, #0b0d12 55%, #090b10 100%);
+      color:var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* subtle top bar like GGPoker */
+    .topbar{
+      display:flex; align-items:center; justify-content:center;
+      padding:10px 14px; border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg, #0f131a 0%, #0b0d12 100%);
+      position:sticky; top:0; z-index:10;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center; font-weight:700; letter-spacing:.4px;
+      text-transform:uppercase;
+    }
+    .brand em{ color:var(--gold-2); font-style:normal; text-shadow:var(--glow) }
+    .brand span{ color:#fff }
+
+    /* hero wrapper */
+    .wrap{
+      min-height:calc(100% - 56px);
+      display:grid; place-items:center; padding:40px 16px;
+    }
+
+    /* card with metallic border */
+    .card{
+      width:min(520px, 100%);
+      background:linear-gradient(180deg, var(--card), var(--bg2));
+      border-radius:var(--radius);
+      padding:28px 24px;
+      border:1px solid var(--border);
+      position:relative;
+      box-shadow: 0 10px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    .card::before{
+      content:""; position:absolute; inset:-1px; border-radius:calc(var(--radius) + 1px);
+      padding:1px; background:linear-gradient(135deg, rgba(247,228,164,.35), rgba(92,76,28,.1) 45%, rgba(247,228,164,.2));
+      -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+    }
+    h1{ margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800; letter-spacing:.3px }
+    .lead{ margin:0 0 18px; color:var(--muted) }
+
+    /* VK button (пока фирменная синяя) */
+    .btn{
+      width:100%; border:0; border-radius:12px; padding:16px 18px; font-size:16px;
+      font-weight:700; cursor:pointer; transition:transform .08s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .btn.vk{ background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25) }
+    .btn:hover{ filter:brightness(1.05) }
+    .btn:active{ transform:translateY(1px) }
+
+    .hint{ margin-top:10px; text-align:center; color:var(--muted); font-size:12.5px }
+    .status{ color:var(--muted); font-size:14px; margin-top:12px; min-height:1.2em }
+
+    /* footer badges */
+    .badges{ margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; }
+    .badge{
+      border:1px solid var(--border); color:var(--gold-2);
+      background:rgba(247,228,164,.06); padding:6px 10px; border-radius:999px; font-size:12px;
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Войдите и начните выигрывать</h1>
-    <p class="muted">Авторизация через VK ID. После входа перейдём в лобби.</p>
-
-    <!-- Контейнер под One Tap -->
-    <div id="vkid-container"></div>
-
-    <!-- Фолбэк-кнопка -->
-    <div id="fallback">
-      <button class="btn vk" id="fallbackLogin">Войти через VK ID</button>
-      <div class="hint">Если «Продолжить как …» не появилось — нажмите эту кнопку.</div>
-    </div>
-
-    <p id="status"></p>
+  <div class="topbar">
+    <div class="brand"><em>GG</em><span>Room</span></div>
   </div>
 
+  <main class="wrap">
+    <section class="card">
+      <h1>Войдите и начните выигрывать</h1>
+      <p class="lead">Авторизация через VK&nbsp;ID. После входа отправим вас в лобби.</p>
+
+      <button class="btn vk" id="login">Войти через VK ID</button>
+      <div class="hint">Если «Продолжить как …» не появилось — нажмите кнопку выше.</div>
+
+      <p class="status" id="status"></p>
+
+      <div class="badges">
+        <div class="badge">WSOP Online</div>
+        <div class="badge">Гарантии призов</div>
+        <div class="badge">Турниры 24/7</div>
+      </div>
+    </section>
+  </main>
+
   <script>
-    // === Твои константы ===
-    const API_BASE   = 'https://vercel2pr.onrender.com';
-    const VK_CLIENT_ID = 54008517;  // твой app_id из VK ID
+    // Бэкенд (оставляем как было)
+    const API = 'https://vercel2pr.onrender.com';
+    document.getElementById('login').onclick = () => {
+      window.location.href = API + '/api/auth/vk/start';
+    };
 
-    const $status   = document.getElementById('status');
-    const $fallback = document.getElementById('fallback');
-    const $fallbackLogin = document.getElementById('fallbackLogin');
-    const $vkContainer = document.getElementById('vkid-container');
-
-    // Фолбэк: старт авторизации через backend
-    function startBackendAuth() {
-      window.location.href = API_BASE + '/api/auth/vk/start';
-    }
-    $fallbackLogin.onclick = startBackendAuth;
-
-    // Если вернулись после логина — сразу в лобби
+    // Автопереход в лобби после возврата
     const params = new URLSearchParams(location.search);
     if (params.get('logged') === '1') {
-      $status.textContent = 'Готово: авторизован. Переходим в лобби...';
+      const st = document.getElementById('status');
+      st.textContent = 'Готово: авторизован. Переходим в лобби...';
       setTimeout(() => { location.href = '/lobby.html'; }, 600);
     }
-
-    // Пытаемся подключить VK ID SDK (браузерный UMD-бандл).
-    // Если что-то пойдёт не так — просто оставим фолбэк-кнопку.
-    (function loadVKSDK() {
-      const script = document.createElement('script');
-      // UMD-версия SDK (для браузера). Если когда-то поменяют путь — у нас есть фолбэк.
-      script.src = 'https://unpkg.com/@vkid/sdk@latest/dist/umd/index.js';
-      script.async = true;
-      script.onload = () => {
-        try {
-          if (!window.VKID || !window.VKID.Auth) throw new Error('VKID not ready');
-
-          // Инициализация SDK. Секреты НЕ нужны — обмен токенов делаем на бэке.
-          window.VKID.init({ app: VK_CLIENT_ID });
-
-          // Создаём бренд-кнопку. Если у юзера активная VK-сессия — SDK покажет «Продолжить как …».
-          const btn = window.VKID.Auth.createButton({
-            style: 'primary',
-            action: () => startBackendAuth()
-          });
-
-          $vkContainer.appendChild(btn.getElement());
-
-          // Кнопка SDK есть — фолбэк можно спрятать (но оставим как запасной вариант на всякий случай).
-          // Комментируй строку ниже, если хочешь, чтобы фолбэк всегда оставался видимым.
-          $fallback.classList.add('hide');
-        } catch (e) {
-          // Тихо оставляем фолбэк
-          console.warn('VKID init failed:', e.message);
-        }
-      };
-      script.onerror = () => {
-        console.warn('VKID SDK load error — используем фолбэк-кнопку');
-      };
-      document.head.appendChild(script);
-    })();
   </script>
 </body>
 </html>
