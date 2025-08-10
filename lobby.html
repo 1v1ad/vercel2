@@ -1,1 +1,75 @@
-<lobby.html content>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Лобби</title>
+  <style>
+    :root { color-scheme: dark; }
+    body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;background:#0b0f17;color:#fff}
+    .wrap{max-width:960px;margin:0 auto;padding:24px}
+    .card{background:#121826;border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#0f1626}
+    .name{font-weight:600}
+    .muted{color:#9aa3af}
+    .balance{margin-left:auto;font-variant-numeric:tabular-nums}
+    button{padding:10px 14px;border:none;border-radius:10px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="header">
+        <img id="ava" class="avatar" alt=""/>
+        <div>
+          <div class="name" id="name">Гость</div>
+          <div class="muted" id="hello">Проверяю сессию...</div>
+        </div>
+        <div class="balance" id="balance">Баланс: 0,00</div>
+      </div>
+
+      <p>Это лобби. Дальше добавим матчи, турниры и историю операций.</p>
+      <a href="/"><button>↩ На главную</button></a>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://vercel2pr.onrender.com';
+    function money(n){
+      const v = (Number(n || 0) / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return v;
+    }
+    async function fetchMe(){
+      const r = await fetch(API + '/api/me', { credentials: 'include' });
+      if (!r.ok) throw new Error('unauth');
+      return r.json();
+    }
+    async function logEvent(type, payload){
+      try{
+        await fetch(API + '/api/events', {
+          method:'POST',
+          credentials:'include',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ type, payload })
+        });
+      }catch{}
+    }
+    (async () => {
+      try{
+        const j = await fetchMe();
+        if (!j.ok) throw new Error('no session');
+        const u = j.user || {};
+        document.getElementById('name').textContent = (u.first_name || '') + (u.last_name ? ' ' + u.last_name : '');
+        document.getElementById('hello').textContent = 'Сессия активна.';
+        if (u.avatar) document.getElementById('ava').src = u.avatar;
+        const bal = Number.isFinite(u.balance) ? u.balance : 0;
+        document.getElementById('balance').textContent = 'Баланс: ' + money(bal);
+        logEvent('page_view', { page: 'lobby' });
+      }catch(e){
+        document.getElementById('hello').textContent = 'Сессия не найдена. Вернись на главную и войди заново.';
+      }
+    })();
+  </script>
+</body>
+</html>
