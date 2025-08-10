@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGRoom — Admin</title>
+  <link rel="stylesheet" href="./admin.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="card login" id="loginCard">
+      <h1>Админ‑панель</h1>
+      <p class="muted">Вход по паролю администратора</p>
+      <div class="field">
+        <label for="password">Пароль</label>
+        <input type="password" id="password" autocomplete="current-password" />
+      </div>
+      <button id="loginBtn">Войти</button>
+      <p id="loginError" class="error" style="display:none;"></p>
+    </div>
+
+    <div class="card" id="app" style="display:none;">
+      <div class="topbar">
+        <h1>GGRoom — Admin</h1>
+        <div class="actions">
+          <button id="refreshBtn">Обновить</button>
+          <button id="logoutBtn">Выйти</button>
+        </div>
+      </div>
+
+      <section class="grid metrics" id="metrics">
+        <!-- динамически -->
+      </section>
+
+      <section class="card table-card">
+        <div class="table-header">
+          <h2>Пользователи (последние 100)</h2>
+          <div class="tools">
+            <input type="search" id="userSearch" placeholder="Поиск по имени или VK ID" />
+            <button id="reloadUsers">Обновить</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>VK ID</th>
+                <th>Имя</th>
+                <th>Фамилия</th>
+                <th>Баланс</th>
+                <th>Регистрация</th>
+                <th>Обновлено</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card table-card">
+        <div class="table-header">
+          <h2>Операции (последние 200)</h2>
+          <div class="tools">
+            <select id="txType">
+              <option value="">Все типы</option>
+              <option value="deposit">deposit</option>
+              <option value="withdraw">withdraw</option>
+              <option value="win">win</option>
+              <option value="lose">lose</option>
+              <option value="bonus">bonus</option>
+            </select>
+            <button id="reloadTx">Обновить</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>UserID</th>
+                <th>Тип</th>
+                <th>Сумма</th>
+                <th>Meta</th>
+                <th>Время</th>
+              </tr>
+            </thead>
+            <tbody id="txTbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    window.BACKEND_BASE = ""; // если пусто — будет взято из origin или prompt
+  </script>
+  <script src="./admin.js"></script>
+</body>
+</html>
