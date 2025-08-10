@@ -13,102 +13,89 @@
     }
     .card { width:100%; max-width:420px; background:#121826; border-radius:16px; padding:24px;
       box-shadow:0 10px 30px rgba(0,0,0,0.4); }
-    h1 { font-size:20px; margin:0 0 12px; }
-    p.muted { color:#9aa3af; font-size:14px; margin:8px 0 16px; }
-    .fallback { display:none; }
+    h1 { font-size:22px; margin:0 0 8px; }
+    p.muted { color:#9aa3af; font-size:14px; margin:0 0 16px; }
     .btn { width:100%; padding:14px 16px; font-size:16px; border:none; border-radius:12px; cursor:pointer; }
     .vk { background:#2787F5; color:#fff; }
     .hint { color:#9aa3af; font-size:12px; margin-top:10px; text-align:center; }
+    .hide { display:none; }
     #status { color:#9aa3af; font-size:14px; margin-top:12px; min-height:1em; }
   </style>
-  <!-- VK ID Web SDK (загружаем асинхронно; если не поднимется — будет фолбэк) -->
-  <script defer src="https://unpkg.com/@vkid/sdk@latest"></script>
 </head>
 <body>
   <div class="card">
-    <h1>Вход через VK ID</h1>
-    <p class="muted">Быстрый вход. После подтверждения вернём тебя в лобби.</p>
+    <h1>Войдите и начните выигрывать</h1>
+    <p class="muted">Авторизация через VK ID. После входа перейдём в лобби.</p>
 
-    <!-- Контейнер под кнопку/One Tap -->
+    <!-- Контейнер под One Tap -->
     <div id="vkid-container"></div>
 
-    <!-- Фолбэк-кнопка, если SDK не подгрузился -->
-    <div class="fallback" id="fallback">
+    <!-- Фолбэк-кнопка -->
+    <div id="fallback">
       <button class="btn vk" id="fallbackLogin">Войти через VK ID</button>
-      <div class="hint">Если “Продолжить как …” не появилось — используй эту кнопку.</div>
+      <div class="hint">Если «Продолжить как …» не появилось — нажмите эту кнопку.</div>
     </div>
 
     <p id="status"></p>
   </div>
 
   <script>
-    // === Константы твоего проекта ===
+    // === Твои константы ===
     const API_BASE   = 'https://vercel2pr.onrender.com';
-    const FRONT_BASE = 'https://sweet-twilight-63a9b6.netlify.app';
     const VK_CLIENT_ID = 54008517;  // твой app_id из VK ID
 
     const $status   = document.getElementById('status');
     const $fallback = document.getElementById('fallback');
     const $fallbackLogin = document.getElementById('fallbackLogin');
+    const $vkContainer = document.getElementById('vkid-container');
 
-    // Фолбэк: прямой редирект на backend старт
+    // Фолбэк: старт авторизации через backend
     function startBackendAuth() {
       window.location.href = API_BASE + '/api/auth/vk/start';
     }
     $fallbackLogin.onclick = startBackendAuth;
 
-    // После возврата с бэка автоматом идём в лобби
+    // Если вернулись после логина — сразу в лобби
     const params = new URLSearchParams(location.search);
     if (params.get('logged') === '1') {
       $status.textContent = 'Готово: авторизован. Переходим в лобби...';
       setTimeout(() => { location.href = '/lobby.html'; }, 600);
     }
 
-    // === Попытка инициализировать VK ID Web SDK ===
-    // Идея: показываем “Продолжить как …”/бренд-кнопку. Под капотом SDK вызовет VK,
-    // а вернуться мы всё равно просим на backend-redirect URI (через наш /api/auth/vk/start).
-    (function initVKID() {
-      const tryInit = () => {
-        if (!window.VKID) { throw new Error('VKID SDK not loaded'); }
+    // Пытаемся подключить VK ID SDK (браузерный UMD-бандл).
+    // Если что-то пойдёт не так — просто оставим фолбэк-кнопку.
+    (function loadVKSDK() {
+      const script = document.createElement('script');
+      // UMD-версия SDK (для браузера). Если когда-то поменяют путь — у нас есть фолбэк.
+      script.src = 'https://unpkg.com/@vkid/sdk@latest/dist/umd/index.js';
+      script.async = true;
+      script.onload = () => {
+        try {
+          if (!window.VKID || !window.VKID.Auth) throw new Error('VKID not ready');
 
-        // Базовая инициализация: только client_id.
-        // Мы не делаем обмен токенов на фронте — redirect приведёт на наш backend/callback.
-        const vk = window.VKID;
-        vk.init({ app: VK_CLIENT_ID });
+          // Инициализация SDK. Секреты НЕ нужны — обмен токенов делаем на бэке.
+          window.VKID.init({ app: VK_CLIENT_ID });
 
-        // Рендерим кнопку в контейнер.
-        const container = document.getElementById('vkid-container');
-        container.innerHTML = '';
+          // Создаём бренд-кнопку. Если у юзера активная VK-сессия — SDK покажет «Продолжить как …».
+          const btn = window.VKID.Auth.createButton({
+            style: 'primary',
+            action: () => startBackendAuth()
+          });
 
-        // Создаём кнопку. Если пользователь залогинен в VK, SDK покажет “Продолжить как …”.
-        // Если нет — будет бренд-кнопка "Войти через VK ID".
-        const btn = vk.Auth.createButton({
-          // стиль/варианты можно менять: 'primary', 'secondary', 'tertiary'
-          style: 'primary',
-          // при клике — просто уходим на наш backend start (надёжно и безопасно)
-          action: () => startBackendAuth()
-        });
+          $vkContainer.appendChild(btn.getElement());
 
-        container.appendChild(btn.getElement());
-
-        // Показать фолбэк, если по каким-то причинам кнопка не появилась
-        setTimeout(() => {
-          if (!container.firstChild) $fallback.style.display = 'block';
-        }, 1000);
-      };
-
-      // Пробуем сразу, и если скрипт ещё не загрузился — повторим позже
-      const start = () => {
-        try { tryInit(); }
-        catch (e) {
-          // Покажем фолбэк, и попробуем ещё раз через 1.5с (на случай медленной сети)
-          $fallback.style.display = 'block';
-          setTimeout(() => { try { tryInit(); } catch(_){} }, 1500);
+          // Кнопка SDK есть — фолбэк можно спрятать (но оставим как запасной вариант на всякий случай).
+          // Комментируй строку ниже, если хочешь, чтобы фолбэк всегда оставался видимым.
+          $fallback.classList.add('hide');
+        } catch (e) {
+          // Тихо оставляем фолбэк
+          console.warn('VKID init failed:', e.message);
         }
       };
-
-      if (document.readyState === 'complete') start();
-      else window.addEventListener('load', start);
+      script.onerror = () => {
+        console.warn('VKID SDK load error — используем фолбэк-кнопку');
+      };
+      document.head.appendChild(script);
     })();
   </script>
 </body>
