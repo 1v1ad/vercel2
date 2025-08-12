@@ -2,116 +2,124 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GGRoom • Admin</title>
-  
-  <!-- Основные стили админки -->
-  <link rel="stylesheet" href="styles.css">
-  
-  <!-- Новый стиль для флагов -->
-  <link rel="stylesheet" href="emoji.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGRoom Admin</title>
 
+  <!-- Основные стили -->
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Доб. стили только для эмодзи-флагов -->
+  <link rel="stylesheet" href="emoji.css" />
+
+  <!-- Chart.js для графика -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div id="app">
-    <!-- Шапка -->
-    <header class="admin-header">
-      <h1>GGRoom • Admin</h1>
-      <div class="admin-connection">
-        <input id="backendUrl" placeholder="https://backend.example.com" />
-        <input id="adminPassword" type="password" placeholder="Пароль" />
-        <button id="saveConfig">Сохранить</button>
-        <button id="testConnection">Проверка</button>
-      </div>
-    </header>
+  <!-- Верхняя панель -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <span>GGRoom • Admin</span>
+    </div>
+    <div class="controls">
+      <input id="backendUrl" placeholder="https://vercel2pr.onrender.com" />
+      <input id="adminPwd" type="password" placeholder="Admin password" />
+      <button id="saveBtn">Сохранить</button>
+      <button id="healthBtn">Проверка</button>
+    </div>
+  </header>
 
-    <!-- Метрики -->
-    <section class="admin-metrics">
-      <div class="metric-card">
-        <div class="metric-value" id="metric-users">0</div>
-        <div class="metric-label">Пользователи</div>
+  <main class="container">
+    <!-- KPI карточки -->
+    <section class="cards">
+      <div class="card">
+        <div class="label">Пользователи</div>
+        <div class="value" id="kpiUsers">–</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-value" id="metric-events">0</div>
-        <div class="metric-label">События</div>
+      <div class="card">
+        <div class="label">События</div>
+        <div class="value" id="kpiEvents">–</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-value" id="metric-auth7">0</div>
-        <div class="metric-label">Авторизаций (7д)</div>
+      <div class="card">
+        <div class="label">Авторизаций (7д)</div>
+        <div class="value" id="kpiAuth7d">–</div>
       </div>
-      <div class="metric-card">
-        <div class="metric-value" id="metric-uniq7">0</div>
-        <div class="metric-label">Уникальные (7д)</div>
+      <div class="card">
+        <div class="label">Уникальные (7д)</div>
+        <div class="value" id="kpiUnique7d">–</div>
       </div>
     </section>
 
     <!-- График -->
-    <section class="admin-chart">
-      <h2>Аналитика посещений</h2>
-      <canvas id="visitsChart"></canvas>
-      <small>Количество авторизаций по дням недели • уникальные пользователи</small>
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Аналитика посещений</h3>
+        <div class="muted">Количество авторизаций по дням недели • уникальные пользователи</div>
+      </div>
+      <div class="panel-body">
+        <canvas id="weeklyChart"></canvas>
+      </div>
     </section>
 
-    <!-- Пользователи и события -->
-    <section class="admin-tables">
-      <div class="admin-table">
-        <h3>Пользователи</h3>
-        <div class="table-controls">
-          <input id="userSearch" placeholder="Поиск (vk_id, имя, фамилия)" />
-          <button id="loadUsers">Обновить</button>
+    <!-- Две таблицы: Users и Events -->
+    <section class="grid-two">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Пользователи</h3>
+          <div class="right">
+            <input id="userSearch" placeholder="Поиск (vk_id, имя, фамилия)" />
+            <button id="userReload">Обновить</button>
+          </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>VK</th>
-              <th>Имя</th>
-              <th>Фамилия</th>
-              <th>Баланс</th>
-              <th>Страна</th>
-              <th>Создан</th>
-            </tr>
-          </thead>
-          <tbody id="usersTableBody"></tbody>
-        </table>
-        <div class="table-pagination">
-          <button id="usersPrev">Назад</button>
-          <span id="usersInfo"></span>
-          <button id="usersNext">Вперед</button>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th><th>VK</th><th>Имя</th><th>Фамилия</th><th>Баланс</th><th>Страна</th><th>Создан</th>
+              </tr>
+            </thead>
+            <tbody id="userRows"></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <button id="userPrev">Назад</button>
+          <span id="userInfo" class="muted"></span>
+          <button id="userNext">Вперёд</button>
         </div>
       </div>
 
-      <div class="admin-table">
-        <h3>События</h3>
-        <div class="table-controls">
-          <input id="eventType" placeholder="Тип (login, auth_start, auth_success...)" />
-          <input id="eventUserId" placeholder="user_id" />
-          <button id="loadEvents">Обновить</button>
+      <div class="panel">
+        <div class="panel-head">
+          <h3>События</h3>
+          <div class="right">
+            <input id="eventType" placeholder="Тип (login, auth_start, auth_success…)" />
+            <input id="eventUserId" placeholder="user_id" type="number" min="1" />
+            <button id="eventReload">Обновить</button>
+          </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>User</th>
-              <th>Тип</th>
-              <th>IP</th>
-              <th>UA</th>
-              <th>Создано</th>
-            </tr>
-          </thead>
-          <tbody id="eventsTableBody"></tbody>
-        </table>
-        <div class="table-pagination">
-          <button id="eventsPrev">Назад</button>
-          <span id="eventsInfo"></span>
-          <button id="eventsNext">Вперед</button>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th><th>User</th><th>Тип</th><th>IP</th><th>UA</th><th>Создано</th>
+              </tr>
+            </thead>
+            <tbody id="eventRows"></tbody>
+          </table>
+        </div>
+        <div class="pager">
+          <button id="eventPrev">Назад</button>
+          <span id="eventInfo" class="muted"></span>
+          <button id="eventNext">Вперёд</button>
         </div>
       </div>
     </section>
-  </div>
+  </main>
 
-  <!-- Логика админки -->
-  <script src="admin.js"></script>
+  <footer class="foot">
+    <span class="muted">Админка обращается к API: /api/admin/* • URL/пароль хранятся в localStorage.</span>
+  </footer>
+
+  <!-- Логика -->
+  <script src="app.js"></script>
 </body>
 </html>
