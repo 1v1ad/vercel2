@@ -1,4 +1,4 @@
-/* === GGRoom Admin — полный стиль "как раньше" === */
+/* === GGRoom Admin — стиль с мобильными правками === */
 :root{
   --bg:#0b0f14;
   --panel:#0f1621;
@@ -106,14 +106,31 @@ body{
 .chartjs-render-monitor{margin-top:8px}
 
 /* Responsive */
-@media (max-width: 1100px){
+@media (max-width: 900px){
   .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid-two{grid-template-columns:1fr}
   .topbar .controls input{min-width:220px}
 }
+
 @media (max-width: 640px){
-  .cards{grid-template-columns:1fr}
-  .topbar{align-items:flex-start}
-  .topbar .controls{width:100%}
-  .topbar .controls input{flex:1;min-width:0}
+  .container{padding:12px}
+  .cards{grid-template-columns:1fr;gap:12px}
+  .topbar{align-items:flex-start;gap:10px;padding:10px 12px}
+  .topbar .controls{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .topbar .controls input{min-width:0;width:100%}
+  .topbar .controls button{width:100%}
+  .panel-head{flex-wrap:wrap;gap:8px}
+  .panel .right{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+  .panel .right input,
+  .panel .right button{width:100%}
 }
