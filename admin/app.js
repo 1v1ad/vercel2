@@ -1,4 +1,4 @@
-// Admin UI logic
+// Admin UI logic with FlagCDN flags
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -46,7 +46,6 @@
     const total = Object.values(s.eventsByType || {}).reduce((a,b)=>a+b,0);
     $('kpiEvents').textContent = total;
 
-    // compute 7d metrics from events (auth_success)
     const info = await aggregateAuthLast7d();
     $('kpiAuth7d').textContent = info.totalAuth;
     $('kpiUnique7d').textContent = info.uniqueUsers;
@@ -54,7 +53,6 @@
   }
 
   async function aggregateAuthLast7d() {
-    // fetch events type=auth_success over pages, limit 5000 total to be safe
     const pageSize = 200;
     let skip = 0;
     let all = [];
@@ -69,7 +67,6 @@
       skip += take;
       if ((batch.items || []).length < take) break;
     }
-    // filter last 7 days
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7*24*60*60*1000);
     const recent = all.filter(e => new Date(e.created_at) >= sevenDaysAgo);
@@ -109,7 +106,6 @@
         scales: { y: { beginAtZero: true } }
       }
     });
-    // make panel tall enough
     ctx.parentElement.style.height = '320px';
   }
 
@@ -156,15 +152,12 @@
   }
 
   // Helpers
-  
-function flagFromCC(cc) {
-  if (!cc || cc.length !== 2) return '';
-  const A = 0x1F1E6;
-  const a = cc.toUpperCase();
-  return String.fromCodePoint(A + (a.charCodeAt(0) - 65)) +
-         String.fromCodePoint(A + (a.charCodeAt(1) - 65));
-}
-function fmtDate(str) {
+  function flagFromCC(cc) {
+    if (!cc || cc.length !== 2) return '';
+    const code = cc.toLowerCase();
+    return `<img class="flag" src="https://flagcdn.com/24x18/${code}.png" alt="${cc}" width="18" height="13" loading="lazy">`;
+  }
+  function fmtDate(str) {
     if (!str) return '';
     const d = new Date(str);
     return d.toLocaleString();
