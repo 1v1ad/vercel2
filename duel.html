@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Дуэль 1 на 1 — выбор ставки</title>
+  <link rel="stylesheet" href="/css/duel.css">
+</head>
+<body class="duel-body">
+  <header class="duel-banner">
+    <img src="/assets/final-table.png" alt="banner" class="banner-img">
+    <div class="banner-strip">
+      <span>Дуэль 1 на 1</span>
+    </div>
+  </header>
+
+  <main class="duel-content">
+    <section class="grid-6" aria-label="Выбор размера ставки">
+      <button class="cell" data-stake="100"    data-kind="coins">
+        <div class="art bg-1"></div>
+        <div class="overlay hide-cashback"></div>
+        <div class="price">100&nbsp;₽</div>
+      </button>
+      <button class="cell" data-stake="250"    data-kind="wallet">
+        <div class="art bg-2"></div>
+        <div class="overlay hide-cashback"></div>
+        <div class="price">250&nbsp;₽</div>
+      </button>
+      <button class="cell" data-stake="500"    data-kind="sack">
+        <div class="art bg-3"></div>
+        <div class="overlay hide-cashback"></div>
+        <div class="price">500&nbsp;₽</div>
+      </button>
+      <button class="cell" data-stake="1000"   data-kind="chest-small">
+        <div class="art bg-4"></div>
+        <div class="overlay hide-cashback"></div>
+        <div class="price">1 000&nbsp;₽</div>
+      </button>
+      <button class="cell" data-stake="5000"   data-kind="chest-mid">
+        <div class="art bg-5"></div>
+        <div class="overlay hide-cashback"></div>
+        <div class="price">5 000&nbsp;₽</div>
+      </button>
+      <button class="cell" data-stake="10000"  data-kind="chest-big">
+        <div class="art bg-6"></div>
+        <div class="overlay hide-cashback"></div>
+        <div class="price">10 000&nbsp;₽</div>
+      </button>
+    </section>
+  </main>
+
+  <script src="/js/duel.js"></script>
+</body>
+</html>

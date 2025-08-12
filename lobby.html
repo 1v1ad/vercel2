@@ -1,133 +1,84 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>GGRoom — Лобби</title>
-  <meta name="color-scheme" content="dark" />
-  <style>
-    :root{
-      --bg:#0b0d12; --bg2:#11151d; --panel:#0f131a; --panel2:#121722;
-      --gold:#d7b35c; --gold-2:#f4d88a; --text:#e8eaf0; --muted:#98a2b3; --border:rgba(255,255,255,.07);
-      --radius:18px;
-    }
-    *{ box-sizing:border-box }
-    body{ margin:0; background:linear-gradient(180deg, #0b0d12 0%, #090b10 100%); color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-
-    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 18px;
-      position:sticky; top:0; z-index:10; background:linear-gradient(180deg, #0f131a 0%, #0b0d12 100%); border-bottom:1px solid var(--border); }
-    .brand{ display:flex; gap:10px; align-items:center; font-weight:800; text-transform:uppercase; letter-spacing:.4px }
-    .brand em{ color:var(--gold-2); font-style:normal; text-shadow:0 0 26px rgba(215,179,92,.25) }
-    .brand span{ color:#fff }
-
-    /* header/чердак */
-    .userbar{
-      display:flex; align-items:center; gap:12px; padding:8px 10px; border:1px solid var(--border);
-      background:linear-gradient(180deg, var(--panel), var(--panel2)); border-radius:12px;
-    }
-    .avatar{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#101521; border:1px solid var(--border) }
-    .name{ font-weight:700 }
-    .muted{ color:var(--muted); font-size:12.5px }
-    .balance{ margin-left:auto; font-variant-numeric:tabular-nums; background:rgba(247,228,164,.08); color:var(--gold-2);
-      padding:8px 12px; border-radius:999px; border:1px solid rgba(247,228,164,.25) }
-
-    .wrap{ max-width:1100px; margin:18px auto; padding:0 18px }
-    .card{ background:linear-gradient(180deg, var(--panel), var(--panel2)); border-radius:var(--radius); padding:20px;
-      border:1px solid var(--border); box-shadow:0 10px 40px rgba(0,0,0,.45) }
-
-    .grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:16px }
-    .tile{ padding:18px; border-radius:14px; border:1px solid var(--border); background:rgba(255,255,255,.02) }
-    .tile h3{ margin:0 0 8px; font-size:16px }
-    .tile p{ margin:0; color:var(--muted); font-size:13.5px }
-
-    .btn{ padding:10px 14px; border:1px solid var(--border); background:#111721; color:#fff; border-radius:10px; cursor:pointer }
-    a.btn{ text-decoration:none; display:inline-block }
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Лобби</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><em>GG</em><span>Room</span></div>
-
-    <div class="userbar">
-      <img id="ava" class="avatar" alt="">
-      <div>
-        <div class="name" id="name">Гость</div>
-        <div class="muted" id="hello">Проверяю сессию…</div>
-      </div>
-      <div class="balance" id="balance">Баланс: 0,00</div>
-    </div>
+  <header>
+    <!-- твой существующий хедер -->
   </header>
 
-  <main class="wrap">
-    <section class="card">
-      <h2 style="margin:0 0 8px">Главное лобби</h2>
-      <div class="muted">Турниры, кэш-игры и акции в одном месте. История операций появится тут же.</div>
+  <main>
+    <section class="hub">
+      <h2 class="hub-title">Главное лобби</h2>
+      <p class="hub-sub">
+        Турниры, кэш-игры и акции в одном месте. История операций появится тут же.
+      </p>
 
-      <div class="grid">
-        <div class="tile">
-          <h3>WSOP Online</h3>
-          <p>Квалификации и события серии. Большие гарантии ежедневно.</p>
-        </div>
-        <div class="tile">
-          <h3>Сит-энд-гоу</h3>
-          <p>Быстрые турниры: сел — сыграл — забрал.</p>
-        </div>
-        <div class="tile">
-          <h3>Кэш-столы</h3>
-          <p>Играй в любое время 24/7. Скоро — динамические столы.</p>
-        </div>
-      </div>
-
-      <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap">
-        <a href="/" class="btn">↩ На главную</a>
-        <!-- сюда позже добавим: История, Пополнить, Вывести -->
+      <div class="hub-row one">
+        <a href="/duel.html" class="game-card">
+          <div class="game-card-title">Дуэль 1 на 1</div>
+          <div class="game-card-desc">
+            Создай комнату и выбери ставку: 100 · 250 · 500 · 1 000 · 5 000 · 10 000 ₽
+          </div>
+        </a>
       </div>
     </section>
   </main>
 
-  <script>
-    const API = 'https://vercel2pr.onrender.com';
+  <footer>
+    <!-- твой существующий футер -->
+  </footer>
 
-    function money(n){
-      const v = (Number(n || 0) / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return v;
+  <style>
+    .hub {
+      margin: 24px auto;
+      max-width: 1100px;
+      padding: 16px 18px;
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 16px;
     }
-
-    async function fetchMe(){
-      const r = await fetch(API + '/api/me', { credentials: 'include' });
-      if (!r.ok) throw new Error('unauth');
-      return r.json();
+    .hub-title {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 800;
     }
-
-    async function logEvent(type, payload){
-      try{
-        await fetch(API + '/api/events', {
-          method:'POST',
-          credentials:'include',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify({ type, payload })
-        });
-      }catch{}
+    .hub-sub {
+      margin: 0 0 16px;
+      opacity: .7;
     }
-
-    (async () => {
-      try{
-        const j = await fetchMe();
-        if (!j.ok) throw new Error('no session');
-
-        const u = j.user || {};
-        document.getElementById('name').textContent = (u.first_name || '') + (u.last_name ? ' ' + u.last_name : '');
-        document.getElementById('hello').textContent = 'Сессия активна.';
-        if (u.avatar) document.getElementById('ava').src = u.avatar;
-        const bal = Number.isFinite(u.balance) ? u.balance : 0;
-        document.getElementById('balance').textContent = 'Баланс: ' + money(bal);
-
-        logEvent('page_view', { page: 'lobby' });
-      }catch(e){
-        document.getElementById('hello').textContent = 'Сессия не найдена. Вернись на главную и войди заново.';
-      }
-    })();
-  </script>
+    .hub-row.one {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .game-card {
+      display: block;
+      padding: 16px;
+      background: #12151b;
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 14px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color .1s ease, transform .06s ease;
+    }
+    .game-card:hover {
+      border-color: rgba(35,178,109,.45);
+    }
+    .game-card:active {
+      transform: translateY(1px);
+    }
+    .game-card-title {
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .game-card-desc {
+      opacity: .75;
+    }
+  </style>
 </body>
 </html>
-
