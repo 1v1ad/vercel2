@@ -4,6 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Дуэль — комната ожидания</title>
+  <script>
+    (function () {
+      const has = k => !!localStorage.getItem(k) || document.cookie.includes(k + '=');
+      const authed =
+        has('session_jwt') || has('gg_user') || has('vk_access_token') || has('vk_user');
+      if (!authed) {
+        const next = encodeURIComponent(location.pathname + location.search);
+        location.replace('/index.html?next=' + next);
+      }
+    })();
+  </script>
   <style>
     :root { --bg:#0e1014; --panel:#161a21; --accent:#23b26d; --text:#e7f0e9; --muted:#9aa3a8; }
     html,body{height:100%} body{margin:0;background:radial-gradient(80% 60% at 50% 0%,#13161c,#0b0d10);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
@@ -32,13 +43,13 @@
       </div>
     </div>
   </div>
-
   <script>
     const url = new URL(location.href);
     const stake = url.searchParams.get('stake') || sessionStorage.getItem('duel_stake') || '—';
     document.getElementById('stakeBox').textContent = `Ставка: ${stake} ₽`;
     const invite = `${location.origin}/duel.html?ref=invite`;
-    document.getElementById('inviteBtn').href = `https://t.me/share/url?url=${encodeURIComponent(invite)}&text=${encodeURIComponent('Залетай в дуэль на ' + stake + ' ₽')}`;
+    document.getElementById('inviteBtn').href =
+      `https://t.me/share/url?url=${encodeURIComponent(invite)}&text=${encodeURIComponent('Залетай в дуэль на ' + stake + ' ₽')}`;
   </script>
 </body>
 </html>

@@ -3,82 +3,59 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Лобби</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Лобби — GG Room</title>
+  <script>
+    (function () {
+      const has = k => !!localStorage.getItem(k) || document.cookie.includes(k + '=');
+      const authed =
+        has('session_jwt') || has('gg_user') || has('vk_access_token') || has('vk_user');
+      if (!authed) {
+        const next = encodeURIComponent(location.pathname + location.search);
+        location.replace('/index.html?next=' + next);
+      }
+    })();
+  </script>
+  <style>
+    :root { --bg:#0f1115; --panel:#171a20; --text:#e7f0e9; --muted:#9aa3a8; --accent:#23b26d; --stroke:rgba(255,255,255,.06); }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(80% 60% at 50% 0%, #13161c, #0b0d10);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+    .panel{background:rgba(255,255,255,.02);border:1px solid var(--stroke);border-radius:16px;padding:16px 18px}
+    h2{margin:0 0 6px;font-size:22px;font-weight:800}
+    .sub{margin:0 0 16px;color:var(--muted)}
+    .games{display:grid;grid-template-columns:1fr;gap:14px}
+    .game-card{position:relative;display:block;border-radius:14px;border:1px solid var(--stroke);overflow:hidden;background:#12151b;color:inherit;text-decoration:none;transition:transform .06s ease,border-color .1s ease}
+    .game-card:hover{border-color:rgba(35,178,109,.45)}
+    .game-card:active{transform:translateY(1px)}
+    .card-banner{position:relative}
+    .card-banner img{display:block;width:100%;max-height:220px;object-fit:cover;filter:saturate(.95) brightness(.95)}
+    .card-strip{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:linear-gradient(180deg,#1d7f4b,#0f5f37);color:#e8ffe8;padding:10px 22px;border-radius:10px;font-weight:800;font-size:clamp(18px,3.5vw,28px);border:1px solid rgba(0,0,0,.35);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+    .card-body{padding:14px 16px}
+    .card-title{font-weight:800;margin:0 0 6px}
+    .card-desc{margin:0;color:var(--muted)}
+    .back{display:inline-block;margin-top:12px;color:inherit;opacity:.85;text-decoration:none}
+  </style>
 </head>
 <body>
-  <header>
-    <!-- твой существующий хедер -->
-  </header>
-
-  <main>
-    <section class="hub">
-      <h2 class="hub-title">Главное лобби</h2>
-      <p class="hub-sub">
-        Турниры, кэш-игры и акции в одном месте. История операций появится тут же.
-      </p>
-
-      <div class="hub-row one">
-        <a href="/duel.html" class="game-card">
-          <div class="game-card-title">Дуэль 1 на 1</div>
-          <div class="game-card-desc">
-            Создай комнату и выбери ставку: 100 · 250 · 500 · 1 000 · 5 000 · 10 000 ₽
+  <main class="wrap">
+    <section class="panel">
+      <h2>Главное лобби</h2>
+      <p class="sub">Турниры, кэш-игры и акции в одном месте. История операций появится тут же.</p>
+      <div class="games">
+        <a class="game-card" href="/duel.html">
+          <div class="card-banner">
+            <img src="/assets/final-table.png" alt="Дуэль 1 на 1">
+            <div class="card-strip">Дуэль 1 на 1</div>
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">Дуэль 1 на 1</h3>
+            <p class="card-desc">Выбери ставку: 100 · 250 · 500 · 1 000 · 5 000 · 10 000 ₽</p>
           </div>
         </a>
       </div>
+      <a class="back" href="/index.html">↩ На главную</a>
     </section>
   </main>
-
-  <footer>
-    <!-- твой существующий футер -->
-  </footer>
-
-  <style>
-    .hub {
-      margin: 24px auto;
-      max-width: 1100px;
-      padding: 16px 18px;
-      background: rgba(255,255,255,.02);
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 16px;
-    }
-    .hub-title {
-      margin: 0 0 6px;
-      font-size: 22px;
-      font-weight: 800;
-    }
-    .hub-sub {
-      margin: 0 0 16px;
-      opacity: .7;
-    }
-    .hub-row.one {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-    .game-card {
-      display: block;
-      padding: 16px;
-      background: #12151b;
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 14px;
-      text-decoration: none;
-      color: inherit;
-      transition: border-color .1s ease, transform .06s ease;
-    }
-    .game-card:hover {
-      border-color: rgba(35,178,109,.45);
-    }
-    .game-card:active {
-      transform: translateY(1px);
-    }
-    .game-card-title {
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-    .game-card-desc {
-      opacity: .75;
-    }
-  </style>
 </body>
 </html>
