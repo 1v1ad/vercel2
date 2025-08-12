@@ -128,6 +128,7 @@
                       <td>${escapeHtml(u.first_name ?? '')}</td>
                       <td>${escapeHtml(u.last_name ?? '')}</td>
                       <td>${u.balance ?? 0}</td>
+                      <td title="${u.country_code || ''}">${flagFromCC(u.country_code)} ${u.country_name || u.country_code || ''}</td>
                       <td>${fmtDate(u.created_at)}</td>`;
       tbody.appendChild(tr);
     }
@@ -155,7 +156,15 @@
   }
 
   // Helpers
-  function fmtDate(str) {
+  
+function flagFromCC(cc) {
+  if (!cc || cc.length !== 2) return '';
+  const A = 0x1F1E6;
+  const a = cc.toUpperCase();
+  return String.fromCodePoint(A + (a.charCodeAt(0) - 65)) +
+         String.fromCodePoint(A + (a.charCodeAt(1) - 65));
+}
+function fmtDate(str) {
     if (!str) return '';
     const d = new Date(str);
     return d.toLocaleString();
