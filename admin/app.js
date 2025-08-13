@@ -1,4 +1,4 @@
-// Admin UI logic with FlagCDN flags + mobile chart height
+// Admin UI logic with FlagCDN flags
 (() => {
   const $ = (id) => document.getElementById(id);
 
@@ -106,8 +106,7 @@
         scales: { y: { beginAtZero: true } }
       }
     });
-    const h = (window.innerWidth < 480) ? 260 : 320;
-    ctx.parentElement.style.height = h + 'px';
+    ctx.parentElement.style.height = '320px';
   }
 
   // Users table
