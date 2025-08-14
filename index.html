@@ -34,7 +34,7 @@
       pointer-events:none;
     }
 
-    h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800 color:var(--gold);}
+    h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800 color:var(--gold); color:var(--gold); text-align:center; margin-left:auto; margin-right:auto;}
     .lead{margin:0 0 18px; color:var(--muted)}
     .btn{width:100%; border:0; border-radius:12px; padding:16px 18px; font-size:16px; font-weight:700; cursor:pointer}
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
@@ -53,6 +53,14 @@
     .card-media img{ display:block; width:100%; height:auto }
     @media (max-width: 480px){
       .card::before{ --borderw:2px }
+    /* Crop bottom of the image on desktop; keep full on mobile */
+    .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
+    .card-media picture, .card-media img{ display:block; width:100%; height:auto }
+    @media (min-width: 980px){
+      .card-media{ height: 380px; } /* tune if нужно выше/ниже */
+      .card-media picture, .card-media img{ height:100%; object-fit:cover; object-position:center top; }
+    }
+
       .card-media{ margin:14px -16px -24px }
     }
 
