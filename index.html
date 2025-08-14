@@ -6,7 +6,7 @@
   <title>GG Room</title>
   <style>
     :root{
-      --bg:#0b0d12; --bg2:#11151d; --card:#0f131a; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
+      --bg:#0b0d12; --bg2:#11151d; --card:#000000; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
       --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px;
     }
     *{box-sizing:border-box}
@@ -31,7 +31,7 @@
       -webkit-mask-composite:xor; mask-composite:exclude;
       pointer-events:none; /* чтобы рамка не блокировала клики */
     }
-    h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800}
+    h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800 color:var(--gold);}
     .lead{margin:0 0 18px; color:var(--muted)}
     .btn{width:100%; border:0; border-radius:12px; padding:16px 18px; font-size:16px; font-weight:700; cursor:pointer}
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
@@ -39,6 +39,11 @@
     .badges{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
     .badge{border:1px solid var(--border); color:var(--gold); background:rgba(247,228,164,.06); padding:6px 10px; border-radius:999px; font-size:12px}
     .status{margin-top:12px; color:var(--muted); min-height:1.2em}
+  
+    @media (max-width: 480px){
+      h1{font-size:18px; white-space:nowrap}
+    }
+
   </style>
 </head>
 <body>
@@ -46,16 +51,15 @@
 
   <main class="wrap">
     <section class="card">
-      <h1>Войдите и начните выигрывать</h1>
-      <p class="lead">Авторизация через VK&nbsp;ID. После входа отправим вас в лобби.</p>
+      <h1>Войдите и начните выигрывать!</h1>
+      <p class="lead">&nbsp;</p>
 
       <button class="btn vk" id="login">Войти через VK ID</button>
-      <div class="hint">Если «Продолжить как …» не появилось — нажмите кнопку выше.</div>
 
       <p class="status" id="status"></p>
 
       <div class="badges">
-        <div class="badge">WSOP Online</div>
+        <div class="badge">Розыгрыши</div>
         <div class="badge">Гарантии призов</div>
         <div class="badge">Турниры 24/7</div>
       </div>
