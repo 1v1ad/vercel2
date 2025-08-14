@@ -39,6 +39,9 @@
     .badges{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
     .badge{border:1px solid var(--border); color:var(--gold); background:rgba(247,228,164,.06); padding:6px 10px; border-radius:999px; font-size:12px}
     .status{margin-top:12px; color:var(--muted); min-height:1.2em}
+  
+    .hero-chest{display:block; width:min(520px,92%); margin:22px auto -8px; filter: drop-shadow(0 12px 30px rgba(0,0,0,.6));}
+    @media (max-width:480px){ .hero-chest{width:95%; margin:18px auto -6px;} }
   </style>
 </head>
 <body>
@@ -46,20 +49,20 @@
 
   <main class="wrap">
     <section class="card">
-      <h1>Войдите и начните выигрывать</h1>
-      <p class="lead">Авторизация через VK&nbsp;ID. После входа отправим вас в лобби.</p>
-
-      <button class="btn vk" id="login">Войти через VK ID</button>
+      <h1>Войдите и начните выигрывать!</h1>
+<button class="btn vk" id="login">Войти через VK ID</button>
       <div class="hint">Если «Продолжить как …» не появилось — нажмите кнопку выше.</div>
 
       <p class="status" id="status"></p>
 
       <div class="badges">
-        <div class="badge">WSOP Online</div>
+        <div class="badge">Розыгрыши</div>
         <div class="badge">Гарантии призов</div>
         <div class="badge">Турниры 24/7</div>
       </div>
-    </section>
+    
+      <img src="images/login-chest.png" alt="Призовой сундук" class="hero-chest" />
+</section>
   </main>
 
   <script>
