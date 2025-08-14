@@ -1,88 +1,118 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GG Room</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GG ROOM — Вход</title>
+  <meta name="color-scheme" content="dark" />
   <style>
     :root{
-      --bg:#0b0d12; --bg2:#11151d; --card:#0f131a; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
-      --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px;
+      --bg: #0c1016;
+      --card: #0f131a;
+      --card-stroke: rgba(255,255,255,.06);
+      --text: #e8eefc;
+      --muted: #aab6cf;
+      --badge-bg: rgba(255,255,255,.05);
+      --badge-fg: #c9d4ea; /* цвет как у бейджа «Розыгрыши» */
+      --accent: #287cff;
+      --accent-press: #1f68d6;
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
     body{
-      margin:0; background:radial-gradient(1200px 600px at 50% -10%, #171b24 0%, #0b0d12 55%, #090b10 100%);
-      color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      display:flex; flex-direction:column;
+      margin:0; background: radial-gradient(1000px 600px at 50% 0%, #0c1016 0%, #0b0f15 50%, #0a0e14 100%), var(--bg);
+      color:var(--text); font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      min-height:100dvh; display:flex; flex-direction:column; align-items:center;
     }
-    header{display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)}
-    header b{color:var(--gold); letter-spacing:.4px}
-    .wrap{flex:1; display:grid; place-items:center; padding:40px 16px}
+    header{ padding:18px 20px; width:100%; text-align:center; letter-spacing:.4px; color:#f6f7fb; opacity:.9; font-weight:700 }
+    .wrap{ width:min(820px, 92%); margin:20px auto 64px; }
     .card{
-      width:min(520px,100%); background:linear-gradient(180deg, var(--card), var(--bg2));
-      border-radius:var(--radius); padding:28px 24px; border:1px solid var(--border); position:relative;
-      box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.02);
+      background: var(--card);
+      border: 1px solid var(--card-stroke);
+      border-radius: 16px;
+      padding: 22px 24px 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-    .card::before{
-      content:""; position:absolute; inset:-1px; border-radius:calc(var(--radius) + 1px);
-      padding:1px; background:linear-gradient(135deg, rgba(247,228,164,.35), rgba(92,76,28,.1) 45%, rgba(247,228,164,.2));
-      -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-      -webkit-mask-composite:xor; mask-composite:exclude;
-      pointer-events:none; /* чтобы рамка не блокировала клики */
+    h1{
+      margin:0 0 12px;
+      font-weight:800;
+      font-size: 26px;       /* меньше, как просил */
+      color: var(--badge-fg); /* цвет как у «Розыгрыши» */
+      text-align: center;
+      letter-spacing:.2px;
     }
-    h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800}
-    .lead{margin:0 0 18px; color:var(--muted)}
-    .btn{width:100%; border:0; border-radius:12px; padding:16px 18px; font-size:16px; font-weight:700; cursor:pointer}
-    .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
-    .hint{margin-top:10px; text-align:center; color:var(--muted); font-size:12.5px}
-    .badges{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
-    .badge{border:1px solid var(--border); color:var(--gold); background:rgba(247,228,164,.06); padding:6px 10px; border-radius:999px; font-size:12px}
-    .status{margin-top:12px; color:var(--muted); min-height:1.2em}
-  
-    .hero-chest{display:block; width:min(520px,92%); margin:22px auto -8px; filter: drop-shadow(0 12px 30px rgba(0,0,0,.6));}
-    @media (max-width:480px){ .hero-chest{width:95%; margin:18px auto -6px;} }
+    .btn.vk{
+      display:block; width:100%; max-width:420px; margin:14px auto 8px; /* добавил «пробел» до кнопки */
+      background: var(--accent); color:#fff; border:0; border-radius:10px;
+      font-weight:700; padding:12px 18px; cursor:pointer;
+    }
+    .btn.vk:hover{ background: var(--accent-press); }
+    .hint{ text-align:center; color:var(--muted); font-size:14px; margin-top:2px }
+    .badges{ display:flex; gap:10px; justify-content:center; margin:14px 0 12px; flex-wrap:wrap }
+    .badge{
+      background: var(--badge-bg);
+      color: var(--badge-fg);
+      border:1px solid rgba(255,255,255,.07);
+      padding:6px 10px; border-radius:10px; font-size:13px;
+      backdrop-filter: blur(2px);
+    }
+    .promo{
+      background: rgba(255,255,255,.03);
+      border:1px solid var(--card-stroke);
+      border-radius:12px;
+      padding:6px 6px 10px;
+      margin-top:8px;
+    }
+    .hero-chest{
+      display:block;
+      width:min(520px,92%);
+      margin:22px auto -8px;
+      filter: drop-shadow(0 12px 30px rgba(0,0,0,.6));
+      image-rendering:auto;
+      transform: translateZ(0); /* сглаживает субпиксельные стыки */
+    }
+    @media (max-width:480px){
+      .card{ padding:18px 16px 16px; border-radius:14px }
+      .btn.vk{ max-width:100% }
+      .hero-chest{ width:95%; margin:18px auto -6px; }
+    }
   </style>
 </head>
 <body>
-  <header><b>GG ROOM</b></header>
+  <header>GG ROOM</header>
 
   <main class="wrap">
     <section class="card">
       <h1>Войдите и начните выигрывать!</h1>
-<button class="btn vk" id="login">Войти через VK ID</button>
-      <div class="hint">Если «Продолжить как …» не появилось — нажмите кнопку выше.</div>
 
-      <p class="status" id="status"></p>
+      <button class="btn vk" id="login">Войти через VK ID</button>
+      <div class="hint">Если «Продолжить как …» не появилось — нажмите кнопку выше.</div>
 
       <div class="badges">
         <div class="badge">Розыгрыши</div>
         <div class="badge">Гарантии призов</div>
         <div class="badge">Турниры 24/7</div>
       </div>
-    
-      <img src="images/login-chest.png" alt="Призовой сундук" class="hero-chest" />
-</section>
+
+      <div class="promo">
+        <picture>
+          <source srcset="images/login-chest-feather.webp" type="image/webp">
+          <img src="images/login-chest-feather.png" alt="Призовой сундук" class="hero-chest">
+        </picture>
+      </div>
+    </section>
   </main>
 
   <script>
-    const API = 'https://vercel2pr.onrender.com';
+    // Не ломаем логику авторизации — тот же механизм:
+    const BACKEND = localStorage.getItem('backend_url') || 'https://vercel2pr.onrender.com';
+    document.getElementById('login').addEventListener('click', () => {
+      window.location.href = BACKEND + '/api/auth/vk/start';
+    });
 
-    // Кнопка авторизации
-    document.getElementById('login').onclick = () => {
-      window.location.href = API + '/api/auth/vk/start';
-    };
-
-    // Автоматический переход в лобби после успешного возврата (?logged=1)
-    (function handleLoggedRedirect(){
-      const params = new URLSearchParams(location.search);
-      if (params.get('logged') === '1') {
-        const st = document.getElementById('status');
-        st.textContent = 'Готово: авторизован. Переходим в лобби...';
-        // Чуть-чуть подождём, чтобы пользователь увидел статус
-        setTimeout(() => { window.location.href = '/lobby.html'; }, 500);
-      }
-    })();
+    // Если вернулись с успешной авторизацией — можно дернуть метку/очистить query:
+    if (new URLSearchParams(location.search).has('logged')) {
+      history.replaceState({}, '', location.pathname);
+    }
   </script>
 </body>
 </html>
