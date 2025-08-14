@@ -21,7 +21,7 @@
     .wrap{flex:1; display:grid; place-items:center; padding:40px 16px}
     .card{
       width:min(520px,100%); background:linear-gradient(180deg, var(--card), var(--bg2));
-      border-radius:var(--radius); padding:28px 24px; border:1px solid var(--border); position:relative;
+      border-radius:var(--radius); padding:28px 24px; border:1px solid rgba(247,228,164,.35); position:relative;
       box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.02);
     }
     .card::before{
@@ -37,11 +37,16 @@
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
     .hint{margin-top:10px; text-align:center; color:var(--muted); font-size:12.5px}
     .badges{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
-    .badge{border:1px solid var(--border); color:var(--gold); background:rgba(247,228,164,.06); padding:6px 10px; border-radius:999px; font-size:12px}
+    .badge{border:1px solid rgba(247,228,164,.35); color:var(--gold); background:rgba(247,228,164,.06); padding:6px 10px; border-radius:999px; font-size:12px}
     .status{margin-top:12px; color:var(--muted); min-height:1.2em}
   
     @media (max-width: 480px){
       h1{font-size:18px; white-space:nowrap}
+    }
+
+    @media (max-width: 480px){
+      .badges{flex-wrap:nowrap; gap:6px}
+      .badge{font-size:11px; padding:6px 8px}
     }
 
   </style>
