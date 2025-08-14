@@ -49,7 +49,7 @@
       .badge{font-size:11px; padding:6px 8px}
     }
 
-    .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
+    .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden  background:#000; position:relative}
     .card-media img{ display:block; width:100%; height:auto }
     @media (max-width: 480px){
       .card::before{ --borderw:2px }
@@ -61,6 +61,12 @@
     }
 
       .card-media{ margin:14px -16px -24px }
+    }
+
+    .card-media::after{
+      content:""; position:absolute; left:0; right:0; top:0; height:16px;
+      background:linear-gradient(to bottom, #000 0%, #000 70%, rgba(0,0,0,0) 100%);
+      pointer-events:none;
     }
 
   </style>
