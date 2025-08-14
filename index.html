@@ -56,9 +56,8 @@
     /* Crop bottom of the image on desktop; keep full on mobile */
     .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
     .card-media picture, .card-media img{ display:block; width:100%; height:auto }
-    @media (min-width: 980px){
-      .card-media{ height: 380px; } /* tune if нужно выше/ниже */
-      .card-media picture, .card-media img{ height:100%; object-fit:cover; object-position:center top; }
+    @media (min-width: 980px){ .card-media{ height: 320px; } /* tune if нужно выше/ниже */
+      .card-media picture, .card-media img{ height:100%; object-fit:cover; object-position:center 15%; }
     }
 
       .card-media{ margin:14px -16px -24px }
