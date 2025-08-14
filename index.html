@@ -24,15 +24,16 @@
       border-radius:var(--radius); padding:28px 24px; border:1px solid rgba(247,228,164,.35); position:relative;
       box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.02);
     }
+    
     .card::before{
       content:""; position:absolute; inset:0; border-radius:calc(var(--radius) + 0px);
-      --borderw:1px;
-      padding:var(--borderw);
+      --borderw:1px; padding:var(--borderw);
       background:linear-gradient(135deg, rgba(247,228,164,.8), rgba(247,228,164,.35) 45%, rgba(247,228,164,.6));
       -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
       -webkit-mask-composite:xor; mask-composite:exclude;
       pointer-events:none;
     }
+
     h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800 color:var(--gold);}
     .lead{margin:0 0 18px; color:var(--muted)}
     .btn{width:100%; border:0; border-radius:12px; padding:16px 18px; font-size:16px; font-weight:700; cursor:pointer}
@@ -44,9 +45,6 @@
   
     @media (max-width: 480px){
       h1{font-size:18px; white-space:nowrap}
-    }
-
-    @media (max-width: 480px){
       .badges{flex-wrap:nowrap; gap:6px}
       .badge{font-size:11px; padding:6px 8px}
     }
@@ -55,7 +53,7 @@
     .card-media img{ display:block; width:100%; height:auto }
     @media (max-width: 480px){
       .card::before{ --borderw:2px }
-      .card-media{ margin:14px -16px -24px } /* чуть меньше поля на мобиле */
+      .card-media{ margin:14px -16px -24px }
     }
 
   </style>
@@ -79,7 +77,15 @@
       </div>
 
       <div class="card-media">
-        <img src="assets/prize-chest.png" alt="Призовой сундук">
+        <picture>
+          <source type="image/webp"
+                  srcset="assets/prize-chest-500w.webp 500w, assets/prize-chest-700w.webp 700w, assets/prize-chest-900w.webp 900w"
+                  sizes="(max-width: 480px) 100vw, 640px">
+          <source type="image/png"
+                  srcset="assets/prize-chest-500w.png 500w, assets/prize-chest-700w.png 700w, assets/prize-chest-900w.png 900w"
+                  sizes="(max-width: 480px) 100vw, 640px">
+          <img src="assets/prize-chest.png" alt="Призовой сундук" loading="lazy" decoding="async">
+        </picture>
       </div>
     </section>
   </main>
