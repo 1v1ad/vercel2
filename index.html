@@ -13,35 +13,50 @@
       --text: #e8eefc;
       --muted: #aab6cf;
       --badge-bg: rgba(255,255,255,.05);
-      --badge-fg: #c9d4ea; /* цвет как у бейджа «Розыгрыши» */
+      --badge-fg: #c9d4ea;           /* цвет бейджа «Розыгрыши» */
       --accent: #287cff;
       --accent-press: #1f68d6;
     }
     *{box-sizing:border-box}
     body{
-      margin:0; background: radial-gradient(1000px 600px at 50% 0%, #0c1016 0%, #0b0f15 50%, #0a0e14 100%), var(--bg);
-      color:var(--text); font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      min-height:100dvh; display:flex; flex-direction:column; align-items:center;
+      margin:0;
+      background: radial-gradient(1000px 600px at 50% 0%, #0c1016 0%, #0b0f15 50%, #0a0e14 100%), var(--bg);
+      color:var(--text);
+      font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      min-height:100dvh;
+      display:flex; flex-direction:column; align-items:center;
     }
-    header{ padding:18px 20px; width:100%; text-align:center; letter-spacing:.4px; color:#f6f7fb; opacity:.9; font-weight:700 }
-    .wrap{ width:min(820px, 92%); margin:20px auto 64px; }
+    header{
+      padding:18px 20px; width:100%; text-align:center;
+      letter-spacing:.4px; color:#f6f7fb; opacity:.9; font-weight:700
+    }
+    /* Центровка карточки по экрану */
+    .wrap{
+      width:min(820px, 92%);
+      margin:0 auto;
+      min-height:calc(100dvh - 80px); /* минус высота хедера */
+      display:grid;
+      place-items:center;
+    }
     .card{
       background: var(--card);
       border: 1px solid var(--card-stroke);
       border-radius: 16px;
       padding: 22px 24px 24px;
       box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      width:100%;
     }
     h1{
       margin:0 0 12px;
       font-weight:800;
-      font-size: 26px;       /* меньше, как просил */
-      color: var(--badge-fg); /* цвет как у «Розыгрыши» */
-      text-align: center;
+      font-size: 26px;            /* меньше размера */
+      color: var(--badge-fg);      /* как у «Розыгрыши» */
+      text-align:center;
       letter-spacing:.2px;
     }
     .btn.vk{
-      display:block; width:100%; max-width:420px; margin:14px auto 8px; /* добавил «пробел» до кнопки */
+      display:block; width:100%; max-width:420px;
+      margin:14px auto 8px;        /* добавлен отступ перед кнопкой */
       background: var(--accent); color:#fff; border:0; border-radius:10px;
       font-weight:700; padding:12px 18px; cursor:pointer;
     }
@@ -95,21 +110,21 @@
 
       <div class="promo">
         <picture>
-          <source srcset="images/login-chest-feather.webp" type="image/webp">
-          <img src="images/login-chest-feather.png" alt="Призовой сундук" class="hero-chest">
+          <source srcset="images/login-chest-transparent-feather.webp" type="image/webp">
+          <img src="images/login-chest-transparent-feather.png" alt="Призовой сундук" class="hero-chest">
         </picture>
       </div>
     </section>
   </main>
 
   <script>
-    // Не ломаем логику авторизации — тот же механизм:
+    // URL бэкенда можно менять в админке — здесь читаем из localStorage
     const BACKEND = localStorage.getItem('backend_url') || 'https://vercel2pr.onrender.com';
     document.getElementById('login').addEventListener('click', () => {
       window.location.href = BACKEND + '/api/auth/vk/start';
     });
 
-    // Если вернулись с успешной авторизацией — можно дернуть метку/очистить query:
+    // После успешного входа лобби может прислать ?logged=1 — чистим query
     if (new URLSearchParams(location.search).has('logged')) {
       history.replaceState({}, '', location.pathname);
     }
