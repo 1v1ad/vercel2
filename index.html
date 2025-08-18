@@ -3,89 +3,86 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GG ROOM</title>
-  <meta name="color-scheme" content="dark light"/>
-
+  <title>GG Room</title>
   <style>
     :root{
-      --bg:#0b0d12; --bg2:#11151d; --card:#0d1117; --text:#e8eaf0; --muted:#98a2b3;
-      --vk:#2787F5; --gold:#f4d88a; --border:rgba(255,255,255,.08); --radius:18px;
-      --btnh:52px;
+      --bg:#0b0d12; --bg2:#11151d; --card:#000000; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
+      --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px; --btnh:52px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; color:var(--text);
-      background:radial-gradient(1200px 600px at 50% -10%, #171b24 0%, #0b0d12 55%, #090b10 100%);
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin:0; background:radial-gradient(1200px 600px at 50% -10%, #171b24 0%, #0b0d12 55%, #090b10 100%);
+      color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display:flex; flex-direction:column;
     }
+    header{
+      display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)
+    }
+    header b{color:var(--gold); letter-spacing:.4px}
 
-    header{max-width:980px; margin:24px auto 0; padding:0 16px; font-weight:700; letter-spacing:.04em; color:#cfd6e4}
-    header b{color:#fff}
-
-    .wrap{max-width:980px; margin:16px auto; padding:0 16px}
+    .wrap{flex:1; display:grid; place-items:center; padding:40px 16px}
     .card{
-      margin:24px auto; max-width:640px; background:linear-gradient(180deg, #0f141c 0%, #0b0f16 100%);
-      border:1px solid var(--border); border-radius:var(--radius); position:relative; padding:24px;
-      box-shadow: 0 10px 40px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.02);
+      overflow:hidden; width:min(520px,100%); background:var(--card);
+      border-radius:var(--radius); padding:28px 24px; border:1px solid rgba(247,228,164,.35); position:relative;
+      box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.02);
     }
     .card::before{
-      content:""; position:absolute; inset:-1px; border-radius:calc(var(--radius) + 1px);
-      pointer-events:none; background:
-        linear-gradient(180deg, rgba(247,228,164,.25), rgba(247,228,164,0) 35%) border-box;
-      -webkit-mask:
-        linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
-      -webkit-mask-composite: xor; mask-composite: exclude;
-      border:1px solid transparent;
+      content:""; position:absolute; inset:0; border-radius:calc(var(--radius) + 0px);
+      --borderw:1px; padding:var(--borderw);
+      background:linear-gradient(135deg, rgba(247,228,164,.8), rgba(247,228,164,.35) 45%, rgba(247,228,164,.6));
+      -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite:xor; mask-composite:exclude;
+      pointer-events:none;
     }
 
-    h1{margin:6px 0 14px; font-size:24px; font-weight:800; color:#ffe9a6; text-shadow:0 0 12px rgba(247,228,164,.15)}
-    .lead{margin:0 0 10px; color:var(--muted)}
+    h1{
+      margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800;
+      color:var(--gold); text-align:center; margin-left:auto; margin-right:auto;
+    }
+    .lead{margin:0 0 18px; color:var(--muted)}
 
     /* Кнопки */
     .btn{
-      display:block; width:100%; height:var(--btnh); border-radius:12px; border:0; cursor:pointer;
-      font-weight:700; letter-spacing:.01em; transition:transform .06s ease, box-shadow .12s ease, filter .12s ease;
-      box-shadow:0 6px 18px rgba(0,0,0,.25);
+      width:100%; height:var(--btnh); border:0; border-radius:12px; font-size:16px;
+      font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;
     }
-    .btn:active{transform:translateY(1px)}
-    .btn.vk{background:var(--vk); color:#fff}
-    .btn.vk:hover{filter:brightness(1.04)}
-    .btn.tg-shell{background:transparent; padding:0}
+    .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* Контейнер под виджет TG */
-    #tg-login{display:block; width:100%; height:var(--btnh); margin-top:10px; position:relative}
-    #tg-login iframe{
-      position:absolute; inset:0; width:100% !important; height:100% !important;
-      border:0; border-radius:12px !important; overflow:hidden;
-      /* тени как у VK-кнопки */
-      box-shadow:0 6px 18px rgba(0,0,0,.25);
+    /* TG-контейнер: по размеру как VK, содержимое по центру */
+    .tg-wrap{
+      margin-top:10px; width:100%; height:var(--btnh);
+      display:flex; align-items:center; justify-content:center;
+      border-radius:12px; position:relative;
+      /* тень как у VK для визуального паритета */
+      box-shadow:0 8px 24px rgba(0,0,0,.25);
+      background:rgba(255,255,255,.04);
+    }
+    .tg-wrap iframe{
+      border:0; width:auto !important; height:100% !important;
+      border-radius:12px !important;
     }
 
     .status{margin-top:12px; color:var(--muted); min-height:1.2em}
 
-    .badges{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap}
+    .badges{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
     .badge{border:1px solid rgba(247,228,164,.35); color:var(--gold); background:rgba(247,228,164,.06);
       padding:6px 10px; border-radius:999px; font-size:12px}
 
     .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
     .card-media picture, .card-media img{ display:block; width:100%; height:auto }
 
-    @media (min-width: 980px){
-      .card-media{ height: 320px; }
-      .card-media picture, .card-media img{ height:100%; object-fit:cover; object-position:center 15%; }
-    }
-
     @media (max-width: 480px){
+      .card::before{ --borderw:2px }
       h1{font-size:18px; white-space:nowrap}
+      .badges{flex-wrap:nowrap; gap:6px}
       .badge{font-size:11px; padding:6px 8px}
-      .card{padding:16px}
       .card-media{ margin:14px -16px -24px }
     }
   </style>
 </head>
 <body>
-  <header>GG <b>ROOM</b></header>
+  <header><b>GG ROOM</b></header>
 
   <main class="wrap">
     <section class="card">
@@ -95,8 +92,8 @@
       <!-- VK -->
       <button class="btn vk" id="login">Войти через VK ID</button>
 
-      <!-- Telegram (та же ширина/высота, виджет растянут через CSS) -->
-      <span id="tg-login">
+      <!-- Telegram: такой же контейнер по размерам, сам виджет по центру -->
+      <div class="tg-wrap" id="tg-login">
         <script async src="https://telegram.org/js/telegram-widget.js?22"
                 data-telegram-login="GGR00m_bot"
                 data-size="large"
@@ -104,7 +101,7 @@
                 data-request-access="write"
                 data-onauth="onTelegramAuth(user)">
         </script>
-      </span>
+      </div>
 
       <p class="status" id="status"></p>
 
@@ -122,28 +119,27 @@
           <source type="image/png"
                   srcset="assets/prize-chest-500w.png 500w, assets/prize-chest-700w.png 700w, assets/prize-chest-900w.png 900w"
                   sizes="(max-width: 480px) 100vw, 640px">
-          <img src="assets/prize-chest-700w.png" alt="Призовой сундук" loading="lazy" decoding="async">
+          <img src="assets/prize-chest.png" alt="Призовой сундук" loading="lazy" decoding="async">
         </picture>
       </div>
     </section>
   </main>
 
   <script>
-    // адрес API-бекенда (Render)
     const API = 'https://vercel2pr.onrender.com';
 
-    // VK → старт OAuth/OneTap
+    // VK → старт
     document.getElementById('login').onclick = () => {
       window.location.href = API + '/api/auth/vk/start';
     };
 
-    // Telegram → обработка виджета
+    // TG → обработка
     async function onTelegramAuth(user){
       try{
         const resp = await fetch(API + '/api/auth/tg', {
-          credentials: 'include',
           method:'POST',
           headers:{'Content-Type':'application/json'},
+          credentials:'include',
           body: JSON.stringify({ user })
         });
         const data = await resp.json();
@@ -161,9 +157,9 @@
                       `Объединить и перенести баланс/историю?`;
           if(confirm(msg)){
             const r2 = await fetch(API + '/api/link/merge/confirm', {
-              credentials: 'include',
               method:'POST',
               headers:{'Content-Type':'application/json'},
+              credentials:'include',
               body: JSON.stringify({ primaryId: data.primary.id, mergedId: data.merged.id })
             });
             const j2 = await r2.json();
@@ -185,7 +181,7 @@
       }
     }
 
-    // Если бек вернул нас на /?logged=1 после VK
+    // Возврат после VK (?logged=1)
     (function handleLoggedRedirect(){
       const params = new URLSearchParams(location.search);
       if (params.get('logged') === '1') {
