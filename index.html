@@ -141,6 +141,7 @@
     async function onTelegramAuth(user){
       try{
         const resp = await fetch(API + '/api/auth/tg', {
+          credentials: 'include',
           method:'POST',
           headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ user })
@@ -160,6 +161,7 @@
                       `Объединить и перенести баланс/историю?`;
           if(confirm(msg)){
             const r2 = await fetch(API + '/api/link/merge/confirm', {
+              credentials: 'include',
               method:'POST',
               headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ primaryId: data.primary.id, mergedId: data.merged.id })
