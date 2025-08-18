@@ -75,6 +75,19 @@
 
       <button class="btn vk" id="login">Войти через VK ID</button>
 
+      <div style="margin-top:10px;">
+        <span id="tg-login">
+          <script async src="https://telegram.org/js/telegram-widget.js?22"
+                  data-telegram-login="GGR00m_bot"
+                  data-size="large"
+                  data-userpic="false"
+                  data-request-access="write"
+                  data-onauth="onTelegramAuth">
+          </script>
+        </span>
+      </div>
+
+
       <p class="status" id="status"></p>
 
       <div class="badges">
@@ -116,5 +129,46 @@
       }
     })();
   </script>
+
+
+<script>
+async function onTelegramAuth(user){
+  try{
+    const resp = await fetch('/api/auth/tg', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ user })
+    });
+    const data = await resp.json();
+    const s = document.getElementById('status');
+    if(!data.ok){ s.textContent = 'TG вход: ' + (data.error||'ошибка'); return; }
+    if(data.mergeNeeded && data.primary && data.merged){
+      const msg = `Найден второй профиль.\n` +
+                  `Primary(ID ${data.primary.id}) баланс=${data.primary.balance} ₽\n` +
+                  `Merged (ID ${data.merged.id}) баланс=${data.merged.balance} ₽\n` +
+                  `Объединить и перенести баланс/историю?`;
+      if(confirm(msg)){
+        const r2 = await fetch('/api/link/merge/confirm', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ primaryId: data.primary.id, mergedId: data.merged.id })
+        });
+        const j2 = await r2.json();
+        if(j2.ok){ s.textContent = 'Объединено'; } else { s.textContent = 'Не удалось объединить'; }
+      } else {
+        s.textContent = 'Объединение отменено';
+      }
+      return;
+    }
+    if(data.token) localStorage.setItem('session', data.token);
+    s.textContent = 'TG авторизация успешна';
+    setTimeout(()=>location.href='lobby.html', 600);
+  }catch(e){
+    document.getElementById('status').textContent = 'TG вход: ошибка сети';
+  }
+}
+</script>
+
+
 </body>
 </html>
