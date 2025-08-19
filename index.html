@@ -23,7 +23,7 @@
     header{display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)}
     header b{color:var(--gold); letter-spacing:.4px; font-weight:800}
     header b .gg{color:var(--gold-strong); text-shadow:0 0 10px rgba(255,215,106,.25)}
-    .wrap{flex:1; display:grid; place-items:center; padding:20px 16px 40px;} /* верхний отступ уменьшен на 50% */
+    .wrap{flex:1; display:grid; place-items:center; padding:20px 16px 40px;}
     .card{
       overflow:hidden;
       width:min(520px,100%); background:var(--card);
@@ -51,10 +51,17 @@
     }
     .btn__icon{width:24px; height:24px; flex:0 0 24px; display:inline-block}
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
-    .btn.vk .btn__icon{width:31px; height:31px; flex-basis:31px;} /* +30% к размеру логотипа VK */
+    .btn.vk .btn__icon{width:31px; height:31px; flex-basis:31px;} /* VK логотип +30% */
 
-    .tg-auth{display:flex; align-items:center; justify-content:flex-start; min-height:52px}
-    .btn.tg{background:var(--tg); color:#fff; box-shadow:0 8px 24px rgba(42,171,238,.25); display:none}
+    /* ВЫРАВНИВАНИЕ ВИДЖЕТА TG ПО ЦЕНТРУ */
+    .tg-auth{
+      display:flex; align-items:center; justify-content:center; /* было flex-start */
+      min-height:52px;
+    }
+    .tg-auth iframe{display:block; margin:0 auto !important;} /* центрируем сам iframe */
+
+    /* Fallback */
+    .btn.tg{background:var(--tg); color:#fff; box-shadow:0 8px 24px rgba(42,171,238,.25); display:none; width:auto; margin:0 auto;}
 
     .status{margin-top:8px; color:var(--muted); min-height:1.2em}
 
@@ -67,9 +74,9 @@
       .badge{font-size:11px; padding:6px 8px}
     }
 
-    /* КАРТИНКА С СУНДУКОМ: без обрезания на десктопе */
+    /* КАРТИНКА БЕЗ ОБРЕЗАНИЯ */
     .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
-    .card-media picture, .card-media img{ display:block; width:100%; height:auto; object-fit:contain; } /* показываем целиком */
+    .card-media picture, .card-media img{ display:block; width:100%; height:auto; object-fit:contain; }
 
     @media (max-width: 480px){
       .card::before{ --borderw:2px }
@@ -134,16 +141,13 @@
   </main>
 
   <script>
-    // ====== НАСТРОЙКИ ======
     const API = 'https://vercel2pr.onrender.com';
-    const TG_BOT_ID = 8236271394; // bot_id из @BotFather
+    const TG_BOT_ID = 8236271394;
 
-    // ====== VK: start OAuth ======
     document.getElementById('vk-login').onclick = () => {
       window.location.href = API + '/api/auth/vk/start';
     };
 
-    // ====== Telegram fallback ======
     function showTgFallback() {
       const w = document.getElementById('tg-auth');
       const f = document.getElementById('tg-fallback');
@@ -164,7 +168,6 @@
     });
     setTimeout(showTgFallback, 1200);
 
-    // ====== Автопереход в лобби после успешного возврата (?logged=1) ======
     (function handleLoggedRedirect(){
       const params = new URLSearchParams(location.search);
       if (params.get('logged') === '1') {
