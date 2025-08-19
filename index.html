@@ -40,11 +40,13 @@
       pointer-events:none;
     }
 
-    h1{margin:0 0 16px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
+    /* ↑ увеличил нижний отступ h1 до ~1.5× */
+    h1{margin:0 0 36px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
 
-    /* Блок авторизации по центру (не ломая Telegram-виджет) */
+    /* Блок авторизации по центру */
     .auth{
-      margin-top:8px; display:flex; flex-direction:column; gap:12px; align-items:center;
+      margin-top:0; /* раньше было 8px — убрал, чтобы суммарный зазор был именно ~36px */
+      display:flex; flex-direction:column; gap:12px; align-items:center;
     }
 
     .btn{
@@ -56,26 +58,24 @@
     .btn__icon{width:24px; height:24px; flex:0 0 24px; display:inline-block}
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* >>> VK: компактная кнопка 40px по высоте, ширина по контенту, по центру <<< */
+    /* VK: компактная кнопка 40px по высоте, ширина по контенту, по центру */
     .btn.vk{
-      /* переопределяем базовые правила под компактный вид */
       height:40px; padding:0 16px;
       width:auto; margin:0 auto;
       font-size:14px; line-height:40px;
       align-items:center; justify-content:center; gap:10px;
     }
-    /* квадрат 40×40 слева */
+    /* левая зона 40×40 — делаем прозрачной, чтобы не было «инородного квадрата» */
     .btn.vk .vk-icon{
       width:40px; height:40px; flex:0 0 40px;
       display:inline-grid; place-items:center;
-      background:rgba(255,255,255,.18);
+      background:transparent; /* было rgba(255,255,255,.18) */
       border-radius:8px;
     }
     .btn.vk .vk-icon img{
-      width:22px; height:22px;
-      filter:brightness(0) invert(1); /* делаем лого белым на любом svg */
+      width:30px; height:30px; /* было 22×22 */
+      filter:brightness(0) invert(1);
     }
-    /* текст — без растягивания на всю ширину */
     .btn.vk .vk-text{white-space:nowrap}
 
     /* Центрируем Telegram-виджет */
