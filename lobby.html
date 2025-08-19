@@ -14,19 +14,25 @@
       margin:0; background:#0b0d12; color:var(--text);
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-    header{display:flex; align-items:center; justify-content:space-between; gap:16px;
+    header{display:flex; align-items:center; justify-content:space-between; gap:12px;
       padding:14px 16px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#0f131b,#0b0d12)}
     header .brand{font-weight:800; color:var(--gold)}
     .user{display:flex; align-items:center; gap:10px}
     .user img{width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222}
     .wrap{max-width:980px; margin:0 auto; padding:20px 16px}
     .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px}
+
+    .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+      background:#121621; border:1px solid var(--border); color:#e8eaf0; font-weight:700}
+    .btn{display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:#121621; color:#e8eaf0; text-decoration:none}
   </style>
 </head>
 <body>
   <header>
-    <div class="brand">GG ROOM</div>
+    <a class="btn" href="/index.html">← На главную</a>
+    <div class="brand">GG ROOM — Лобби</div>
     <div class="user">
+      <span id="user-balance" class="pill">₽ 0</span>
       <img id="user-avatar" src="" alt="avatar" />
       <div id="user-name">Гость</div>
     </div>
@@ -44,19 +50,24 @@
       const API = 'https://vercel2pr.onrender.com';
       const params = new URLSearchParams(location.search);
 
+      const nameEl = document.querySelector('#user-name');
+      const avatarEl = document.querySelector('#user-avatar');
+      const balanceEl = document.querySelector('#user-balance');
+      const note = document.getElementById('provider-note');
+
+      function rub(n){ try{ return '₽ ' + (Number(n)||0).toLocaleString('ru-RU'); }catch{ return '₽ 0'; } }
+
       function applyUser(u) {
-        const nameEl = document.querySelector('#user-name');
-        const avatarEl = document.querySelector('#user-avatar');
         if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
         if (avatarEl && u.avatar) avatarEl.src = u.avatar;
-        const note = document.getElementById('provider-note');
+        if (balanceEl) balanceEl.textContent = rub(u.balance ?? 0);
         if (note) note.textContent = u.provider ? ('Источник данных: ' + u.provider.toUpperCase()) : 'Вы не авторизованы.';
         document.body.dataset.auth = u.provider ? 'auth' : 'guest';
       }
 
       let user = null;
 
-      // 1) Приоритет — TG через query (после колбэка)
+      // 1) TG через query — имя/аватар сразу, баланс попробуем подтянуть из API/кэша
       if (params.get('provider') === 'tg') {
         user = {
           provider: 'tg',
@@ -64,37 +75,42 @@
           first_name: params.get('first_name') || '',
           last_name: params.get('last_name') || '',
           username: params.get('username') || '',
-          avatar: params.get('photo_url') || ''
+          avatar: params.get('photo_url') || '',
+          balance: 0,
         };
+        try {
+          const cached = JSON.parse(localStorage.getItem('gg_user') || 'null');
+          if (cached && cached.balance != null) user.balance = cached.balance;
+        } catch {}
         try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+
         if (history.replaceState) history.replaceState({}, '', location.pathname);
       }
 
-      // 2) Если нет — пробуем серверную сессию (VK cookie)
-      if (!user) {
-        try {
-          const r = await fetch(API + '/api/me', { credentials: 'include' });
-          const j = await r.json();
-          if (j && j.ok && j.user) {
-            user = {
-              provider: 'vk',
-              id: j.user.id || null,
-              first_name: j.user.first_name || '',
-              last_name: j.user.last_name || '',
-              avatar: j.user.avatar || ''
-            };
-            try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
-          }
-        } catch {}
-      }
+      // 2) Пробуем серверную сессию (VK cookie или TG если кука будет добавлена)
+      try {
+        const r = await fetch(API + '/api/me', { credentials: 'include' });
+        const j = await r.json();
+        if (j && j.ok && j.user) {
+          // приоритет серверным данным (баланс берём отсюда)
+          user = {
+            provider: user?.provider || 'vk',
+            id: j.user.id || user?.id || null,
+            first_name: j.user.first_name || user?.first_name || '',
+            last_name: j.user.last_name || user?.last_name || '',
+            avatar: j.user.avatar || user?.avatar || '',
+            balance: j.user.balance ?? user?.balance ?? 0,
+          };
+          try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+        }
+      } catch {}
 
       // 3) Фолбэк — кэш
       if (!user) {
         try { user = JSON.parse(localStorage.getItem('gg_user') || 'null'); } catch {}
       }
 
-      if (user) applyUser(user);
-      else applyUser({ first_name: 'Гость', avatar: '' });
+      applyUser(user || { first_name: 'Гость', avatar: '', balance: 0 });
     })();
   </script>
 </body>

@@ -21,8 +21,19 @@
       display:flex; flex-direction:column;
     }
     header{display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)}
-    header b{color:var(--gold); letter-spacing:.4px; font-weight:800}
-    header b .gg{color:var(--gold-strong); text-shadow:0 0 10px rgba(255,215,106,.25)}
+    header b{
+      /* +25% размер логотипа */
+      font-size: 1.25rem;
+      letter-spacing:.4px; font-weight:800
+    }
+    header b .gg{
+      /* Градиент GG: красный → зелёный */
+      background: linear-gradient(90deg, #ff3b3b, #23d160);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow:none;
+    }
     .wrap{flex:1; display:grid; place-items:center; padding:20px 16px 40px;}
     .card{
       overflow:hidden;
@@ -42,7 +53,6 @@
 
     h1{margin:0 0 36px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
 
-    /* Блок авторизации по центру */
     .auth{
       margin-top:0; display:flex; flex-direction:column; gap:12px; align-items:center;
     }
@@ -56,7 +66,6 @@
     .btn__icon{width:24px; height:24px; flex:0 0 24px; display:inline-block}
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* VK: компактная кнопка 40px по высоте, ширина по тексту, по центру */
     .btn.vk{
       height:40px; padding:0 16px;
       width:auto; margin:0 auto;
@@ -125,7 +134,7 @@
         <!-- Fallback (если виджет не подгрузился) -->
         <a id="tg-fallback" class="btn tg" href="#" role="button" rel="noopener">
           <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="white" d="M9.18 15.18 8.96 18a.77.77 0 0 0 .62-.3l1.49-1.46 3.09 2.27c.57.32.98.15 1.13-.53l2.05-9.64c.2-.9-.33-1.25-.9-1.03L4.94 10.6c-.88.34-.86.83-.15 1.05l3.22 1 .01.01 7.47-4.72c.35-.21.67-.1.41.13"/>
+            <path fill="white" d="M9.18 15.18 8.96 18a.77.77 0 0 0 .62-.3l1.49-1.46 3.09 2.27c.57.32.98.15 1.13-.53л2.05-9.64c.2-.9-.33-1.25-.9-1.03L4.94 10.6c-.88.34-.86.83-.15 1.05l3.22 1 .01.01 7.47-4.72c.35-.21.67-.1.41.13"/>
           </svg>
           <span>Войти через Telegram</span>
         </a>
@@ -161,7 +170,6 @@
       window.location.href = API + '/api/auth/vk/start';
     };
 
-    // Ленивая вставка TG-виджета после прогрева бэкенда
     async function warmAndMountTg() {
       try { await fetch(API + '/health', { cache: 'no-store' }); } catch {}
       setTimeout(() => {
@@ -177,7 +185,6 @@
         s.setAttribute('data-auth-url', API + '/api/auth/tg/callback');
         const mount = document.getElementById('tg-auth');
         if (mount) mount.appendChild(s);
-        // Если iframe не появится — покажем fallback
         setTimeout(() => {
           const hasIframe = !!mount?.querySelector('iframe');
           if (!hasIframe) {
@@ -189,7 +196,6 @@
     }
     warmAndMountTg();
 
-    // Fallback ручной запуск OAuth TG
     document.getElementById('tg-fallback').addEventListener('click', (e) => {
       e.preventDefault();
       const origin = window.location.origin;
@@ -202,7 +208,6 @@
       window.open(url, '_blank', 'noopener');
     });
 
-    // Перенаправление в лобби с сохранением query (provider/имя/аватар)
     (function handleLoggedRedirect(){
       const params = new URLSearchParams(location.search);
       if (params.get('logged') === '1') {
