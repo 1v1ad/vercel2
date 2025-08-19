@@ -1,133 +1,101 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>GGRoom — Лобби</title>
-  <meta name="color-scheme" content="dark" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GG Room — Лобби</title>
   <style>
     :root{
-      --bg:#0b0d12; --bg2:#11151d; --panel:#0f131a; --panel2:#121722;
-      --gold:#d7b35c; --gold-2:#f4d88a; --text:#e8eaf0; --muted:#98a2b3; --border:rgba(255,255,255,.07);
-      --radius:18px;
+      --bg:#0b0d12; --card:#0f1219; --text:#e8eaf0; --muted:#98a2b3; --gold:#f4d88a;
+      --border:rgba(255,255,255,.08);
     }
-    *{ box-sizing:border-box }
-    body{ margin:0; background:linear-gradient(180deg, #0b0d12 0%, #090b10 100%); color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-
-    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 18px;
-      position:sticky; top:0; z-index:10; background:linear-gradient(180deg, #0f131a 0%, #0b0d12 100%); border-bottom:1px solid var(--border); }
-    .brand{ display:flex; gap:10px; align-items:center; font-weight:800; text-transform:uppercase; letter-spacing:.4px }
-    .brand em{ color:var(--gold-2); font-style:normal; text-shadow:0 0 26px rgba(215,179,92,.25) }
-    .brand span{ color:#fff }
-
-    /* header/чердак */
-    .userbar{
-      display:flex; align-items:center; gap:12px; padding:8px 10px; border:1px solid var(--border);
-      background:linear-gradient(180deg, var(--panel), var(--panel2)); border-radius:12px;
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:#0b0d12; color:var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
-    .avatar{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#101521; border:1px solid var(--border) }
-    .name{ font-weight:700 }
-    .muted{ color:var(--muted); font-size:12.5px }
-    .balance{ margin-left:auto; font-variant-numeric:tabular-nums; background:rgba(247,228,164,.08); color:var(--gold-2);
-      padding:8px 12px; border-radius:999px; border:1px solid rgba(247,228,164,.25) }
-
-    .wrap{ max-width:1100px; margin:18px auto; padding:0 18px }
-    .card{ background:linear-gradient(180deg, var(--panel), var(--panel2)); border-radius:var(--radius); padding:20px;
-      border:1px solid var(--border); box-shadow:0 10px 40px rgba(0,0,0,.45) }
-
-    .grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:16px }
-    .tile{ padding:18px; border-radius:14px; border:1px solid var(--border); background:rgba(255,255,255,.02) }
-    .tile h3{ margin:0 0 8px; font-size:16px }
-    .tile p{ margin:0; color:var(--muted); font-size:13.5px }
-
-    .btn{ padding:10px 14px; border:1px solid var(--border); background:#111721; color:#fff; border-radius:10px; cursor:pointer }
-    a.btn{ text-decoration:none; display:inline-block }
+    header{display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:14px 16px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#0f131b,#0b0d12)}
+    header .brand{font-weight:800; color:var(--gold)}
+    .user{display:flex; align-items:center; gap:10px}
+    .user img{width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222}
+    .wrap{max-width:980px; margin:0 auto; padding:20px 16px}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px}
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><em>GG</em><span>Room</span></div>
-
-    <div class="userbar">
-      <img id="ava" class="avatar" alt="">
-      <div>
-        <div class="name" id="name">Гость</div>
-        <div class="muted" id="hello">Проверяю сессию…</div>
-      </div>
-      <div class="balance" id="balance">Баланс: 0,00</div>
+  <header>
+    <div class="brand">GG ROOM</div>
+    <div class="user">
+      <img id="user-avatar" src="" alt="avatar" />
+      <div id="user-name">Гость</div>
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="card">
-      <h2 style="margin:0 0 8px">Главное лобби</h2>
-      <div class="muted">Турниры, кэш-игры и акции в одном месте. История операций появится тут же.</div>
-
-      <div class="grid">
-        <div class="tile">
-          <h3>WSOP Online</h3>
-          <p>Квалификации и события серии. Большие гарантии ежедневно.</p>
-        </div>
-        <div class="tile">
-          <h3>Сит-энд-гоу</h3>
-          <p>Быстрые турниры: сел — сыграл — забрал.</p>
-        </div>
-        <div class="tile">
-          <h3>Кэш-столы</h3>
-          <p>Играй в любое время 24/7. Скоро — динамические столы.</p>
-        </div>
-      </div>
-
-      <div style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap">
-        <a href="/" class="btn">↩ На главную</a>
-        <!-- сюда позже добавим: История, Пополнить, Вывести -->
-      </div>
-    </section>
-  </main>
+  <div class="wrap">
+    <div class="card">
+      <p>Добро пожаловать в лобби. Тут будут комнаты, турниры и прочая красота.</p>
+      <p id="provider-note" style="color:var(--muted)"></p>
+    </div>
+  </div>
 
   <script>
-    const API = 'https://vercel2pr.onrender.com';
-
-    function money(n){
-      const v = (Number(n || 0) / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return v;
-    }
-
-    async function fetchMe(){
-      const r = await fetch(API + '/api/me', { credentials: 'include' });
-      if (!r.ok) throw new Error('unauth');
-      return r.json();
-    }
-
-    async function logEvent(type, payload){
-      try{
-        await fetch(API + '/api/events', {
-          method:'POST',
-          credentials:'include',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify({ type, payload })
-        });
-      }catch{}
-    }
-
     (async () => {
-      try{
-        const j = await fetchMe();
-        if (!j.ok) throw new Error('no session');
+      const API = 'https://vercel2pr.onrender.com';
+      const params = new URLSearchParams(location.search);
 
-        const u = j.user || {};
-        document.getElementById('name').textContent = (u.first_name || '') + (u.last_name ? ' ' + u.last_name : '');
-        document.getElementById('hello').textContent = 'Сессия активна.';
-        if (u.avatar) document.getElementById('ava').src = u.avatar;
-        const bal = Number.isFinite(u.balance) ? u.balance : 0;
-        document.getElementById('balance').textContent = 'Баланс: ' + money(bal);
-
-        logEvent('page_view', { page: 'lobby' });
-      }catch(e){
-        document.getElementById('hello').textContent = 'Сессия не найдена. Вернись на главную и войди заново.';
+      function applyUser(u) {
+        const nameEl = document.querySelector('#user-name');
+        const avatarEl = document.querySelector('#user-avatar');
+        if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
+        if (avatarEl && u.avatar) avatarEl.src = u.avatar;
+        const note = document.getElementById('provider-note');
+        if (note) note.textContent = u.provider ? ('Источник данных: ' + u.provider.toUpperCase()) : 'Вы не авторизованы.';
+        document.body.dataset.auth = u.provider ? 'auth' : 'guest';
       }
+
+      let user = null;
+
+      // 1) Приоритет — TG через query (после колбэка)
+      if (params.get('provider') === 'tg') {
+        user = {
+          provider: 'tg',
+          id: params.get('id') || null,
+          first_name: params.get('first_name') || '',
+          last_name: params.get('last_name') || '',
+          username: params.get('username') || '',
+          avatar: params.get('photo_url') || ''
+        };
+        try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+        if (history.replaceState) history.replaceState({}, '', location.pathname);
+      }
+
+      // 2) Если нет — пробуем серверную сессию (VK cookie)
+      if (!user) {
+        try {
+          const r = await fetch(API + '/api/me', { credentials: 'include' });
+          const j = await r.json();
+          if (j && j.ok && j.user) {
+            user = {
+              provider: 'vk',
+              id: j.user.id || null,
+              first_name: j.user.first_name || '',
+              last_name: j.user.last_name || '',
+              avatar: j.user.avatar || ''
+            };
+            try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+          }
+        } catch {}
+      }
+
+      // 3) Фолбэк — кэш
+      if (!user) {
+        try { user = JSON.parse(localStorage.getItem('gg_user') || 'null'); } catch {}
+      }
+
+      if (user) applyUser(user);
+      else applyUser({ first_name: 'Гость', avatar: '' });
     })();
   </script>
 </body>
 </html>
-

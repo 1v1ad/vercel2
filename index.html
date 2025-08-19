@@ -42,6 +42,7 @@
 
     h1{margin:0 0 36px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
 
+    /* Блок авторизации по центру */
     .auth{
       margin-top:0; display:flex; flex-direction:column; gap:12px; align-items:center;
     }
@@ -82,7 +83,7 @@
 
     .btn.tg{background:var(--tg); color:#fff; box-shadow:0 8px 24px rgba(42,171,238,.25); display:none; width:auto; margin:0 auto;}
 
-    .status{margin-top:8px; color:var(--muted); min-height:1.2em}
+    .status{margin-top:8px; color:var(--muted); min-height:1.2em; text-align:center}
 
     .badges{margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
     .badge{border:1px solid rgba(247,228,164,.35); color:var(--gold); background:rgba(247,228,164,.06); padding:6px 10px; border-radius:999px; font-size:12px}
@@ -118,18 +119,10 @@
           <span class="vk-text">Войти через VK ID</span>
         </button>
 
-        <!-- Telegram (официальный виджет) -->
-        <div id="tg-auth" class="tg-auth">
-          <script async src="https://telegram.org/js/telegram-widget.js?22"
-            data-telegram-login="GGR00m_bot"
-            data-size="large"
-            data-userpic="false"
-            data-request-access="write"
-            data-auth-url="https://vercel2pr.onrender.com/api/auth/tg/callback">
-          </script>
-        </div>
+        <!-- Telegram (ленивая вставка виджета после прогрева) -->
+        <div id="tg-auth" class="tg-auth"></div>
 
-        <!-- Fallback -->
+        <!-- Fallback (если виджет не подгрузился) -->
         <a id="tg-fallback" class="btn tg" href="#" role="button" rel="noopener">
           <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="white" d="M9.18 15.18 8.96 18a.77.77 0 0 0 .62-.3l1.49-1.46 3.09 2.27c.57.32.98.15 1.13-.53l2.05-9.64c.2-.9-.33-1.25-.9-1.03L4.94 10.6c-.88.34-.86.83-.15 1.05l3.22 1 .01.01 7.47-4.72c.35-.21.67-.1.41.13"/>
@@ -168,13 +161,35 @@
       window.location.href = API + '/api/auth/vk/start';
     };
 
-    function showTgFallback() {
-      const w = document.getElementById('tg-auth');
-      const f = document.getElementById('tg-fallback');
-      if (!w || !f) return;
-      const hasIframe = !!w.querySelector('iframe');
-      if (!hasIframe) f.style.display = 'flex';
+    // Ленивая вставка TG-виджета после прогрева бэкенда
+    async function warmAndMountTg() {
+      try { await fetch(API + '/health', { cache: 'no-store' }); } catch {}
+      setTimeout(() => {
+        if (document.getElementById('tg-widget')) return;
+        const s = document.createElement('script');
+        s.id = 'tg-widget';
+        s.async = true;
+        s.src = 'https://telegram.org/js/telegram-widget.js?22';
+        s.setAttribute('data-telegram-login', 'GGR00m_bot');
+        s.setAttribute('data-size', 'large');
+        s.setAttribute('data-userpic', 'false');
+        s.setAttribute('data-request-access', 'write');
+        s.setAttribute('data-auth-url', API + '/api/auth/tg/callback');
+        const mount = document.getElementById('tg-auth');
+        if (mount) mount.appendChild(s);
+        // Если iframe не появится — покажем fallback
+        setTimeout(() => {
+          const hasIframe = !!mount?.querySelector('iframe');
+          if (!hasIframe) {
+            const fb = document.getElementById('tg-fallback');
+            if (fb) fb.style.display = 'flex';
+          }
+        }, 1200);
+      }, 200);
     }
+    warmAndMountTg();
+
+    // Fallback ручной запуск OAuth TG
     document.getElementById('tg-fallback').addEventListener('click', (e) => {
       e.preventDefault();
       const origin = window.location.origin;
@@ -186,16 +201,15 @@
         + '&return_to=' + encodeURIComponent(origin + '/');
       window.open(url, '_blank', 'noopener');
     });
-    setTimeout(showTgFallback, 1200);
 
-    // ВАЖНО: теперь передаём все параметры в lobby.html
+    // Перенаправление в лобби с сохранением query (provider/имя/аватар)
     (function handleLoggedRedirect(){
       const params = new URLSearchParams(location.search);
       if (params.get('logged') === '1') {
         const st = document.getElementById('status');
-        st.textContent = 'Готово: авторизован. Переходим в лобби...';
+        if (st) st.textContent = 'Готово: авторизован. Переходим в лобби...';
         setTimeout(() => {
-          window.location.href = '/lobby.html' + location.search; // ← сохраняем provider/имя/аватар
+          window.location.href = '/lobby.html' + location.search;
         }, 400);
       }
     })();
