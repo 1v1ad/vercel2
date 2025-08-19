@@ -6,11 +6,8 @@
   <title>GG Room</title>
   <style>
     :root{
-      --bg:#0b0d12; --bg2:#11151d; --card:#000000; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
+      --bg:#0b0d12; --card:#000; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
       --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px; --btnh:52px;
-      /* тонкая подстройка положения виджета Telegram относительно идеального центра */
-      --tg-nudge-x: 2px;   /* сдвиг вправо; поставь 0px если лишнее */
-      --tg-nudge-y: 0px;   /* сдвиг по вертикали; можно 1px вниз, если нужно */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -19,9 +16,7 @@
       color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       display:flex; flex-direction:column;
     }
-    header{
-      display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)
-    }
+    header{display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)}
     header b{color:var(--gold); letter-spacing:.4px}
 
     .wrap{flex:1; display:grid; place-items:center; padding:20px 16px}
@@ -35,14 +30,10 @@
       --borderw:1px; padding:var(--borderw);
       background:linear-gradient(135deg, rgba(247,228,164,.8), rgba(247,228,164,.35) 45%, rgba(247,228,164,.6));
       -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-      -webkit-mask-composite:xor; mask-composite:exclude;
-      pointer-events:none;
+      -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none;
     }
 
-    h1{
-      margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800;
-      color:var(--gold); text-align:center; margin-left:auto; margin-right:auto;
-    }
+    h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
     .lead{margin:0 0 6px; color:var(--muted)}
 
     .btn{
@@ -51,22 +42,19 @@
     }
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* фон под TG-кнопкой (некликабельный) */
+    /* Фон под TG-кнопкой (не кликабелен) + идеальное центрирование iframe */
     .tg-wrap{
       margin-top:10px; width:100%; height:var(--btnh);
-      position:relative; border-radius:12px; background:#54a9eb;
-      box-shadow:0 8px 24px rgba(39,135,245,.25); overflow:hidden;
-      line-height:0;  /* убираем влияние базовой линии текста */
+      border-radius:12px; background:#54a9eb; box-shadow:0 8px 24px rgba(39,135,245,.25);
+      overflow:hidden; line-height:0;
+      display:flex; align-items:center; justify-content:center; /* ← центр по X и Y */
     }
-    /* сам iframe центрируем математически и слегка «нуджим» переменными выше */
     .tg-wrap iframe{
-      position:absolute; top:50%; left:50%;
-      transform:
-        translate(-50%, -50%)
-        translate(var(--tg-nudge-x), var(--tg-nudge-y));
-      display:block; margin:0;
-      height:100% !important; width:auto !important;
-      border:0; border-radius:12px !important;
+      position:static !important;           /* убираем абсолют/трансформ */
+      width:300px !important;               /* размер large-кнопки у TG */
+      height:52px !important;
+      display:block; margin:0 !important;
+      border:0 !important; border-radius:12px !important;
     }
 
     .status{margin-top:10px; color:var(--muted); min-height:1.2em}
@@ -78,12 +66,11 @@
     .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
     .card-media picture, .card-media img{ display:block; width:100%; height:auto }
 
-    @media (max-width: 480px){
-      .card::before{ --borderw:2px }
-      h1{font-size:18px; white-space:nowrap}
-      .badges{flex-wrap:nowrap; gap:6px}
-      .badge{font-size:11px; padding:6px 8px}
-      .card-media{ margin:14px -16px -24px }
+    @media (max-width: 360px){
+      /* На экстрамалых экранах подожмём немного высоту и масштабируем кнопку,
+         чтобы не вылазила за края карточки */
+      .tg-wrap{ height:48px }
+      .tg-wrap iframe{ transform:scale(.94); transform-origin:center }
     }
   </style>
 </head>
@@ -95,15 +82,13 @@
       <h1>Войдите и начните выигрывать!</h1>
       <p class="lead">&nbsp;</p>
 
-      <!-- VK -->
       <button class="btn vk" id="login">Войти через VK ID</button>
 
-      <!-- Telegram: виджет в центре, фон некликабелен -->
       <div class="tg-wrap" id="tg-login">
         <script async src="https://telegram.org/js/telegram-widget.js?22"
                 data-telegram-login="GGR00m_bot"
                 data-size="large"
-                data-userpic="false"
+                data-userpic="true"         <!-- Было false: поэтому аватар не рисовался -->
                 data-request-access="write"
                 data-onauth="onTelegramAuth(user)">
         </script>
@@ -134,46 +119,37 @@
   <script>
     const API = 'https://vercel2pr.onrender.com';
 
-    // VK → старт
     document.getElementById('login').onclick = () => {
       window.location.href = API + '/api/auth/vk/start';
     };
 
-    // TG → обработка
     async function onTelegramAuth(user){
       try{
         const resp = await fetch(API + '/api/auth/tg', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          credentials:'include',
-          body: JSON.stringify({ user })
+          method:'POST', headers:{'Content-Type':'application/json'},
+          credentials:'include', body: JSON.stringify({ user })
         });
         const data = await resp.json();
         const s = document.getElementById('status');
 
-        if(!data.ok){
-          s.textContent = 'TG вход: ' + (data.error||'ошибка');
-          return;
-        }
+        if(!data.ok){ s.textContent = 'TG вход: ' + (data.error||'ошибка'); return; }
 
         if(data.mergeNeeded && data.primary && data.merged){
-          const msg = `Найден второй профиль.\n` +
-                      `Primary(ID ${data.primary.id}) баланс=${data.primary.balance} ₽\n` +
-                      `Merged (ID ${data.merged.id}) баланс=${data.merged.balance} ₽\n` +
-                      `Объединить и перенести баланс/историю?`;
-          if(confirm(msg)){
+          const ok = confirm(
+            `Найден второй профиль.\n`+
+            `Primary(ID ${data.primary.id}) баланс=${data.primary.balance} ₽\n`+
+            `Merged (ID ${data.merged.id}) баланс=${data.merged.balance} ₽\n`+
+            `Объединить и перенести баланс/историю?`
+          );
+          if(ok){
             const r2 = await fetch(API + '/api/link/merge/confirm', {
-              method:'POST',
-              headers:{'Content-Type':'application/json'},
-              credentials:'include',
+              method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
               body: JSON.stringify({ primaryId: data.primary.id, mergedId: data.merged.id })
             });
             const j2 = await r2.json();
             s.textContent = j2.ok ? 'Аккаунты объединены' : ('Не удалось объединить: ' + (j2.error||'')); 
             if(j2.ok) setTimeout(()=>location.href='lobby.html', 600);
-          } else {
-            s.textContent = 'Объединение отменено';
-          }
+          } else s.textContent = 'Объединение отменено';
           return;
         }
 
@@ -187,12 +163,10 @@
       }
     }
 
-    // Возврат после VK (?logged=1)
     (function handleLoggedRedirect(){
-      const params = new URLSearchParams(location.search);
-      if (params.get('logged') === '1') {
-        const st = document.getElementById('status');
-        st.textContent = 'Готово: авторизован. Переходим в лобби...';
+      const p = new URLSearchParams(location.search);
+      if (p.get('logged') === '1') {
+        document.getElementById('status').textContent = 'Готово: авторизован. Переходим в лобби...';
         setTimeout(() => { window.location.href = '/lobby.html'; }, 500);
       }
     })();
