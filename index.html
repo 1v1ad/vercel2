@@ -8,7 +8,8 @@
     :root{
       --bg:#0b0d12; --bg2:#11151d; --card:#000000; --text:#e8eaf0; --muted:#98a2b3;
       --vk:#2787F5; --tg:#2AABEE;
-      --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px;
+      --gold:#f4d88a; --gold-strong:#ffd76a;
+      --border:rgba(255,255,255,.06); --radius:18px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -20,8 +21,9 @@
       display:flex; flex-direction:column;
     }
     header{display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)}
-    header b{color:var(--gold); letter-spacing:.4px}
-    .wrap{flex:1; display:grid; place-items:center; padding:40px 16px}
+    header b{color:var(--gold); letter-spacing:.4px; font-weight:800}
+    header b .gg{color:var(--gold-strong); text-shadow:0 0 10px rgba(255,215,106,.25)}
+    .wrap{flex:1; display:grid; place-items:center; padding:20px 16px 40px;} /* верхний отступ уменьшен на 50% */
     .card{
       overflow:hidden;
       width:min(520px,100%); background:var(--card);
@@ -39,8 +41,6 @@
     }
 
     h1{margin:0 0 16px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
-    .lead{margin:0; color:var(--muted)}
-
     .auth{margin-top:8px; display:flex; flex-direction:column; gap:12px}
 
     .btn{
@@ -51,9 +51,9 @@
     }
     .btn__icon{width:24px; height:24px; flex:0 0 24px; display:inline-block}
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
+    .btn.vk .btn__icon{width:31px; height:31px; flex-basis:31px;} /* +30% к размеру логотипа VK */
 
     .tg-auth{display:flex; align-items:center; justify-content:flex-start; min-height:52px}
-    /* fallback-кнопка TG на случай, если виджет не загрузился */
     .btn.tg{background:var(--tg); color:#fff; box-shadow:0 8px 24px rgba(42,171,238,.25); display:none}
 
     .status{margin-top:8px; color:var(--muted); min-height:1.2em}
@@ -67,13 +67,10 @@
       .badge{font-size:11px; padding:6px 8px}
     }
 
+    /* КАРТИНКА С СУНДУКОМ: без обрезания на десктопе */
     .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
-    .card-media picture, .card-media img{ display:block; width:100%; height:auto }
-    @media (min-width: 980px){
-      /* Немного подрезаем низ картинки на десктопе, чтобы карточка выглядела «собранно» */
-      .card-media{ height: 320px; }
-      .card-media picture, .card-media img{ height:100%; object-fit:cover; object-position:center 15% }
-    }
+    .card-media picture, .card-media img{ display:block; width:100%; height:auto; object-fit:contain; } /* показываем целиком */
+
     @media (max-width: 480px){
       .card::before{ --borderw:2px }
       .card-media{ margin:14px -16px -24px }
@@ -81,7 +78,7 @@
   </style>
 </head>
 <body>
-  <header><b>GG ROOM</b></header>
+  <header><b><span class="gg">GG</span> ROOM</b></header>
 
   <main class="wrap">
     <section class="card">
@@ -105,9 +102,8 @@
           </script>
         </div>
 
-        <!-- Fallback на случай, если виджет не загрузился (например, в некоторых браузерах) -->
+        <!-- Fallback (если виджет не подгрузился) -->
         <a id="tg-fallback" class="btn tg" href="#" role="button" rel="noopener">
-          <!-- Встроенный значок Telegram -->
           <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="white" d="M9.18 15.18 8.96 18a.77.77 0 0 0 .62-.3l1.49-1.46 3.09 2.27c.57.32.98.15 1.13-.53l2.05-9.64c.2-.9-.33-1.25-.9-1.03L4.94 10.6c-.88.34-.86.83-.15 1.05l3.22 1 .01.01 7.47-4.72c.35-.21.67-.1.41.13"/>
           </svg>
@@ -140,7 +136,7 @@
   <script>
     // ====== НАСТРОЙКИ ======
     const API = 'https://vercel2pr.onrender.com';
-    const TG_BOT_ID = 8236271394; // твой bot_id (из @BotFather)
+    const TG_BOT_ID = 8236271394; // bot_id из @BotFather
 
     // ====== VK: start OAuth ======
     document.getElementById('vk-login').onclick = () => {
@@ -148,17 +144,13 @@
     };
 
     // ====== Telegram fallback ======
-    // Если виджет не подгрузился за ~1.2с (особенно в некоторых браузерах),
-    // показываем «ручную» кнопку, которая ведёт на oauth.telegram.org
     function showTgFallback() {
       const w = document.getElementById('tg-auth');
       const f = document.getElementById('tg-fallback');
       if (!w || !f) return;
-      // Если внутри контейнера нет iframe (виджет не встал) — покажем fallback
       const hasIframe = !!w.querySelector('iframe');
       if (!hasIframe) f.style.display = 'flex';
     }
-    // навешиваем обработчик на fallback-кнопку
     document.getElementById('tg-fallback').addEventListener('click', (e) => {
       e.preventDefault();
       const origin = window.location.origin;
