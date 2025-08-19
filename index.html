@@ -50,13 +50,7 @@
     }
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* ссылка-обёртка вокруг TG-контейнера, чтобы фон был кликабелен */
-    .tg-link{
-      display:block; width:100%; text-decoration:none; border-radius:12px;
-    }
-    .tg-link:focus-visible{ outline:2px solid rgba(84,169,235,.6); outline-offset:2px }
-
-    /* большой фон и идеальное центрирование iframe */
+    /* большой фон под TG-кнопкой (некликабельный), идеальное центрирование iframe */
     .tg-wrap{
       margin-top:10px;
       width:100%; height:var(--btnh);
@@ -65,10 +59,11 @@
       background:#54a9eb;
       box-shadow:0 8px 24px rgba(39,135,245,.25);
       overflow:hidden;
+
+      display:grid; place-items:center;  /* ровно по центру */
+      line-height:0;                      /* убираем базовую линию, чтобы не «прыгало» */
     }
     .tg-wrap iframe{
-      position:absolute; top:50%; left:50%;
-      transform:translate(-50%, -50%);      /* точный центр */
       display:block; margin:0;
       height:100% !important;
       width:auto !important;
@@ -78,7 +73,7 @@
 
     .status{margin-top:10px; color:var(--muted); min-height:1.2em}
 
-    /* ещё чуть компактнее под бейджами */
+    /* компактнее под бейджами */
     .badges{margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
     .badge{border:1px solid rgba(247,228,164,.35); color:var(--gold); background:rgba(247,228,164,.06);
       padding:6px 10px; border-radius:999px; font-size:12px}
@@ -106,18 +101,16 @@
       <!-- VK -->
       <button class="btn vk" id="login">Войти через VK ID</button>
 
-      <!-- Telegram: кликабельный фон + виджет по центру -->
-      <a class="tg-link" id="tg-fon" href="#">
-        <div class="tg-wrap" id="tg-login">
-          <script async src="https://telegram.org/js/telegram-widget.js?22"
-                  data-telegram-login="GGR00m_bot"
-                  data-size="large"
-                  data-userpic="false"
-                  data-request-access="write"
-                  data-onauth="onTelegramAuth(user)">
-          </script>
-        </div>
-      </a>
+      <!-- Telegram: некликабельный фон, кликает только реальная кнопка -->
+      <div class="tg-wrap" id="tg-login">
+        <script async src="https://telegram.org/js/telegram-widget.js?22"
+                data-telegram-login="GGR00m_bot"
+                data-size="large"
+                data-userpic="false"
+                data-request-access="write"
+                data-onauth="onTelegramAuth(user)">
+        </script>
+      </div>
 
       <p class="status" id="status"></p>
 
@@ -196,19 +189,6 @@
         document.getElementById('status').textContent = 'TG вход: ошибка сети';
       }
     }
-
-    // делаем фон TG кликабельным (та же авторизация, в ЭТОМ окне)
-    (function setTgHref(){
-      const BOT_ID = '8236271394';                       // числовой id бота
-      const origin = location.origin;
-      const tgUrl = 'https://oauth.telegram.org/auth'
-                  + '?bot_id=' + BOT_ID
-                  + '&origin=' + encodeURIComponent(origin)
-                  + '&embed=1&request_access=write'
-                  + '&return_to=' + encodeURIComponent(origin + '/');
-      const a = document.getElementById('tg-fon');
-      if (a) a.href = tgUrl; // без target — откроется в этом же окне
-    })();
 
     // Возврат после VK (?logged=1)
     (function handleLoggedRedirect(){
