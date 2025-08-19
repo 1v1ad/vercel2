@@ -40,13 +40,10 @@
       pointer-events:none;
     }
 
-    /* ↑ увеличил нижний отступ h1 до ~1.5× */
     h1{margin:0 0 36px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
 
-    /* Блок авторизации по центру */
     .auth{
-      margin-top:0; /* раньше было 8px — убрал, чтобы суммарный зазор был именно ~36px */
-      display:flex; flex-direction:column; gap:12px; align-items:center;
+      margin-top:0; display:flex; flex-direction:column; gap:12px; align-items:center;
     }
 
     .btn{
@@ -58,34 +55,31 @@
     .btn__icon{width:24px; height:24px; flex:0 0 24px; display:inline-block}
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* VK: компактная кнопка 40px по высоте, ширина по контенту, по центру */
+    /* VK: компактная кнопка 40px по высоте, ширина по тексту, по центру */
     .btn.vk{
       height:40px; padding:0 16px;
       width:auto; margin:0 auto;
       font-size:14px; line-height:40px;
       align-items:center; justify-content:center; gap:10px;
     }
-    /* левая зона 40×40 — делаем прозрачной, чтобы не было «инородного квадрата» */
     .btn.vk .vk-icon{
       width:40px; height:40px; flex:0 0 40px;
       display:inline-grid; place-items:center;
-      background:transparent; /* было rgba(255,255,255,.18) */
+      background:transparent;
       border-radius:8px;
     }
     .btn.vk .vk-icon img{
-      width:30px; height:30px; /* было 22×22 */
+      width:30px; height:30px;
       filter:brightness(0) invert(1);
     }
     .btn.vk .vk-text{white-space:nowrap}
 
-    /* Центрируем Telegram-виджет */
     .tg-auth{
       display:flex; align-items:center; justify-content:center;
       min-height:52px; width:100%;
     }
     .tg-auth iframe{display:block; margin:0 auto !important;}
 
-    /* Fallback */
     .btn.tg{background:var(--tg); color:#fff; box-shadow:0 8px 24px rgba(42,171,238,.25); display:none; width:auto; margin:0 auto;}
 
     .status{margin-top:8px; color:var(--muted); min-height:1.2em}
@@ -99,7 +93,6 @@
       .badge{font-size:11px; padding:6px 8px}
     }
 
-    /* КАРТИНКА БЕЗ ОБРЕЗАНИЯ */
     .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
     .card-media picture, .card-media img{ display:block; width:100%; height:auto; object-fit:contain; }
 
@@ -117,7 +110,7 @@
       <h1>Войдите и начните выигрывать!</h1>
 
       <div class="auth">
-        <!-- VK: компактная, 40px, ширина по тексту, по центру -->
+        <!-- VK -->
         <button class="btn vk" id="vk-login">
           <span class="vk-icon">
             <img src="assets/vk-logo.svg" alt="VK">
@@ -136,7 +129,7 @@
           </script>
         </div>
 
-        <!-- Fallback (если виджет не подгрузился) -->
+        <!-- Fallback -->
         <a id="tg-fallback" class="btn tg" href="#" role="button" rel="noopener">
           <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="white" d="M9.18 15.18 8.96 18a.77.77 0 0 0 .62-.3l1.49-1.46 3.09 2.27c.57.32.98.15 1.13-.53l2.05-9.64c.2-.9-.33-1.25-.9-1.03L4.94 10.6c-.88.34-.86.83-.15 1.05l3.22 1 .01.01 7.47-4.72c.35-.21.67-.1.41.13"/>
@@ -195,12 +188,15 @@
     });
     setTimeout(showTgFallback, 1200);
 
+    // ВАЖНО: теперь передаём все параметры в lobby.html
     (function handleLoggedRedirect(){
       const params = new URLSearchParams(location.search);
       if (params.get('logged') === '1') {
         const st = document.getElementById('status');
         st.textContent = 'Готово: авторизован. Переходим в лобби...';
-        setTimeout(() => { window.location.href = '/lobby.html'; }, 500);
+        setTimeout(() => {
+          window.location.href = '/lobby.html' + location.search; // ← сохраняем provider/имя/аватар
+        }, 400);
       }
     })();
   </script>
