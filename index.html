@@ -8,7 +8,18 @@
     :root{
       --bg:#0b0d12; --card:#000; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
       --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px; --btnh:52px;
+
+      /* тонкая подстройка iframe Telegram относительно идеального центра */
+      --tg-nudge-x: 12px; /* вправо (+) / влево (-) на десктопе */
+      --tg-nudge-y: 1px;  /* вниз (+) / вверх (-) на десктопе */
     }
+    @media (max-width: 480px){
+      :root{
+        --tg-nudge-x: 10px; /* мобилка обычно требует чуть меньше */
+        --tg-nudge-y: 1px;
+      }
+    }
+
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -42,19 +53,22 @@
     }
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* Фон под TG-кнопкой (не кликабелен) + идеальное центрирование iframe */
+    /* Фон под TG-кнопкой (не кликабелен) + центрирование iframe */
     .tg-wrap{
       margin-top:10px; width:100%; height:var(--btnh);
       border-radius:12px; background:#54a9eb; box-shadow:0 8px 24px rgba(39,135,245,.25);
       overflow:hidden; line-height:0;
-      display:flex; align-items:center; justify-content:center; /* ← центр по X и Y */
+      position:relative;
     }
     .tg-wrap iframe{
-      position:static !important;           /* убираем абсолют/трансформ */
-      width:300px !important;               /* размер large-кнопки у TG */
-      height:52px !important;
+      position:absolute !important;
+      top:50% !important; left:50% !important;
+      transform:translate(-50%, -50%) translate(var(--tg-nudge-x), var(--tg-nudge-y)) !important;
+      width:300px !important; height:52px !important;  /* размер large-виджета Telegram */
       display:block; margin:0 !important;
       border:0 !important; border-radius:12px !important;
+      background:transparent !important;
+      pointer-events:auto !important; /* кликаем именно виджет */
     }
 
     .status{margin-top:10px; color:var(--muted); min-height:1.2em}
@@ -65,13 +79,6 @@
 
     .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
     .card-media picture, .card-media img{ display:block; width:100%; height:auto }
-
-    @media (max-width: 360px){
-      /* На экстрамалых экранах подожмём немного высоту и масштабируем кнопку,
-         чтобы не вылазила за края карточки */
-      .tg-wrap{ height:48px }
-      .tg-wrap iframe{ transform:scale(.94); transform-origin:center }
-    }
   </style>
 </head>
 <body>
@@ -82,13 +89,15 @@
       <h1>Войдите и начните выигрывать!</h1>
       <p class="lead">&nbsp;</p>
 
+      <!-- VK -->
       <button class="btn vk" id="login">Войти через VK ID</button>
 
+      <!-- Telegram: виджет в центре, фон не кликабелен, аватар отключён -->
       <div class="tg-wrap" id="tg-login">
         <script async src="https://telegram.org/js/telegram-widget.js?22"
                 data-telegram-login="GGR00m_bot"
                 data-size="large"
-                data-userpic="true"         <!-- Было false: поэтому аватар не рисовался -->
+                data-userpic="false"          <!-- отключили аватар -->
                 data-request-access="write"
                 data-onauth="onTelegramAuth(user)">
         </script>
@@ -104,12 +113,6 @@
 
       <div class="card-media">
         <picture>
-          <source type="image/webp"
-                  srcset="assets/prize-chest-500w.webp 500w, assets/prize-chest-700w.webp 700w, assets/prize-chest-900w.webp 900w"
-                  sizes="(max-width: 480px) 100vw, 640px">
-          <source type="image/png"
-                  srcset="assets/prize-chest-500w.png 500w, assets/prize-chest-700w.png 700w, assets/prize-chest-900w.png 900w"
-                  sizes="(max-width: 480px) 100vw, 640px">
           <img src="assets/prize-chest.png" alt="Призовой сундук" loading="lazy" decoding="async">
         </picture>
       </div>
@@ -119,20 +122,27 @@
   <script>
     const API = 'https://vercel2pr.onrender.com';
 
+    // VK → старт
     document.getElementById('login').onclick = () => {
       window.location.href = API + '/api/auth/vk/start';
     };
 
+    // TG → обработка
     async function onTelegramAuth(user){
       try{
         const resp = await fetch(API + '/api/auth/tg', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          credentials:'include', body: JSON.stringify({ user })
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          credentials:'include',
+          body: JSON.stringify({ user })
         });
         const data = await resp.json();
         const s = document.getElementById('status');
 
-        if(!data.ok){ s.textContent = 'TG вход: ' + (data.error||'ошибка'); return; }
+        if(!data.ok){
+          s.textContent = 'TG вход: ' + (data.error||'ошибка');
+          return;
+        }
 
         if(data.mergeNeeded && data.primary && data.merged){
           const ok = confirm(
@@ -163,6 +173,7 @@
       }
     }
 
+    // Возврат после VK (?logged=1) — как и было
     (function handleLoggedRedirect(){
       const p = new URLSearchParams(location.search);
       if (p.get('logged') === '1') {
