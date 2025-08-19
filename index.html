@@ -41,7 +41,11 @@
     }
 
     h1{margin:0 0 16px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
-    .auth{margin-top:8px; display:flex; flex-direction:column; gap:12px}
+
+    /* Блок авторизации по центру (не ломая Telegram-виджет) */
+    .auth{
+      margin-top:8px; display:flex; flex-direction:column; gap:12px; align-items:center;
+    }
 
     .btn{
       width:100%; border:0; border-radius:999px;
@@ -51,14 +55,35 @@
     }
     .btn__icon{width:24px; height:24px; flex:0 0 24px; display:inline-block}
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
-    .btn.vk .btn__icon{width:31px; height:31px; flex-basis:31px;} /* VK логотип +30% */
 
-    /* ВЫРАВНИВАНИЕ ВИДЖЕТА TG ПО ЦЕНТРУ */
-    .tg-auth{
-      display:flex; align-items:center; justify-content:center; /* было flex-start */
-      min-height:52px;
+    /* >>> VK: компактная кнопка 40px по высоте, ширина по контенту, по центру <<< */
+    .btn.vk{
+      /* переопределяем базовые правила под компактный вид */
+      height:40px; padding:0 16px;
+      width:auto; margin:0 auto;
+      font-size:14px; line-height:40px;
+      align-items:center; justify-content:center; gap:10px;
     }
-    .tg-auth iframe{display:block; margin:0 auto !important;} /* центрируем сам iframe */
+    /* квадрат 40×40 слева */
+    .btn.vk .vk-icon{
+      width:40px; height:40px; flex:0 0 40px;
+      display:inline-grid; place-items:center;
+      background:rgba(255,255,255,.18);
+      border-radius:8px;
+    }
+    .btn.vk .vk-icon img{
+      width:22px; height:22px;
+      filter:brightness(0) invert(1); /* делаем лого белым на любом svg */
+    }
+    /* текст — без растягивания на всю ширину */
+    .btn.vk .vk-text{white-space:nowrap}
+
+    /* Центрируем Telegram-виджет */
+    .tg-auth{
+      display:flex; align-items:center; justify-content:center;
+      min-height:52px; width:100%;
+    }
+    .tg-auth iframe{display:block; margin:0 auto !important;}
 
     /* Fallback */
     .btn.tg{background:var(--tg); color:#fff; box-shadow:0 8px 24px rgba(42,171,238,.25); display:none; width:auto; margin:0 auto;}
@@ -92,10 +117,12 @@
       <h1>Войдите и начните выигрывать!</h1>
 
       <div class="auth">
-        <!-- VK -->
+        <!-- VK: компактная, 40px, ширина по тексту, по центру -->
         <button class="btn vk" id="vk-login">
-          <img class="btn__icon" src="assets/vk-logo.svg" alt="VK">
-          <span>Войти через VK ID</span>
+          <span class="vk-icon">
+            <img src="assets/vk-logo.svg" alt="VK">
+          </span>
+          <span class="vk-text">Войти через VK ID</span>
         </button>
 
         <!-- Telegram (официальный виджет) -->
