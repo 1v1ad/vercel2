@@ -11,18 +11,17 @@
       --bg:#0b0f16;
       --card:#0e121a;
       --gold:#e8d08a;
-      --gold-soft:#b89a51;
-      --vk:#1e73e6;       /* VK-синий */
-      --tg:#4ea6e6;       /* TG-синий */
+      --vk:#1e73e6;
+      --tg:#4ea6e6;
       --text:#f4f4f4;
 
-      /* Базовые габариты “большой” кнопки */
-      --baseW: 520px;
-      --baseH: 74px;
-      --btn-scale: 1;
+      /* ЕДИНАЯ внутренняя ширина контента (кнопки + постер) */
+      --contentW: clamp(520px, 86vw, 720px);
+
+      /* базовая высота больших кнопок */
+      --btnH: 72px;
     }
 
-    /* Сброс и база */
     *,*::before,*::after{ box-sizing:border-box; }
     html,body{ height:100%; }
     body{
@@ -45,7 +44,7 @@
     }
 
     .wrap{
-      max-width: 820px;
+      max-width: calc(var(--contentW) + 56px); /* учёт внутренних паддингов карточки */
       margin: 0 auto;
       padding: 28px 16px 64px;
     }
@@ -59,11 +58,18 @@
         0 0 0 1px rgba(232,208,138,.08) inset,
         0 18px 70px rgba(0,0,0,.55),
         0 0 64px rgba(232,208,138,.06);
-      padding: 28px 28px 32px;
+      padding: 28px;
+    }
+
+    /* ВНУТРЕННЯЯ СЕТКА КАРТОЧКИ — держим единую ширину */
+    .inner {
+      width: var(--contentW);
+      max-width: 100%;
+      margin: 0 auto;
     }
 
     h1{
-      margin: 0 0 44px; /* в 2 раза больше прежнего */
+      margin: 0 0 44px; /* увеличенный отступ сверху до VK-кнопки */
       text-align:left;
       color:var(--gold);
       font-weight:900;
@@ -73,49 +79,48 @@
       text-shadow: 0 2px 0 rgba(0,0,0,.14);
     }
 
-    /* Колонка кнопок — выравниваем по левому краю */
+    /* Колонка кнопок: одинаковая ширина с постером, выравнивание влево */
     .btncol{
+      width:100%;
       display:flex;
       flex-direction:column;
-      align-items:flex-start; /* влево */
+      align-items:flex-start;
       gap:14px;
       margin-bottom: 18px;
-      max-width: min(100%, var(--baseW));
     }
 
-    /* Общий размер/радиус для кастомных кнопок */
-    .u-btn-size{
-      width:  min(calc(var(--baseW) * var(--btn-scale)), 100%);
-      height: calc(var(--baseH) * var(--btn-scale));
-      border-radius: calc(var(--baseH) * var(--btn-scale) / 2);
-    }
-
-    /* VK — более тонкая кнопка (−30% по высоте) */
-    .btn-vk{
-      all:unset;
-      cursor:pointer;
+    /* Общие параметры «толстой» кнопки */
+    .btn{
+      width:100%;
+      height:var(--btnH);
+      border-radius: calc(var(--btnH) / 2);
       display:flex;
       align-items:center;
       gap:16px;
-      background: var(--vk);
+      padding:0 20px 0 16px;
       color:#fff;
       font-weight:800;
-      font-size: clamp(16px, 1.25vw, 18px);
-      padding: 0 22px 0 18px;
-      height: calc(var(--baseH) * var(--btn-scale) * 0.70);
-      border-radius: calc(var(--baseH) * var(--btn-scale) * 0.35);
+      font-size: clamp(15px, 1.25vw, 18px);
+      text-align:left;
       box-shadow:
-        0 14px 36px rgba(30,115,230,.28),
-        0 1px 0 rgba(255,255,255,.25) inset,
-        0 -1px 0 rgba(0,0,0,.25) inset;
-      transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
+        0 1px 0 rgba(255,255,255,.22) inset,
+        0 -1px 0 rgba(0,0,0,.25) inset,
+        0 14px 36px rgba(0,0,0,.22);
+      transition: transform .06s ease, filter .2s ease;
     }
-    .btn-vk:hover{ filter:brightness(1.03); transform: translateY(-1px); }
-    .btn-vk:active{ transform: translateY(0); filter:brightness(.98); }
+    .btn:hover{ filter:brightness(1.03); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0); filter:brightness(.98); }
 
-    /* VK-иконка +50% (45×45) */
+    /* VK */
+    .btn-vk{
+      background: var(--vk);
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.24) inset,
+        0 -1px 0 rgba(0,0,0,.25) inset,
+        0 14px 36px rgba(30,115,230,.28);
+    }
     .vk-ico{
-      width:45px; height:45px; flex:0 0 45px;
+      width:44px; height:44px; flex:0 0 44px;
       border-radius:12px;
       display:grid; place-items:center;
       background: rgba(255,255,255,.14);
@@ -123,30 +128,24 @@
     }
     .vk-ico img{ width:26px; height:26px; display:block; }
 
-    .btn-vk .label{ white-space:nowrap; }
-
-    /* Telegram login widget */
+    /* Telegram */
     .tg-wrap{
-      position:relative;
-      width: min(calc(var(--baseW) * var(--btn-scale)), 100%);
-      height: calc(var(--baseH) * var(--btn-scale));
-      border-radius: calc(var(--baseH) * var(--btn-scale) / 2);
-      overflow:hidden;           /* чтобы на мобильных ничего не торчало */
+      width:100%;
+      height:var(--btnH);
+      border-radius: calc(var(--btnH) / 2);
+      overflow:hidden;     /* не даём реальной кнопке торчать на мобилках */
       background: var(--tg);
       box-shadow:
-        0 14px 36px rgba(78,166,230,.25),
-        0 1px 0 rgba(255,255,255,.25) inset,
-        0 -1px 0 rgba(0,0,0,.25) inset;
+        0 1px 0 rgba(255,255,255,.24) inset,
+        0 -1px 0 rgba(0,0,0,.25) inset,
+        0 14px 36px rgba(78,166,230,.25);
     }
-    /* сам iframe из виджета */
     .tg-wrap iframe{
-      position: absolute;
-      inset: 0;
+      position:absolute;
+      inset:0;
       width:100%;
       height:100%;
       border:0;
-      /* Без масштабирования: виджет large отлично вписывается,
-         а overflow:hidden держит излишки в “рамке” */
     }
 
     /* Бейджи */
@@ -155,12 +154,12 @@
       gap:12px;
       flex-wrap:nowrap;
       justify-content:center;
-      margin: 10px 0 0; /* расстояние от TG-кнопки уменьшено ~на 30% */
+      margin: 10px 0 0; /* расстояние от TG-кнопки уменьшено примерно на 30% */
       user-select:none;
     }
     .badge{
       border:1px solid rgba(232,208,138,.26);
-      color: var(--gold);
+      color:#e8d08a;
       font-weight:600;
       font-size: clamp(12px, 1.25vw, 14px);
       padding: 10px 18px;
@@ -169,26 +168,23 @@
       box-shadow: 0 8px 26px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
     }
 
-    /* Блок с картинкой сундука */
+    /* Постер строго той же ширины */
     .poster{
-      margin: 24px auto 0;
-      max-width: 640px;
+      width:100%;
+      margin: 22px 0 0;
       border-radius: 14px;
       box-shadow:
         0 12px 90px rgba(0,0,0,.55),
         0 0 0 1px rgba(255,255,255,.04) inset;
       overflow:hidden;
     }
-    .poster img{
-      width:100%; height:auto; display:block;
-    }
+    .poster img{ width:100%; height:auto; display:block; }
 
-    /* Адаптив: для очень узких экранов слегка уменьшаем масштаб кнопок */
+    /* Узкие экраны — немного уменьшаем высоту, чтобы не вылезало за рамку */
     @media (max-width: 420px){
-      :root{ --btn-scale: .92; }
-      .vk-ico{ width:42px; height:42px; }
+      :root{ --btnH: 68px; }
+      .vk-ico{ width:40px; height:40px; }
       .vk-ico img{ width:24px; height:24px; }
-      .btncol{ gap:12px; }
     }
   </style>
 </head>
@@ -197,78 +193,70 @@
 
   <main class="wrap">
     <section class="card">
-      <h1>Войдите и начните выигрывать!</h1>
+      <div class="inner">
+        <h1>Войдите и начните выигрывать!</h1>
 
-      <div class="btncol">
-        <!-- VK: кастомная кнопка, тоньше на 30%, иконка увеличена на 50% -->
-        <button class="btn-vk u-btn-size" id="vkLoginBtn" type="button" aria-label="Войти через VK ID">
-          <span class="vk-ico">
-            <!-- положи файл vk-logo.svg рядом с index.html -->
-            <img src="vk-logo.svg" alt="VK">
-          </span>
-          <span class="label">Войти через VK ID</span>
-        </button>
+        <div class="btncol">
+          <!-- VK: одинаковая высота с TG; иконка увеличена -->
+          <button class="btn btn-vk" id="vkLoginBtn" type="button" aria-label="Войти через VK ID">
+            <span class="vk-ico">
+              <!-- ФАЙЛ должен лежать рядом с index.html, имя в нижнем регистре -->
+              <img src="vk-logo.svg" alt="VK">
+            </span>
+            <span>Войти через VK ID</span>
+          </button>
 
-        <!-- Telegram: родной виджет, обрезка по краям для мобильных -->
-        <div class="tg-wrap u-btn-size" id="tgLoginWrap">
-          <!-- Telegram встраивает сюда iframe через свой скрипт ниже -->
+          <!-- Telegram: родной виджет в «рамке» фиксированной высоты -->
+          <div class="tg-wrap" id="tgLoginWrap"></div>
         </div>
-      </div>
 
-      <div class="badges">
-        <div class="badge">Розыгрыши</div>
-        <div class="badge">Гарантии призов</div>
-        <div class="badge">Турниры 24/7</div>
-      </div>
+        <div class="badges">
+          <div class="badge">Розыгрыши</div>
+          <div class="badge">Гарантии призов</div>
+          <div class="badge">Турниры 24/7</div>
+        </div>
 
-      <div class="poster" aria-hidden="true">
-        <picture>
-          <source
-            type="image/webp"
-            srcset="
-              assets/prize-chest-500w.webp 500w,
-              assets/prize-chest-700w.webp 700w,
-              assets/prize-chest-900w.webp 900w"
-            sizes="(max-width: 600px) 92vw, 600px" />
-          <img
-            src="assets/prize-chest-700w.png"
-            srcset="
-              assets/prize-chest-500w.png 500w,
-              assets/prize-chest-700w.png 700w,
-              assets/prize-chest-900w.png 900w"
-            sizes="(max-width: 600px) 92vw, 600px"
-            alt="Призовой сундук ₽1.000.000" loading="lazy" decoding="async" />
-        </picture>
+        <div class="poster" aria-hidden="true">
+          <picture>
+            <source
+              type="image/webp"
+              srcset="
+                assets/prize-chest-500w.webp 500w,
+                assets/prize-chest-700w.webp 700w,
+                assets/prize-chest-900w.webp 900w"
+              sizes="(max-width: 600px) 92vw, var(--contentW)" />
+            <img
+              src="assets/prize-chest-700w.png"
+              srcset="
+                assets/prize-chest-500w.png 500w,
+                assets/prize-chest-700w.png 700w,
+                assets/prize-chest-900w.png 900w"
+              sizes="(max-width: 600px) 92vw, var(--contentW)"
+              alt="Призовой сундук ₽1.000.000" loading="lazy" decoding="async" />
+          </picture>
+        </div>
       </div>
     </section>
   </main>
 
   <script>
-    // Настройки доменов. Если у тебя другой бэкенд — поправь BASE_API.
     const BASE_API = 'https://vercel2pr.onrender.com';
 
-    // VK: показываем «холодный старт» как переход — в этой ссылке Render красиво
-    // покажет “Service waking up…”, чтобы пользователь видел, что всё ок.
+    // VK: специально используем прямой редирект на бек — Render покажет “Service waking up…”
     document.getElementById('vkLoginBtn').addEventListener('click', () => {
       window.location.href = BASE_API + '/api/auth/vk/start';
     });
 
-    // Telegram: встраиваем официальный login-виджет в нашу "рамку".
+    // Telegram login widget (кнопка остаётся внутри нашей рамки одинаковой ширины)
     (function mountTelegramWidget(){
       const wrap = document.getElementById('tgLoginWrap');
-      const origin = encodeURIComponent(location.origin);
       const s = document.createElement('script');
       s.async = true;
       s.src = 'https://telegram.org/js/telegram-widget.js?22';
-
-      // Атрибуты виджета:
-      s.setAttribute('data-telegram-login', 'GGR00m_bot');  // имя твоего бота
-      s.setAttribute('data-size', 'large');                 // крупная кнопка
+      s.setAttribute('data-telegram-login', 'GGR00m_bot');  // твой бот
+      s.setAttribute('data-size', 'large');
       s.setAttribute('data-userpic', 'false');              // без аватара
       s.setAttribute('data-request-access', 'write');
-      // Нам не нужен callback в виде редиректа, держим виджет на странице:
-      // (если захочешь серверный callback — добавь data-auth-url)
-
       wrap.appendChild(s);
     })();
   </script>
