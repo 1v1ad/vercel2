@@ -4,36 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GG Room</title>
+
+  <!-- чтобы не было 404 по фавиконке -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b0d12'/%3E%3Ctext x='50%25' y='54%25' text-anchor='middle' font-size='34' fill='%23f4d88a' font-family='Arial'%3EG%3C/text%3E%3C/svg%3E">
+
   <style>
     :root{
       --bg:#0b0d12; --card:#000; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
       --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px; --btnh:52px;
-
-      /* тонкая подстройка iframe Telegram относительно идеального центра */
-      --tg-nudge-x: 12px; /* вправо (+) / влево (-) на десктопе */
-      --tg-nudge-y: 1px;  /* вниз (+) / вверх (-) на десктопе */
     }
-    @media (max-width: 480px){
-      :root{
-        --tg-nudge-x: 10px; /* мобилка обычно требует чуть меньше */
-        --tg-nudge-y: 1px;
-      }
-    }
-
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; background:radial-gradient(1200px 600px at 50% -10%, #171b24 0%, #0b0d12 55%, #090b10 100%);
-      color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin:0;
+      background:radial-gradient(1200px 600px at 50% -10%, #171b24 0%, #0b0d12 55%, #090b10 100%);
+      color:var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       display:flex; flex-direction:column;
     }
+
     header{display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)}
     header b{color:var(--gold); letter-spacing:.4px}
 
-    .wrap{flex:1; display:grid; place-items:center; padding:20px 16px}
+    .wrap{flex:1; display:grid; place-items:center; padding:40px 16px}
+
     .card{
-      overflow:hidden; width:min(520px,100%); background:var(--card);
-      border-radius:var(--radius); padding:28px 24px; border:1px solid rgba(247,228,164,.35); position:relative;
+      overflow:hidden;
+      width:min(520px,100%);
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:28px 24px;
+      border:1px solid rgba(247,228,164,.35);
+      position:relative;
       box-shadow:0 10px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.02);
     }
     .card::before{
@@ -41,44 +43,62 @@
       --borderw:1px; padding:var(--borderw);
       background:linear-gradient(135deg, rgba(247,228,164,.8), rgba(247,228,164,.35) 45%, rgba(247,228,164,.6));
       -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-      -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none;
+      -webkit-mask-composite:xor; mask-composite:exclude;
+      pointer-events:none;
     }
 
-    h1{margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800; color:var(--gold); text-align:center}
-    .lead{margin:0 0 6px; color:var(--muted)}
+    h1{
+      margin:0 0 6px;
+      font-size:26px; line-height:1.2; font-weight:800;
+      color:var(--gold); text-align:center; margin-left:auto; margin-right:auto;
+      white-space:nowrap;            /* как в «эталоне» — в одну строку */
+    }
 
     .btn{
-      width:100%; height:var(--btnh); border:0; border-radius:12px; font-size:16px;
-      font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      width:100%; height:var(--btnh);
+      border:0; border-radius:12px; font-size:16px; font-weight:700;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
     }
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* Фон под TG-кнопкой (не кликабелен) + центрирование iframe */
+    /* Telegram: фон (не кликабелен) + центрирование самого iframe */
     .tg-wrap{
       margin-top:10px; width:100%; height:var(--btnh);
-      border-radius:12px; background:#54a9eb; box-shadow:0 8px 24px rgba(39,135,245,.25);
+      border-radius:12px; background:#54a9eb;
+      box-shadow:0 8px 24px rgba(39,135,245,.25);
       overflow:hidden; line-height:0;
-      position:relative;
+      display:flex; align-items:center; justify-content:center;
     }
     .tg-wrap iframe{
-      position:absolute !important;
-      top:50% !important; left:50% !important;
-      transform:translate(-50%, -50%) translate(var(--tg-nudge-x), var(--tg-nudge-y)) !important;
-      width:300px !important; height:52px !important;  /* размер large-виджета Telegram */
-      display:block; margin:0 !important;
-      border:0 !important; border-radius:12px !important;
+      position:static !important;          /* никаких абсолютов */
+      width:300px !important; height:52px !important; /* size=large у TG */
+      display:block; margin:0 !important; border:0 !important; border-radius:12px !important;
       background:transparent !important;
-      pointer-events:auto !important; /* кликаем именно виджет */
+      pointer-events:auto !important;      /* кликаем настоящий виджет */
     }
 
     .status{margin-top:10px; color:var(--muted); min-height:1.2em}
 
-    .badges{margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
-    .badge{border:1px solid rgba(247,228,164,.35); color:var(--gold); background:rgba(247,228,164,.06);
-      padding:6px 10px; border-radius:999px; font-size:12px}
+    .badges{
+      margin-top:18px; display:flex; gap:10px; justify-content:center; flex-wrap:nowrap; /* в одну строку */
+    }
+    .badge{
+      border:1px solid rgba(247,228,164,.35);
+      color:var(--gold); background:rgba(247,228,164,.06);
+      padding:6px 10px; border-radius:999px; font-size:12px; white-space:nowrap;
+    }
 
     .card-media{ margin:16px -24px -28px; border-bottom-left-radius:var(--radius); border-bottom-right-radius:var(--radius); overflow:hidden }
     .card-media picture, .card-media img{ display:block; width:100%; height:auto }
+
+    /* мобильные «как в эталоне»: всё помещается в одну строку */
+    @media (max-width: 480px){
+      .card::before{ --borderw:2px }
+      h1{font-size:18px}                 /* компактнее заголовок */
+      .badges{gap:6px}
+      .badge{font-size:11px; padding:6px 8px}
+      .card-media{ margin:14px -16px -24px }
+    }
   </style>
 </head>
 <body>
@@ -87,17 +107,16 @@
   <main class="wrap">
     <section class="card">
       <h1>Войдите и начните выигрывать!</h1>
-      <p class="lead">&nbsp;</p>
 
       <!-- VK -->
       <button class="btn vk" id="login">Войти через VK ID</button>
 
-      <!-- Telegram: виджет в центре, фон не кликабелен, аватар отключён -->
+      <!-- Telegram (виджет обязателен для onAuth), без аватара -->
       <div class="tg-wrap" id="tg-login">
         <script async src="https://telegram.org/js/telegram-widget.js?22"
                 data-telegram-login="GGR00m_bot"
                 data-size="large"
-                data-userpic="false"          <!-- отключили аватар -->
+                data-userpic="false"
                 data-request-access="write"
                 data-onauth="onTelegramAuth(user)">
         </script>
@@ -111,9 +130,21 @@
         <div class="badge">Турниры 24/7</div>
       </div>
 
+      <!-- Картинка сундука: webp/png, 500/700/900w как в эталоне -->
       <div class="card-media">
         <picture>
-          <img src="assets/prize-chest.png" alt="Призовой сундук" loading="lazy" decoding="async">
+          <source type="image/webp"
+                  srcset="assets/prize-chest-500w.webp 500w,
+                          assets/prize-chest-700w.webp 700w,
+                          assets/prize-chest-900w.webp 900w"
+                  sizes="(max-width: 480px) 100vw, 640px">
+          <source type="image/png"
+                  srcset="assets/prize-chest-500w.png 500w,
+                          assets/prize-chest-700w.png 700w,
+                          assets/prize-chest-900w.png 900w"
+                  sizes="(max-width: 480px) 100vw, 640px">
+          <!-- Фолбэк сразу на реально существующий файл -->
+          <img src="assets/prize-chest-700w.png" alt="Призовой сундук" loading="lazy" decoding="async">
         </picture>
       </div>
     </section>
@@ -127,22 +158,19 @@
       window.location.href = API + '/api/auth/vk/start';
     };
 
-    // TG → обработка
+    // Telegram → onAuth
     async function onTelegramAuth(user){
       try{
-        const resp = await fetch(API + '/api/auth/tg', {
+        const r = await fetch(API + '/api/auth/tg', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
           credentials:'include',
           body: JSON.stringify({ user })
         });
-        const data = await resp.json();
+        const data = await r.json();
         const s = document.getElementById('status');
 
-        if(!data.ok){
-          s.textContent = 'TG вход: ' + (data.error||'ошибка');
-          return;
-        }
+        if(!data.ok){ s.textContent = 'TG вход: ' + (data.error||'ошибка'); return; }
 
         if(data.mergeNeeded && data.primary && data.merged){
           const ok = confirm(
@@ -153,13 +181,17 @@
           );
           if(ok){
             const r2 = await fetch(API + '/api/link/merge/confirm', {
-              method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              credentials:'include',
               body: JSON.stringify({ primaryId: data.primary.id, mergedId: data.merged.id })
             });
             const j2 = await r2.json();
             s.textContent = j2.ok ? 'Аккаунты объединены' : ('Не удалось объединить: ' + (j2.error||'')); 
             if(j2.ok) setTimeout(()=>location.href='lobby.html', 600);
-          } else s.textContent = 'Объединение отменено';
+          }else{
+            s.textContent = 'Объединение отменено';
+          }
           return;
         }
 
@@ -173,11 +205,12 @@
       }
     }
 
-    // Возврат после VK (?logged=1) — как и было
+    // Возврат после VK (?logged=1)
     (function handleLoggedRedirect(){
-      const p = new URLSearchParams(location.search);
-      if (p.get('logged') === '1') {
-        document.getElementById('status').textContent = 'Готово: авторизован. Переходим в лобби...';
+      const params = new URLSearchParams(location.search);
+      if (params.get('logged') === '1') {
+        const st = document.getElementById('status');
+        st.textContent = 'Готово: авторизован. Переходим в лобби...';
         setTimeout(() => { window.location.href = '/lobby.html'; }, 500);
       }
     })();
