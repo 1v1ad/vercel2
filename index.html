@@ -12,144 +12,85 @@
       --gold-d:#C7A74F;
       --bg:#0e141b;
       --card:#0b0f14;
-      --stroke:#c9a84e;
       --vk:#2a7bd8;
       --vk-d:#1f62ac;
-      --tg:#54a9eb;
       --pill:#171b21;
       --pill-stroke:#6a5520;
-      --shadow: 0 10px 35px rgba(0,0,0,.55);
+      --shadow:0 10px 35px rgba(0,0,0,.55);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
       font-family:"Montserrat",system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
-      background:
-        radial-gradient(1000px 500px at 50% -200px, #15202b 0%, rgba(21,32,43,0) 55%),
-        var(--bg);
+      background: radial-gradient(1000px 500px at 50% -200px, #15202b 0%, rgba(21,32,43,0) 55%), var(--bg);
       color:#fff;
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
     }
 
     /* Header */
-    header{
-      display:flex; justify-content:center; align-items:center;
-      padding:18px 16px 8px;
-    }
-    .brand{
-      font-weight:800; letter-spacing:.08em; font-size:20px;
-      color:rgba(255,220,130,.85);
-    }
-    .brand .gg{color:var(--gold); letter-spacing:.04em}
-    
+    header{display:flex;justify-content:center;align-items:center;padding:18px 16px 8px}
+    .brand{font-weight:800;letter-spacing:.08em;font-size:20px;color:rgba(255,220,130,.85)}
+    .brand .gg{color:var(--gold);letter-spacing:.04em}
+
     /* Layout */
-    .wrap{display:flex; justify-content:center; padding:20px 16px 64px}
+    .wrap{display:flex;justify-content:center;padding:20px 16px 60px}
     .card{
-      width: min(92vw, 520px);
-      background: radial-gradient(800px 380px at 50% 0, #121923 0%, rgba(18,25,35,0) 70%), var(--card);
+      width:min(92vw,520px);
+      background: radial-gradient(800px 380px at 50% 0,#121923 0%,rgba(18,25,35,0) 70%), var(--card);
       border:1px solid #3b2e12;
       border-radius:18px;
-      box-shadow: var(--shadow), inset 0 0 0 1px rgba(255,255,255,.02);
-      position:relative;
+      box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.02);
+      outline:1px solid #c9a84e; outline-offset:-12px;
       padding:24px 20px 26px;
-      outline:1px solid var(--stroke);
-      outline-offset:-12px;
     }
 
     h1{
-      margin:0 0 16px 0;
+      margin:0 0 16px;
       text-align:center;
       color:var(--gold);
       font-weight:800;
-      font-size:clamp(20px, 4.3vw, 28px);
+      font-size:clamp(20px,4.3vw,28px);
       line-height:1.2;
       letter-spacing:.02em;
     }
 
     /* Auth block */
-    .auth{
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:10px;
-      margin-bottom:14px;
-    }
+    .auth{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:14px}
 
-    /* VK button – 40px height, icon 40×40, width by content, centered */
+    /* VK button — высота 40, иконка 40×40, ширина по контенту, центр */
     .btn-vk{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      height:40px;
-      padding:0 14px 0 10px;         /* авто-ширина с паддингами */
-      border-radius:20px;
-      background:var(--vk);
-      color:#fff;
-      border:1px solid rgba(255,255,255,.08);
-      box-shadow: 0 6px 22px rgba(42,123,216,.35);
-      font-weight:700;
-      font-size:15px;
-      line-height:40px;
-      white-space:nowrap;
-      cursor:pointer;
-      transition:transform .08s ease, box-shadow .12s ease, background .12s ease;
+      display:inline-flex; align-items:center; gap:10px;
+      height:40px; padding:0 14px 0 10px; border-radius:20px;
+      background:var(--vk); color:#fff; border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 6px 22px rgba(42,123,216,.35);
+      font-weight:700; font-size:15px; line-height:40px; white-space:nowrap;
+      cursor:pointer; transition:transform .08s ease, background .12s ease;
     }
-    .btn-vk:hover{ background:var(--vk-d) }
-    .btn-vk:active{ transform:translateY(1px) }
-
+    .btn-vk:hover{background:var(--vk-d)}
+    .btn-vk:active{transform:translateY(1px)}
     .btn-vk .ico-box{
-      width:40px; height:40px;           /* КВАДРАТ 40×40 */
-      border-radius:12px;
-      background:rgba(0,0,0,.12);
-      display:grid; place-items:center;
-      flex:0 0 40px;
-      overflow:hidden;
+      width:40px; height:40px; flex:0 0 40px;
+      border-radius:12px; background:rgba(0,0,0,.12);
+      display:grid; place-items:center; overflow:hidden;
     }
-    .btn-vk .ico-box img{
-      width:22px; height:22px; display:block;
-      filter: drop-shadow(0 0 0 rgba(0,0,0,0));
-    }
+    .btn-vk .ico-box img{width:22px;height:22px;display:block}
 
-    /* TG widget wrapper (центрируем и скрываем артефакты) */
-    .tg-auth{
-      display:flex; justify-content:center; align-items:center;
-      min-height:40px; width:100%;
-      overflow:hidden; /* чтобы не было лишнего справа у iframe */
-    }
-    .tg-auth iframe{ display:block; margin:0 auto; }
+    /* TG widget wrapper — центр и без артефактов */
+    .tg-auth{display:flex;justify-content:center;align-items:center;min-height:40px;width:100%;overflow:hidden}
+    .tg-auth iframe{display:block;margin:0 auto}
 
     /* Pills */
-    .pills{
-      display:flex; gap:10px; justify-content:center; flex-wrap:wrap;
-      margin:10px 0 16px;
-    }
-    .pill{
-      padding:8px 14px;
-      border-radius:16px;
-      background:var(--pill);
-      border:1px solid var(--pill-stroke);
-      color:var(--gold);
-      font-size:12px;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.25);
-    }
+    .pills{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:10px 0 16px}
+    .pill{padding:8px 14px;border-radius:16px;background:var(--pill);border:1px solid var(--pill-stroke);color:var(--gold);font-size:12px}
 
-    /* Chest image */
-    .chest{
-      margin-top:6px;
-      border-radius:12px;
-      overflow:hidden;
-      border:1px solid rgba(201,168,78,.25);
-      box-shadow: inset 0 0 60px rgba(255,193,53,.05);
-    }
-    .chest picture, .chest img{
-      display:block; width:100%; height:auto;
-    }
+    /* Chest image (как было) */
+    .chest{margin-top:6px;border-radius:12px;overflow:hidden}
+    .chest picture,.chest img{display:block;width:100%;height:auto}
 
-    /* Spacing tweaks on desktop */
-    @media (min-width: 900px){
-      .wrap{ padding-top:8px }
+    @media (min-width:900px){
+      .wrap{padding-top:8px}
     }
   </style>
 </head>
@@ -163,7 +104,7 @@
       <h1>Войдите и начните выигрывать!</h1>
 
       <div class="auth">
-        <!-- VK button (40px высота, иконка 40×40, ширина по контенту) -->
+        <!-- VK -->
         <button id="vk-login" class="btn-vk" type="button" aria-label="Войти через VK ID">
           <span class="ico-box">
             <img src="assets/vk-logo.svg" alt="VK">
@@ -171,15 +112,14 @@
           <span>Войти через VK&nbsp;ID</span>
         </button>
 
-        <!-- Telegram official widget (центрирован) -->
+        <!-- Telegram widget -->
         <div id="tg-auth" class="tg-auth">
           <script async src="https://telegram.org/js/telegram-widget.js?22"
                   data-telegram-login="GGR00m_bot"
                   data-size="large"
                   data-userpic="false"
-                  data-request-access="write"
-                  data-userpic="false"
                   data-radius="20"
+                  data-request-access="write"
                   data-onauth="onTelegramAuth(user)"></script>
         </div>
       </div>
@@ -208,10 +148,9 @@
     </section>
   </main>
 
-  <!-- Роуты сервера (должен лежать рядом как раньше) -->
   <script src="routes_link.js"></script>
   <script>
-    // VK: перейти на старт авторизации
+    // VK
     (function(){
       const btn = document.getElementById('vk-login');
       btn?.addEventListener('click', () => {
@@ -222,19 +161,13 @@
       });
     })();
 
-    // Telegram callback
+    // Telegram
     function onTelegramAuth(user){
-      // показываем стейт и сразу идём на серверный /api/auth/tg/complete
-      const status = document.getElementById('status');
-      if(status){ status.textContent = 'Вход...'; }
       const url = (window.ROUTES && window.ROUTES.tgComplete)
         ? window.ROUTES.tgComplete
         : '/api/auth/tg/complete';
-      // user.id / username передаются серверу cookie/редиректом на бекенде
       window.location.href = url;
     }
   </script>
-
-  <div id="status" style="position:fixed; left:-9999px; top:-9999px;"></div>
 </body>
 </html>
