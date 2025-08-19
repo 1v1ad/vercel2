@@ -11,19 +11,18 @@
     :root{
       --bg:#0b0d12; --card:#000; --text:#e8eaf0; --muted:#98a2b3; --gold:#f4d88a;
       --radius:18px; --border:rgba(255,255,255,.06);
-      --vk:#2787F5;
 
-      /* Базовый размер нативной TG-кнопки (size=large) */
+      /* базовый размер нативной TG-кнопки (size=large) */
       --btnw: 300px;
       --btnh: 52px;
 
-      /* «Чуть больше» */
+      /* лёгкое увеличение обеих кнопок */
       --scale: 1.06;
-    }
 
-    @media (max-width: 360px){
-      :root{ --scale: 0.96; } /* чтобы влезало на узких мобилках */
+      /* цвет как у TG-кнопки, чтобы совпадали */
+      --blue: #2AABEE;
     }
+    @media (max-width:360px){ :root{ --scale:0.96; } }
 
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -56,28 +55,27 @@
       color:var(--gold); text-align:center; white-space:nowrap;
     }
 
-    /* Общая панель кнопок — центрируем и даём одинаковую ширину */
-    .btnbar{
-      display:flex; flex-direction:column; align-items:center; gap:12px;
-      margin-bottom:4px;
-    }
+    .btnbar{ display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:4px; }
+
+    /* общий «каркас» обеих кнопок — размер и тени */
     .btn-like{
       width: calc(var(--btnw) * var(--scale));
       height: calc(var(--btnh) * var(--scale));
-      border-radius:12px; display:flex; align-items:center; justify-content:center;
+      border-radius: calc(var(--btnh) * var(--scale) / 2); /* как у TG */
+      display:flex; align-items:center; justify-content:flex-start;
+      gap:12px; padding:0 18px;
       font-weight:800; font-size:16px; line-height:1; white-space:nowrap;
       box-shadow:0 8px 24px rgba(39,135,245,.25);
       user-select:none; -webkit-tap-highlight-color:transparent;
     }
 
-    /* VK-кнопка — стили «как у TG»: с иконкой слева и тем же размером */
+    /* VK-кнопка: такой же цвет/вид как у TG, текст сдвинут влево */
     .vk-like{
-      background: var(--vk); color:#fff; border:0; cursor:pointer;
-      gap:10px; padding:0 18px;
+      background: var(--blue); color:#fff; border:0; cursor:pointer;
     }
-    .vk-like svg{ width:22px; height:22px; fill:#fff; flex:0 0 auto }
+    .vk-like svg{ width:29px; height:29px; fill:#fff; flex:0 0 auto; display:block } /* +~30% */
 
-    /* Telegram — НЕТ фона. Центрируем только iframe и слегка скейлим */
+    /* Telegram — только виджет, без подложки */
     .tg-wrap{
       position:relative;
       width: calc(var(--btnw) * var(--scale));
@@ -110,7 +108,7 @@
       .card-media{ margin:14px -16px -24px }
     }
 
-    /* статус-лоадер для TG ожидания */
+    /* статус-лоадер */
     .loader{display:inline-flex; gap:6px; align-items:center; margin-left:8px}
     .loader .dot{width:6px; height:6px; border-radius:50%; background:#98a2b3; opacity:.3; animation:blink 1.2s infinite ease-in-out}
     .loader .dot:nth-child(2){animation-delay:.2s}.loader .dot:nth-child(3){animation-delay:.4s}
@@ -125,15 +123,16 @@
       <h1>Войдите и начните выигрывать!</h1>
 
       <div class="btnbar">
-        <!-- VK в том же размере и с иконкой -->
+        <!-- VK в том же размере/скруглении/цвете, текст сдвинут влево -->
         <button class="btn-like vk-like" id="login" type="button" aria-label="Войти через VK ID">
+          <!-- аккуратный VK-глиф (белый), +~30% -->
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M13.3 18c-.5 0-.7-.3-1.2-.8-.9-.9-1.3-1-1.5-1-.3 0-.3.1-.3.5v1.1c0 .4-.1.5-.9.5-1.3 0-2.8-.8-4.1-2.3C2.3 13.2 1 10.9 1 9.2c0-.4.1-.5.6-.5h1.9c.5 0 .6.2.7.6.8 2.1 2.3 4.1 3 4.1.2 0 .2-.2.2-.6V9c0-.5-.1-.7-.6-.7H5.9c-.4 0-.5-.2-.5-.6V6.1c0-.4.2-.6.6-.6h3c.5 0 .6.2.7.6v3.9c0 .3.1.5.2.5.2 0 .5-.3 1-1 1-1.4 1.7-3 1.7-3.4 0-.3.2-.5.6-.5h2.1c.5 0 .6.2.6.5 0 .5-1.1 2.6-2.2 4.1-.3.4-.4.6 0 .9.7.5 1.5 1.4 2.3 2.4 1.1 1.4 1.4 2.1 1.4 2.4 0 .4-.2.6-.7.6h-2c-.5 0-.7-.2-1-.6-.8-1.2-1.7-2.2-2-2.2-.2 0-.2.1-.2.5v1.1c0 .4-.1.6-.6.6h-1.2z"/>
+            <path d="M13.3 18c-.5 0-.7-.2-1.1-.6-.6-.6-1-.9-1.3-.9-.2 0-.2.1-.2.4v1c0 .4-.2.6-.9.6-1.3 0-2.8-.8-4.1-2.3C3 13.2 1.9 11 1.9 9.3c0-.3.1-.5.6-.5h1.9c.4 0 .6.2.7.6.7 2 2.2 4.1 3 4.1.2 0 .2-.2.2-.6V9c0-.5-.1-.7-.6-.7H5.9c-.3 0-.5-.2-.5-.6V6.1c0-.4.2-.6.6-.6h3c.5 0 .6.2.7.6v4c0 .2.1.4.2.4.2 0 .5-.3 1-1 .9-1.3 1.7-3 1.7-3.4 0-.2.1-.3.3-.3h2.1c.4 0 .6.2.6.4 0 .5-1.1 2.6-2.2 4.1-.3.4-.3.6 0 .8.7.5 1.6 1.5 2.3 2.4 1.1 1.4 1.4 2.1 1.4 2.4 0 .4-.2.6-.7.6h-2c-.5 0-.7-.2-1-.6-.8-1.1-1.7-2.2-2-2.2-.2 0-.2.1-.2.4v1c0 .4-.2.6-.6.6h-1.2z"/>
           </svg>
           Войти через VK ID
         </button>
 
-        <!-- Telegram: только виджет, без фона -->
+        <!-- Telegram: только виджет, без подложки -->
         <div class="tg-wrap" id="tg-login">
           <script async src="https://telegram.org/js/telegram-widget.js?22"
                   data-telegram-login="GGR00m_bot"
@@ -174,22 +173,19 @@
   <script>
     const API = 'https://vercel2pr.onrender.com';
 
-    // лёгкий прогрев Render (чтобы меньше ждать)
     function warmUpBackend(){
       try{ new Image().src = API + '/?wake=' + Date.now(); }catch(_){}
-      try{ fetch(API + '/__wake', { mode: 'no-cors', cache: 'no-store' }).catch(()=>{}); }catch(_){}
+      try{ fetch(API + '/__wake', { mode:'no-cors', cache:'no-store' }).catch(()=>{}); }catch(_){}
     }
     window.addEventListener('load', warmUpBackend);
     document.getElementById('login')?.addEventListener('mouseenter', warmUpBackend);
     document.getElementById('tg-login')?.addEventListener('mouseenter', warmUpBackend);
 
-    // VK → редирект (у VK показывается «Render waking up…» — это норм)
     document.getElementById('login').onclick = () => {
       warmUpBackend();
       window.location.href = API + '/api/auth/vk/start';
     };
 
-    // TG → показываем понятный статус, если Render спит (ретраи)
     const $s = () => document.getElementById('status');
     function setStatus(text, wait=false){
       $s().innerHTML = wait
@@ -252,7 +248,6 @@
       }
     }
 
-    // возврат после VK (?logged=1)
     (function handleLoggedRedirect(){
       const p = new URLSearchParams(location.search);
       if (p.get('logged') === '1') {
