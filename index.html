@@ -8,6 +8,9 @@
     :root{
       --bg:#0b0d12; --bg2:#11151d; --card:#000000; --text:#e8eaf0; --muted:#98a2b3; --vk:#2787F5;
       --gold:#f4d88a; --border:rgba(255,255,255,.06); --radius:18px; --btnh:52px;
+      /* тонкая подстройка положения виджета Telegram относительно идеального центра */
+      --tg-nudge-x: 2px;   /* сдвиг вправо; поставь 0px если лишнее */
+      --tg-nudge-y: 0px;   /* сдвиг по вертикали; можно 1px вниз, если нужно */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -21,7 +24,6 @@
     }
     header b{color:var(--gold); letter-spacing:.4px}
 
-    /* компактнее расстояние от шапки до карточки */
     .wrap{flex:1; display:grid; place-items:center; padding:20px 16px}
     .card{
       overflow:hidden; width:min(520px,100%); background:var(--card);
@@ -41,7 +43,6 @@
       margin:0 0 6px; font-size:26px; line-height:1.2; font-weight:800;
       color:var(--gold); text-align:center; margin-left:auto; margin-right:auto;
     }
-    /* менее широкий зазор под заголовком */
     .lead{margin:0 0 6px; color:var(--muted)}
 
     .btn{
@@ -50,30 +51,26 @@
     }
     .btn.vk{background:var(--vk); color:#fff; box-shadow:0 8px 24px rgba(39,135,245,.25)}
 
-    /* большой фон под TG-кнопкой (некликабельный), идеальное центрирование iframe */
+    /* фон под TG-кнопкой (некликабельный) */
     .tg-wrap{
-      margin-top:10px;
-      width:100%; height:var(--btnh);
-      position:relative;
-      border-radius:12px;
-      background:#54a9eb;
-      box-shadow:0 8px 24px rgba(39,135,245,.25);
-      overflow:hidden;
-
-      display:grid; place-items:center;  /* ровно по центру */
-      line-height:0;                      /* убираем базовую линию, чтобы не «прыгало» */
+      margin-top:10px; width:100%; height:var(--btnh);
+      position:relative; border-radius:12px; background:#54a9eb;
+      box-shadow:0 8px 24px rgba(39,135,245,.25); overflow:hidden;
+      line-height:0;  /* убираем влияние базовой линии текста */
     }
+    /* сам iframe центрируем математически и слегка «нуджим» переменными выше */
     .tg-wrap iframe{
+      position:absolute; top:50%; left:50%;
+      transform:
+        translate(-50%, -50%)
+        translate(var(--tg-nudge-x), var(--tg-nudge-y));
       display:block; margin:0;
-      height:100% !important;
-      width:auto !important;
-      border:0;
-      border-radius:12px !important;
+      height:100% !important; width:auto !important;
+      border:0; border-radius:12px !important;
     }
 
     .status{margin-top:10px; color:var(--muted); min-height:1.2em}
 
-    /* компактнее под бейджами */
     .badges{margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center}
     .badge{border:1px solid rgba(247,228,164,.35); color:var(--gold); background:rgba(247,228,164,.06);
       padding:6px 10px; border-radius:999px; font-size:12px}
@@ -101,7 +98,7 @@
       <!-- VK -->
       <button class="btn vk" id="login">Войти через VK ID</button>
 
-      <!-- Telegram: некликабельный фон, кликает только реальная кнопка -->
+      <!-- Telegram: виджет в центре, фон некликабелен -->
       <div class="tg-wrap" id="tg-login">
         <script async src="https://telegram.org/js/telegram-widget.js?22"
                 data-telegram-login="GGR00m_bot"
