@@ -173,5 +173,92 @@
       });
     })();
   </script>
+
+  <!-- Склейка аккаунтов -->
+  <section id="linking" style="margin:16px auto; max-width:640px; background:#0f1219; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:16px;">
+    <h3 style="margin:0 0 8px 0; font-size:18px">Связать аккаунты (VK ↔ TG)</h3>
+    <div id="link-status" style="font-size:14px; opacity:.8; margin-bottom:8px">Статус: …</div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center">
+      <button id="gen-code" style="padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#151a23; color:#e8eaf0; cursor:pointer">Получить код</button>
+      <span id="code-box" style="font-family: ui-monospace,Consolas,monospace; padding:6px 10px; border:1px dashed rgba(255,255,255,.18); border-radius:8px; display:none"></span>
+      <input id="claim-input" placeholder="Введите LINK-XXXX" style="flex:1; min-width:180px; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.12); background:#0b0d12; color:#e8eaf0"/>
+      <button id="claim-btn" style="padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#151a23; color:#e8eaf0; cursor:pointer">Связать</button>
+    </div>
+    <div style="margin-top:10px; display:flex; gap:8px; align-items:center">
+      <input id="phone-input" placeholder="Телефон (+7…)" style="flex:1; min-width:180px; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,.12); background:#0b0d12; color:#e8eaf0"/>
+      <button id="phone-btn" style="padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#151a23; color:#e8eaf0; cursor:pointer">Склеить по телефону</button>
+    </div>
+    <div id="link-msg" style="margin-top:8px; font-size:14px; opacity:.9"></div>
+  </section>
+  <script>
+    (function(){
+      const API = (window.API || 'https://vercel2pr.onrender.com');
+      const st = document.getElementById('link-status');
+      const msg = document.getElementById('link-msg');
+      const box = document.getElementById('code-box');
+
+      function setMsg(text){ msg.textContent = text; }
+      function setStatus(text){ if(st) st.textContent = 'Статус: ' + text; }
+
+      async function refresh(){
+        try{
+          const r = await fetch(API + '/api/whoami', { credentials: 'include' });
+          const j = await r.json();
+          if (j && j.user){
+            const ps = (j.user.providers || []).join(', ') || '—';
+            setStatus('вход: #' + j.user.id + ' | провайдеры: ' + ps + (j.user.has_phone ? ' | phone✓' : ''));
+          } else {
+            setStatus('гость');
+          }
+        } catch(e){ setStatus('нет соединения'); }
+      }
+
+      document.getElementById('gen-code')?.addEventListener('click', async () => {
+        try{
+          const r = await fetch(API + '/api/link/code/generate', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:'{}' });
+          const j = await r.json();
+          if (j.ok){
+            box.style.display = 'inline-block';
+            box.textContent = j.code + ' (до ' + new Date(j.expires_at).toLocaleTimeString() + ')';
+            setMsg('Отправьте этот код нашему TG-боту — аккаунты склеятся автоматически');
+          } else {
+            setMsg('Ошибка: ' + (j.error || 'не удалось сгенерировать код'));
+          }
+        } catch(e){ setMsg('Сеть недоступна'); }
+      });
+
+      document.getElementById('claim-btn')?.addEventListener('click', async () => {
+        const code = String(document.getElementById('claim-input').value || '').trim().toUpperCase();
+        if (!/^LINK-[A-Z0-9]{4}$/.test(code)){ setMsg('Код формата LINK-XXXX'); return; }
+        try{
+          const r = await fetch(API + '/api/link/code/claim', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ code }) });
+          const j = await r.json();
+          if (j.ok){
+            setMsg('Готово: аккаунты объединены');
+            refresh();
+          } else {
+            setMsg('Ошибка: ' + (j.error || 'не удалось применить код'));
+          }
+        } catch(e){ setMsg('Сеть недоступна'); }
+      });
+
+      document.getElementById('phone-btn')?.addEventListener('click', async () => {
+        const phone = String(document.getElementById('phone-input').value || '').trim();
+        try{
+          const r = await fetch(API + '/api/link/phone', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone }) });
+          const j = await r.json();
+          if (j.ok){
+            setMsg(j.merged ? 'Склеено по телефону' : 'Телефон привязан. Совпадений не найдено.');
+            refresh();
+          } else {
+            setMsg('Ошибка: ' + (j.error || 'не удалось'));
+          }
+        } catch(e){ setMsg('Сеть недоступна'); }
+      });
+
+      refresh();
+    })();
+  </script>
+
 </body>
 </html>
