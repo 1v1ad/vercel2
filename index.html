@@ -163,11 +163,44 @@
   </main>
 
   <script>
+
+  // Device ID: stable, signed-less identifier stored on the frontend domain.
+  (function(){
+    function uuidv4() {
+      if (crypto && crypto.randomUUID) return crypto.randomUUID();
+      const rnd = new Uint8Array(16); (window.crypto||window.msCrypto).getRandomValues(rnd);
+      rnd[6] = (rnd[6] & 0x0f) | 0x40; rnd[8] = (rnd[8] & 0x3f) | 0x80;
+      const b = [...rnd].map(x=>x.toString(16).padStart(2,'0')).join('');
+      return `${b.slice(0,8)}-${b.slice(8,12)}-${b.slice(12,16)}-${b.slice(16,20)}-${b.slice(20)}`;
+    }
+    const key = 'gg_did';
+    let did = localStorage.getItem(key);
+    if (!did) { did = uuidv4(); localStorage.setItem(key, did); }
+    // expose
+    window.__GG_DID__ = did;
+  })();
+
+
+// Add x-device-id to all fetches to API (best-effort)
+(function(){
+  const DID = window.__GG_DID__;
+  const origFetch = window.fetch;
+  window.fetch = function(input, init={}){
+    try{
+      const url = (typeof input === 'string') ? input : (input?.url || '');
+      const headers = new Headers(init?.headers || {});
+      if (url && url.startsWith(API)) headers.set('x-device-id', DID);
+      return origFetch(input, { ...init, headers });
+    }catch(_){ return origFetch(input, init); }
+  };
+})();
+
+
     const API = 'https://vercel2pr.onrender.com';
     const TG_BOT_ID = 8236271394;
 
     document.getElementById('vk-login').onclick = () => {
-      window.location.href = API + '/api/auth/vk/start';
+      window.location.href = API + '/api/auth/vk/start?did=' + encodeURIComponent(window.__GG_DID__);
     };
 
     async function warmAndMountTg() {
@@ -182,7 +215,7 @@
         s.setAttribute('data-size', 'large');
         s.setAttribute('data-userpic', 'false');
         s.setAttribute('data-request-access', 'write');
-        s.setAttribute('data-auth-url', API + '/api/auth/tg/callback');
+        s.setAttribute('data-auth-url', API + '/api/auth/tg/callback?did=' + encodeURIComponent(window.__GG_DID__));
         const mount = document.getElementById('tg-auth');
         if (mount) mount.appendChild(s);
         setTimeout(() => {
