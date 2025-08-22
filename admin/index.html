@@ -1,128 +1,82 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <title>GGRoom — Admin</title>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root { color-scheme: dark; }
-    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0f14; color:#e6e9ef; }
-    .wrap { max-width:1100px; margin:0 auto; padding:24px; }
-    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    input, button {
-      background:#111826; color:#e6e9ef; border:1px solid #1f2a3a;
-      padding:10px 12px; border-radius:10px; font-size:14px; outline:none;
-    }
-    input:focus { border-color:#335b99; }
-    button { cursor:pointer; }
-    .okdot { width:10px; height:10px; border-radius:999px; background:#2e7d32; display:inline-block; margin-right:8px; }
-    .baddot { width:10px; height:10px; border-radius:999px; background:#b71c1c; display:inline-block; margin-right:8px; }
-    .grid { display:grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap:12px; margin-top:16px; }
-    .card { background:#111826; border:1px solid #1f2a3a; border-radius:16px; padding:18px; }
-    .big { font-size:24px; font-weight:700; }
-    .muted { color:#8ea1b5; }
-    table { width:100%; border-collapse:collapse; margin-top:14px; }
-    th, td { padding:8px 6px; border-bottom:1px solid #1f2a3a; text-align:left; }
-  </style>
+  <title>GGRoom Admin</title>
+
+  <!-- Основные стили -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.patch.css" />
+  <!-- Доб. стили только для эмодзи-флагов -->
+  <link rel="stylesheet" href="emoji.css" />
+
+  <!-- Chart.js для графика -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="row">
-      <span id="status" class="okdot" title="API OK"></span>
-      <input id="apiInput" style="min-width:420px" />
-      <input id="passInput" type="password" placeholder="Admin password" />
+  <header class="header">
+    <div class="left">
+      <div class="dot ok" id="apiState" title="API state"></div>
+      <input id="backendUrl" value="https://vercel2pr.onrender.com" />
+    </div>
+    <div class="right">
+      <input id="adminPwd" type="password" placeholder="Admin password" />
       <button id="saveBtn">Сохранить</button>
-      <button id="checkBtn">Проверка</button>
+      <button id="healthBtn">Проверка</button>
     </div>
+  </header>
 
-    <div class="grid">
-      <div class="card"><div class="muted">Пользователи</div><div class="big" id="mUsers">—</div></div>
-      <div class="card"><div class="muted">События</div><div class="big" id="mEvents">—</div></div>
-      <div class="card"><div class="muted">Авторизаций (7д)</div><div class="big" id="mAuth7">—</div></div>
-      <div class="card"><div class="muted">Уникальные (7д)</div><div class="big" id="mUniq7">—</div></div>
-    </div>
+  <main class="container">
+    <!-- KPI карточки -->
+    <section class="cards">
+      <div class="card">
+        <div class="label">Пользователи</div>
+        <div class="value" id="kpiUsers">–</div>
+      </div>
+      <div class="card">
+        <div class="label">События</div>
+        <div class="value" id="kpiEvents">–</div>
+      </div>
+      <div class="card">
+        <div class="label">Авторизаций (7д)</div>
+        <div class="value" id="kpiAuth7">–</div>
+      </div>
+      <div class="card">
+        <div class="label">Уникальные (7д)</div>
+        <div class="value" id="kpiUniq7">–</div>
+      </div>
+    </section>
 
-    <div class="card" style="margin-top:16px">
-      <div class="muted">Аналитика посещений</div>
-      <table id="chartTbl"><thead><tr><th>День</th><th>Авторизаций</th><th>Уникальные</th></tr></thead><tbody></tbody></table>
-    </div>
-  </div>
+    <!-- График -->
+    <section class="panel">
+      <div class="panel-title">Аналитика посещений</div>
+      <canvas id="chart" height="120"></canvas>
+    </section>
 
-  <script>
-    const LS = {
-      api: 'gg_admin_api',
-      pass: 'gg_admin_pass',
-    };
-    const DEVICE_ID_KEY = 'gg_device_id';
-    function ensureDeviceId() {
-      let did = localStorage.getItem(DEVICE_ID_KEY);
-      if (!did) { did = crypto.randomUUID?.() || 'guest-' + Math.random().toString(36).slice(2); localStorage.setItem(DEVICE_ID_KEY, did); }
-      return did;
-    }
-    const DEVICE_ID = ensureDeviceId();
+    <!-- Пользователи -->
+    <section class="panel">
+      <div class="panel-title">Пользователи</div>
+      <div class="toolbar">
+        <input id="userSearch" placeholder="Поиск (vk_id, имя, фамилия)" />
+        <button id="userReload">Обновить</button>
+      </div>
+      <div class="table-wrap">
+        <table id="usersTable">
+          <thead><tr>
+            <th>ID</th><th>Имя</th><th>Баланс</th><th>Страна</th><th>Создан</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <button id="userPrev">←</button>
+        <span id="userPage">1</span>
+        <button id="userNext">→</button>
+      </div>
+    </section>
+  </main>
 
-    const apiInput  = document.getElementById('apiInput');
-    const passInput = document.getElementById('passInput');
-    const statusEl  = document.getElementById('status');
-    apiInput.value  = localStorage.getItem(LS.api)  || 'https://vercel2pr.onrender.com';
-    passInput.value = localStorage.getItem(LS.pass) || '';
-
-    document.getElementById('saveBtn').onclick = () => {
-      localStorage.setItem(LS.api, apiInput.value.trim());
-      localStorage.setItem(LS.pass, passInput.value);
-      ping();
-    };
-    document.getElementById('checkBtn').onclick = refreshSummary;
-
-    async function api(path) {
-      const base = apiInput.value.trim().replace(/\/+$/,'');
-      const res = await fetch(base + path, {
-        headers: {
-          'x-admin-password': passInput.value,
-          'x-device-id': DEVICE_ID,
-        },
-        credentials: 'include',
-      });
-      if (res.status === 401) throw new Error('unauthorized');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      return res.json();
-    }
-
-    async function ping() {
-      const base = apiInput.value.trim().replace(/\/+$/,'');
-      try {
-        const r = await fetch(base + '/health', { credentials: 'include' });
-        statusEl.className = r.ok ? 'okdot' : 'baddot';
-        statusEl.title = r.ok ? 'API OK' : 'API недоступен';
-      } catch {
-        statusEl.className = 'baddot';
-        statusEl.title = 'API недоступен';
-      }
-    }
-
-    async function refreshSummary() {
-      try {
-        const data = await api('/api/admin/summary');
-        document.getElementById('mUsers').textContent = data.users ?? '0';
-        document.getElementById('mEvents').textContent = data.events ?? '0';
-        document.getElementById('mAuth7').textContent = data.auth_7d ?? '0';
-        document.getElementById('mUniq7').textContent = data.uniq_7d ?? '0';
-
-        const tb = document.querySelector('#chartTbl tbody');
-        tb.innerHTML = '';
-        (data.chart || []).forEach(row => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${row.date}</td><td>${row.auth}</td><td>${row.uniq}</td>`;
-          tb.appendChild(tr);
-        });
-      } catch (e) {
-        alert('Ошибка запроса: ' + e.message);
-      }
-    }
-
-    ping();
-    // опционально автозагрузка при открытии
-    // refreshSummary();
-  </script>
+  <script src="app.js"></script>
 </body>
 </html>
