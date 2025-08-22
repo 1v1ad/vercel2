@@ -1,124 +1,65 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <title>GGRoom — Главная</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GG Room</title>
   <style>
-    :root{
-      --bg:#0b0d12; --bg2:#11151d; --card:#000000; --text:#e8eaf0; --muted:#98a2b3;
-      --vk:#2787F5; --tg:#2AABEE;
-      --gold:#f4d88a; --gold-strong:#ffd76a;
-      --border:rgba(255,255,255,.06); --radius:18px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      background:radial-gradient(1200px 600px at 50% -10%, #171b24 0%, #0b0d12 55%, #090b10 100%);
-      color:var(--text);
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      display:flex; flex-direction:column;
-    }
-    header{display:flex; justify-content:center; padding:14px 16px; border-bottom:1px solid var(--border)}
-    header b{
-      /* +25% размер логотипа */
-      font-size: 1.25rem;
-      letter-spacing:.4px; font-weight:800
-    }
-    header b .gg{
-      /* Градиент GG: красный → зелёный */
-      background: linear-gradient(90deg, #ff3b3b, #23d160);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      
-    }
-    main{flex:1; display:grid; place-items:center; padding:32px}
-    .hero{
-      width:min(1100px, 100%); display:grid; grid-template-columns:repeat(12, 1fr); gap:18px;
-      align-items:stretch;
-    }
-    .card{
-      grid-column:span 8; background:linear-gradient(180deg, #0f131b 0%, #0a0c12 100%);
-      border-radius:var(--radius); border:1px solid var(--border); padding:22px 18px 16px;
-      box-shadow:0 40px 100px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
-    }
-    .card h1{ margin:0 0 8px; font-size:28px; line-height:1.25 }
-    .lead{ color:var(--muted); margin:0 0 18px }
-    .pill{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; border:1px solid var(--border); background:#0f141c; color:#c4cbd6; font-size:.9rem }
-    .actions{ display:flex; gap:12px; flex-wrap:wrap; margin:18px 0 }
-    .btn{
-      display:inline-flex; align-items:center; gap:10px; padding:13px 16px; border-radius:12px;
-      background:#121722; border:1px solid var(--border); color:#e8eaf0; text-decoration:none; cursor:pointer;
+    :root { color-scheme: dark; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0f14; color:#e6e9ef; }
+    .wrap { max-width:960px; margin:0 auto; padding:24px; }
+    .card { background:#111826; border:1px solid #1f2a3a; border-radius:16px; padding:24px; box-shadow: 0 5px 30px rgba(0,0,0,.25); }
+    h1 { font-size:28px; margin:0 0 16px; }
+    p { margin:8px 0 16px; color:#9fb0c5; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .btn {
+      display:inline-flex; align-items:center; gap:10px; padding:14px 18px; border-radius:12px;
+      background:#1b2433; border:1px solid #2a3952; color:#e6e9ef; text-decoration:none; cursor:pointer;
       transition:.15s transform, .15s background;
     }
-    .btn:hover{ transform:translateY(-1px); background:#182034 }
-    .btn.vk{ background:rgba(39,135,245,.08); border-color:rgba(39,135,245,.25) }
-    .btn.vk:hover{ background:rgba(39,135,245,.14) }
-    .btn.tg{ background:rgba(42,171,238,.08); border-color:rgba(42,171,238,.25) }
-    .btn.tg:hover{ background:rgba(42,171,238,.14) }
-
-    .side{
-      grid-column:span 4; border-radius:var(--radius);
-      border:1px solid var(--border); background:linear-gradient(180deg, #0f141b 0%, #0b0d12 100%);
-      padding:18px;
-    }
-    .mini{ color:#c4cbd6; font-size:.95rem; line-height:1.4; }
-    .muted{ color:var(--muted) }
-    .list{ display:grid; gap:10px; margin:12px 0 0 }
-    .list .item{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      background:#0f141c; border:1px solid var(--border); border-radius:12px; padding:10px 12px;
-    }
-    .item .tag{ color:#a9b2c2; font-size:12px; border:1px solid var(--border); padding:2px 6px; border-radius:8px }
-    .foot{ margin-top:18px; color:#8d98a8; font-size:12px }
-
-    @media (max-width: 960px){
-      .card{ grid-column: span 12 }
-      .side{ grid-column: span 12 }
-    }
+    .btn:hover { background:#223048; transform:translateY(-1px); }
+    .vk { background:#2a3b69; border-color:#3f58a1; }
+    .vk:hover { background:#334881; }
+    .tg { background:#295a67; border-color:#3f8fa3; }
+    .tg:hover { background:#2f6a79; }
+    .muted { color:#8ea1b5; font-size:14px; }
+    .nav { display:flex; gap:10px; margin-top:16px; }
+    .nav a { color:#9fc6ff; text-decoration:none; }
+    .nav a:hover { text-decoration:underline; }
+    .foot { margin-top:24px; font-size:12px; color:#6f7d90; }
+    code { background:#0f1520; padding:2px 6px; border-radius:6px; border:1px solid #1b2433; }
   </style>
 </head>
 <body>
-  <header>
-    <b><span class="gg">GG</span>Room</b>
-  </header>
+  <div class="wrap">
+    <div class="card">
+      <h1>GGRoom</h1>
+      <p>Войдите через VK ID или Telegram. Склейка аккаунтов — через <code>device_id</code>.</p>
 
-  <main>
-    <section class="hero">
-      <div class="card">
-        <div class="pill">💫 Добро пожаловать</div>
-        <h1>Одна кнопка и вы в игре</h1>
-        <p class="lead">Вход через VK ID или Telegram. Без паролей, коды не нужны — склейка по устройству.</p>
-
-        <div class="actions">
-          <button id="vk-login" class="btn vk">Войти через VK ID</button>
-          <span id="tg-auth" class="btn tg" style="padding:0; border:none; background:transparent"></span>
-        </div>
-
-        <div class="muted" id="status">Готовы? Нажмите любую из кнопок.</div>
+      <div class="row" style="margin:18px 0 8px">
+        <button id="btnVK" class="btn vk">Войти через VK ID</button>
+        <span id="tgMount" class="btn tg" style="padding:0; border:none; background:transparent"></span>
       </div>
 
-      <aside class="side">
-        <div class="mini">Что дальше?</div>
-        <div class="list">
-          <div class="item"><div>1) Авторизуем вас</div><div class="tag">15 сек</div></div>
-          <div class="item"><div>2) Пополнение — прямо картой</div><div class="tag">минутка</div></div>
-          <div class="item"><div>3) Комнаты, турниры, лотереи</div><div class="tag">🔥 скоро</div></div>
-        </div>
-        <div class="foot">Поддерживаются: VK ID, Telegram. Баланс хранится у нас — без боли и паролей.</div>
-      </aside>
-    </section>
-  </main>
+      <div class="nav">
+        <a href="/lobby.html">→ Лобби</a>
+        <a href="/admin/">→ Админка</a>
+      </div>
+
+      <div class="foot">
+        <div>API: <code id="apiVal"></code></div>
+        <div>Device ID: <code id="didVal"></code></div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    /* Конфиг */
     const API = 'https://vercel2pr.onrender.com';
-    const TG_BOT_ID = 8236271394;
-
-    /* 👇 Новый блок: device_id для фоновой склейки */
+    const TG_BOT_USERNAME = 'GGR00m_bot';
     const DEVICE_ID_KEY = 'gg_device_id';
+
+    document.getElementById('apiVal').textContent = API;
+
     function uuid4() {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
         const r = crypto.getRandomValues(new Uint8Array(1))[0] & 15;
@@ -132,55 +73,32 @@
       return did;
     }
     const DEVICE_ID = ensureDeviceId();
+    document.getElementById('didVal').textContent = DEVICE_ID;
 
-    document.getElementById('vk-login').onclick = () => {
-      window.location.href = API + '/api/auth/vk/start?did=' + encodeURIComponent(DEVICE_ID);
-    };
-
-    async function warmAndMountTg() {
-      try { await fetch(API + '/health', { cache: 'no-store' }); } catch {}
-      setTimeout(() => {
-        if (document.getElementById('tg-widget')) return;
-        const s = document.createElement('script');
-        s.id = 'tg-widget';
-        s.async = true;
-        s.src = 'https://telegram.org/js/telegram-widget.js?22';
-        s.setAttribute('data-telegram-login', 'GGR00m_bot');
-        s.setAttribute('data-size', 'large');
-        s.setAttribute('data-userpic', 'false');
-        s.setAttribute('data-request-access', 'write');
-        /* 👇 Передаём device_id на бэкенд */
-        s.setAttribute('data-auth-url', API + '/api/auth/tg/callback?did=' + encodeURIComponent(DEVICE_ID));
-        const mount = document.getElementById('tg-auth');
-        if (mount) mount.appendChild(s);
-        setTimeout(() => {
-          const hasIframe = !!mount?.querySelector('iframe');
-          if (!hasIframe) {
-            const fb = document.getElementById('tg-fallback');
-            if (fb) fb.style.display = 'flex';
-          }
-        }, 1200);
-      }, 200);
-    }
-    warmAndMountTg();
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const vk = document.getElementById('vk-login');
-        if (vk) vk.click();
-      }
+    document.getElementById('btnVK').addEventListener('click', async () => {
+      try { await fetch(API + '/health', { cache: 'no-store', mode: 'no-cors' }); } catch {}
+      location.href = `${API}/api/auth/vk/start?did=${encodeURIComponent(DEVICE_ID)}`;
     });
 
-    (function handleLoggedRedirect(){
-      const params = new URLSearchParams(location.search);
-      if (params.get('logged') === '1') {
-        const st = document.getElementById('status');
-        if (st) st.textContent = 'Готово: авторизован. Переходим в лобби...';
-        setTimeout(() => {
-          window.location.href = '/lobby.html' + location.search;
-        }, 400);
-      }
-    })();
+    function mountTelegramWidget() {
+      const mount = document.getElementById('tgMount');
+      mount.innerHTML = '';
+      const s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://telegram.org/js/telegram-widget.js?22';
+      s.setAttribute('data-telegram-login', TG_BOT_USERNAME);
+      s.setAttribute('data-size', 'large');
+      s.setAttribute('data-userpic', 'false');
+      s.setAttribute('data-auth-url', `${API}/api/auth/tg/callback?did=${encodeURIComponent(DEVICE_ID)}`);
+      s.setAttribute('data-request-access', 'write');
+      mount.appendChild(s);
+    }
+    mountTelegramWidget();
+
+    const q = new URLSearchParams(location.search);
+    if (q.get('logged') === '1') {
+      setTimeout(() => location.replace('/lobby.html'), 150);
+    }
   </script>
 </body>
 </html>

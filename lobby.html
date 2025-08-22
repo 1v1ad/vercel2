@@ -1,54 +1,48 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
+  <title>GGRoom — Лобби</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GG Room — Лобби</title>
   <style>
-    :root{
-      --bg:#0b0d12; --card:#0f1219; --text:#e8eaf0; --muted:#98a2b3; --gold:#f4d88a;
-      --border:rgba(255,255,255,.08);
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; background:#0b0d12; color:var(--text);
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-    .hdr{
-      display:grid; grid-template-columns: 1fr auto 1fr; gap:10px; align-items:center;
-      background:linear-gradient(180deg,#0f131b,#0b0d12); border-bottom:1px solid var(--border); padding:12px;
-    }
-    .hdr .brand{ font-weight:800; color:var(--gold); text-align:center }
-    .hdr .brand .gg{ background: linear-gradient(90deg, #ff3b3b, #23d160); -webkit-background-clip:text; background-clip:text; color:transparent }
-    .hdr .btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:#121621; color:#e8eaf0; text-decoration:none; white-space:nowrap }
-    .hdr-back{ grid-area:back }
-    .hdr-cta { grid-area:cta }
-    .wrap{ max-width:960px; margin:0 auto; padding:18px }
-    .card{ border:1px solid var(--border); border-radius:16px; background:linear-gradient(180deg,#0f1219,#0b0d12); padding:18px; margin-top:14px }
-    .muted{ color:var(--muted) }
-    .row{ display:flex; gap:10px; flex-wrap:wrap }
+    :root { color-scheme: dark; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0f14; color:#e6e9ef; }
+    .wrap { max-width:960px; margin:0 auto; padding:24px; }
+    .top { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    .pill { display:inline-flex; padding:6px 10px; border-radius:999px; background:#162031; border:1px solid #223149; color:#9fb0c5; font-size:13px; }
+    .card { background:#111826; border:1px solid #1f2a3a; border-radius:16px; padding:24px; box-shadow: 0 5px 30px rgba(0,0,0,.25); }
+    h1 { font-size:24px; margin:0 0 12px; }
+    .btn { display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:12px;
+      background:#1b2433; border:1px solid #2a3952; color:#e6e9ef; text-decoration:none; cursor:pointer; }
+    .btn:hover { background:#223048; }
+    .muted { color:#8ea1b5; }
+    .nav a { color:#9fc6ff; text-decoration:none; }
+    .nav a:hover { text-decoration:underline; }
+    .user { display:flex; align-items:center; gap:10px; }
+    .avatar { width:36px; height:36px; border-radius:999px; border:1px solid #1f2a3a; background:#0f1520; object-fit:cover; }
   </style>
 </head>
 <body>
-  <header class="hdr">
-    <a href="/" class="btn hdr-back">← На главную</a>
-    <div class="brand"><span class="gg">GG</span> ROOM — Лобби</div>
-    <div class="hdr-cta row">
-      <div id="balance" class="btn">₽ 0</div>
-      <a class="btn" href="/admin/">Админка</a>
+  <div class="wrap">
+    <div class="top">
+      <a class="nav" href="/" style="text-decoration:none">← На главную</a>
+      <span class="pill">GG <b>ROOM</b> — Лобби</span>
+      <div class="pill" id="balance">₽ 0</div>
     </div>
-  </header>
 
-  <main class="wrap">
     <div class="card">
-      <h2 id="hello">Добро пожаловать в лобби.</h2>
+      <div class="user">
+        <img id="avatar" class="avatar" src="" alt="avatar" />
+        <h1 id="hello" style="margin:0">Добро пожаловать в лобби.</h1>
+      </div>
       <p class="muted">Тут будут комнаты, турниры и прочая красота.</p>
       <p class="muted">Источник данных: <span id="prov">—</span></p>
-      <div class="row" style="margin-top:8px">
-        <a href="#" id="topup-btn" class="btn">Пополнить</a>
+      <div style="display:flex; gap:10px; margin-top:8px">
+        <button id="btnDeposit" class="btn">Пополнить</button>
+        <a class="btn" href="/admin/">Админка</a>
       </div>
     </div>
-  </main>
+  </div>
 
   <script>
     const API = 'https://vercel2pr.onrender.com';
@@ -78,22 +72,28 @@
         const hello = document.getElementById('hello');
         const prov = document.getElementById('prov');
         const bal  = document.getElementById('balance');
+        const avEl = document.getElementById('avatar');
         if (ok && user) {
           const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Пользователь';
           hello.textContent = `Привет, ${name}!`;
-          prov.textContent = (provider || '—').toUpperCase();
-          bal.textContent  = `₽ ${user.balance ?? 0}`;
+          prov.textContent  = (provider || '—').toUpperCase();
+          bal.textContent   = `₽ ${user.balance ?? 0}`;
+          if (user.avatar_url) {
+            avEl.src = user.avatar_url;
+          } else {
+            avEl.remove();
+          }
         } else {
           hello.textContent = 'Вы в гостевом режиме.';
           prov.textContent = '—';
+          document.getElementById('avatar').remove();
         }
       } catch (e) {
         console.error(e);
       }
     })();
 
-    document.getElementById('topup-btn').addEventListener('click', (e) => {
-      e.preventDefault();
+    document.getElementById('btnDeposit').addEventListener('click', () => {
       alert('Онбординг пополнения подключим следующим шагом 🙂');
     });
   </script>
