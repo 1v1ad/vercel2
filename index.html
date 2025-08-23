@@ -29,7 +29,7 @@
   <div class="wrap">
     <div class="card">
       <h1>GGRoom</h1>
-      <p class="lead">Вход в один клик: VK или Telegram. Мы тихо «склеим» гостя и аккаунты между входами.</p>
+      <p class="lead">Вход в один клик: VK или Telegram. Склейка гостя и аккаунтов — в фоне, без кодов.</p>
 
       <div class="grid">
         <div>
@@ -40,13 +40,14 @@
               <span id="tg-widget-box" class="btn btn-ghost" style="padding:0;border:none;"></span>
             </div>
             <div class="meta">
-              Нажимая, вы принимаете <a href="#" style="color:var(--primary);text-decoration:none;">условия</a>. Для Телеграма нужен открытый username.
+              Для Телеграма нужен открытый username. Куки <code>sid</code> ставятся httpOnly на бэке.
             </div>
           </div>
 
           <div class="footer">
             <a class="btn btn-ghost" href="lobby.html">Перейти в лобби</a>
-            <a class="btn btn-ghost" href="admin.html">Админка</a>
+            <!-- ВАЖНО: ведём в существующую админку -->
+            <a class="btn btn-ghost" href="admin/">Админка</a>
           </div>
         </div>
 
@@ -56,8 +57,7 @@
             <div style="font-size:13px;color:var(--muted);line-height:1.45;">
               <div>API: <code id="cfg-api"></code></div>
               <div>device_id: <code id="cfg-did"></code></div>
-              <div>После успешной авторизации бэкенд выставит httpOnly-куку <code>sid</code> и вернёт на фронт.</div>
-              <div>Вернётесь с <code>?logged=1</code> — мы перекидываем в лобби.</div>
+              <div>После входа вернётесь с <code>?logged=1</code> — автоматически перейдём в лобби.</div>
             </div>
           </div>
         </div>
@@ -67,12 +67,11 @@
   </div>
 
   <script>
-    // === КОНФИГ (поменяй только при необходимости) ===
-    // Домены API/бота: можно переопределить через window.API_BASE / window.TG_BOT до загрузки страницы
+    // === КОНФИГ ===
     const API_BASE = (window.API_BASE || 'https://vercel2pr.onrender.com').replace(/\/+$/,'');
-    const TG_BOT  = (window.TG_BOT  || 'YOUR_TG_BOT_USERNAME'); // <-- ВСТАВЬ username бота
+    const TG_BOT  = (window.TG_BOT  || 'YOUR_TG_BOT_USERNAME'); // <-- укажи @без собаки
 
-    // device_id — один раз генерируем и храним
+    // device_id — генерируем и храним
     (function ensureDid(){
       try {
         let did = localStorage.getItem('gg_did');
@@ -85,7 +84,7 @@
       } catch(e) { window.gg_did=''; }
     })();
 
-    // VK — используем наш старт-эндпоинт, чтобы сервер поставил httpOnly-куку с did и state
+    // VK — используем наш старт-эндпоинт
     (function bindVk(){
       const a = document.getElementById('vk-login');
       if (!a) return;
@@ -96,7 +95,7 @@
       });
     })();
 
-    // Telegram — динамически вставляем виджет со сгенерированным data-auth-url (с ?did=…)
+    // Telegram — вставляем виджет с ?did=
     (function mountTgWidget(){
       const box = document.getElementById('tg-widget-box');
       if (!box) return;
@@ -118,11 +117,10 @@
       box.appendChild(s);
     })();
 
-    // Технический блок
+    // UI
     (function ui(){
       document.getElementById('cfg-api').textContent = API_BASE;
       document.getElementById('cfg-did').textContent = window.gg_did || '';
-      // если вернулись с logged=1 — в лобби
       const p = new URLSearchParams(location.search);
       if (p.get('logged') === '1') location.replace('lobby.html');
     })();
