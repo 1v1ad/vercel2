@@ -1,0 +1,9 @@
+[build]
+  base    = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  VITE_BACKEND_URL = "https://vercel2pr.onrender.com"
+  VITE_TELEGRAM_BOT = "GGR00m_bot"
+  VITE_VK_APP_ID = "54008517"
