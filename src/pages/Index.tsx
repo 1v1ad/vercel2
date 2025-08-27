@@ -8,16 +8,30 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 1) Возврат с VK: /?vk=ok -> пускаем в лобби
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("vk") === "ok") {
+      if (!localStorage.getItem("user")) {
+        // кладём минимальную метку, чтобы роутер не выпихивал
+        localStorage.setItem("user", JSON.stringify({ provider: "vk" }));
+      }
+      // чистим query, чтобы не мешал
+      window.history.replaceState({}, "", window.location.pathname);
+      navigate("/lobby");
+      return;
+    }
+
+    // 2) Уже есть пользователь? Сразу в лобби
     const anyUser = localStorage.getItem("user");
     if (anyUser) navigate("/lobby");
   }, [navigate]);
 
-  // VK — оставляем как было: редиректим на бэкенд (не трогаем рабочий поток)
+  // VK — не трогаем бэк, просто отправляем на старт
   const handleVkLogin = () => {
     window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/auth/vk/start`;
   };
 
-  // Telegram — нормализуем юзера, сохраняем и СРАЗУ идём в /lobby
+  // Telegram — нормализуем, сохраняем, мгновенно идём в лобби; лог на бэк — фоном
   const handleTelegramAuth = (tg: any) => {
     const normalized = {
       id: String(tg.id),
@@ -28,15 +42,15 @@ const Index = () => {
       provider: "telegram" as const,
     };
 
-    // 1) сохраняем юзера (то, что читает лобби)
+    // 1) сохраняем то, что ожидает твой лобби-guard
     localStorage.setItem("user", JSON.stringify(normalized));
-    // опционально — сырое тело ТГ для отладки
+    // опционально — сырое тело виджета для отладки
     localStorage.setItem("tg_raw", JSON.stringify(tg));
 
     // 2) мгновенно уходим в лобби — UX без ожиданий сети
     navigate("/lobby");
 
-    // 3) фоном шлём payload на бэк (обязательно весь объект с hash)
+    // 3) фоновая валидация подписи + склейка на бэке
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/log-auth`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,7 +64,6 @@ const Index = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">Добро пожаловать</h1>
-          <p className="text-muted-foreground">Выберите способ входа</p>
         </div>
 
         <Tabs defaultValue="vk" className="w-full">
