@@ -4,55 +4,45 @@ import VkLoginButton from "@/components/VkLoginButton";
 import TelegramLoginButton from "@/components/TelegramLoginButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-/**
- * ВАЖНО:
- * - Для Telegram передаём на бэкенд ПОЛНЫЙ payload виджета (id, first_name, last_name, username, photo_url, auth_date, hash).
- *   Бэкенд валидирует hash — без него будет 400.
- * - Для VK используем редирект на /api/auth/vk/start (на бэкенде строится URL под VK ID OAuth 2.1).
- */
 const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const vkUserData = localStorage.getItem("vk_user");
-    const userData = localStorage.getItem("user");
-    if (vkUserData || userData) {
-      navigate("/lobby");
-    }
+    const anyUser = localStorage.getItem("user");
+    if (anyUser) navigate("/lobby");
   }, [navigate]);
 
-  // Старт VK-логина — просто редиректим на бэкенд-роут
+  // VK — оставляем как было: редиректим на бэкенд (не трогаем рабочий поток)
   const handleVkLogin = () => {
     window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/auth/vk/start`;
   };
 
-  // Получаем ПОЛНЫЙ объект из Telegram виджета и шлём на бэкенд как есть
-  const handleTelegramAuth = async (tgUser: any) => {
-    try {
-      // Сохраним "как есть" для последующей склейки аккаунтов
-      localStorage.setItem("user", JSON.stringify({ ...tgUser, provider: "telegram" }));
+  // Telegram — нормализуем юзера, сохраняем и СРАЗУ идём в /lobby
+  const handleTelegramAuth = (tg: any) => {
+    const normalized = {
+      id: String(tg.id),
+      firstName: tg.first_name || "",
+      lastName: tg.last_name || "",
+      username: tg.username || "",
+      photo: tg.photo_url || "",
+      provider: "telegram" as const,
+    };
 
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/log-auth`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: "telegram",
-          // Передаём payload без переименований — бэкенд проверит подпись:
-          userData: tgUser,
-        }),
-        credentials: "include",
-      });
+    // 1) сохраняем юзера (то, что читает лобби)
+    localStorage.setItem("user", JSON.stringify(normalized));
+    // опционально — сырое тело ТГ для отладки
+    localStorage.setItem("tg_raw", JSON.stringify(tg));
 
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        console.error("Telegram /log-auth failed", res.status, text);
-        return;
-      }
+    // 2) мгновенно уходим в лобби — UX без ожиданий сети
+    navigate("/lobby");
 
-      navigate("/lobby");
-    } catch (e) {
-      console.error("Telegram auth error", e);
-    }
+    // 3) фоном шлём payload на бэк (обязательно весь объект с hash)
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/log-auth`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ provider: "telegram", userData: tg }),
+    }).catch(() => {});
   };
 
   return (
@@ -69,7 +59,7 @@ const Index = () => {
             <TabsTrigger value="telegram">Telegram</TabsTrigger>
           </TabsList>
 
-        <TabsContent value="vk" className="space-y-4">
+          <TabsContent value="vk" className="space-y-4">
             <VkLoginButton onLogin={handleVkLogin} />
           </TabsContent>
 
