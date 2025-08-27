@@ -11,7 +11,7 @@ export default function TelegramLoginButton({ onAuth }: Props) {
     const s = document.createElement("script");
     s.src = "https://telegram.org/js/telegram-widget.js?22";
     s.async = true;
-    s.setAttribute("data-telegram-login", import.meta.env.VITE_TELEGRAM_BOT); // e.g. GGR00m_bot
+    s.setAttribute("data-telegram-login", import.meta.env.VITE_TELEGRAM_BOT); // напр. GGR00m_bot
     s.setAttribute("data-size", "large");
     s.setAttribute("data-userpic", "true");
     s.setAttribute("data-onauth", "onTelegramAuth");
