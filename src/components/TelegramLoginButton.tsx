@@ -6,20 +6,20 @@ export default function TelegramLoginButton({ onAuth }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.async = true;
-    script.setAttribute("data-telegram-login", import.meta.env.VITE_TELEGRAM_BOT); // GGR00m_bot
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-userpic", "true"); // аватар на кнопке
-    script.setAttribute("data-onauth", "onTelegramAuth");
-    script.setAttribute("data-request-access", "write");
-
     (window as any).onTelegramAuth = (user: any) => onAuth(user);
+
+    const s = document.createElement("script");
+    s.src = "https://telegram.org/js/telegram-widget.js?22";
+    s.async = true;
+    s.setAttribute("data-telegram-login", import.meta.env.VITE_TELEGRAM_BOT); // GGR00m_bot
+    s.setAttribute("data-size", "large");
+    s.setAttribute("data-userpic", "true"); // показать аватар на кнопке
+    s.setAttribute("data-onauth", "onTelegramAuth");
+    s.setAttribute("data-request-access", "write");
 
     if (ref.current) {
       ref.current.innerHTML = "";
-      ref.current.appendChild(script);
+      ref.current.appendChild(s);
     }
     return () => {
       if (ref.current) ref.current.innerHTML = "";
