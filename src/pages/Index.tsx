@@ -3,57 +3,55 @@ import { useNavigate } from "react-router-dom";
 import VkLoginButton from "@/components/VkLoginButton";
 import TelegramLoginButton from "@/components/TelegramLoginButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { startVkLogin } from "@/lib/vkCodeflow";
 
+/**
+ * ВАЖНО:
+ * - Для Telegram передаём на бэкенд ПОЛНЫЙ payload виджета (id, first_name, last_name, username, photo_url, auth_date, hash).
+ *   Бэкенд валидирует hash — без него будет 400.
+ * - Для VK используем редирект на /api/auth/vk/start (на бэкенде строится URL под VK ID OAuth 2.1).
+ */
 const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Проверяем реальную авторизацию через бек (+aid cookie), а не localStorage
-    const check = async () => {
-      try {
-        const resp = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/me`, { credentials: 'include' });
-        const json = await resp.json();
-        if (json?.data?.user) navigate('/lobby');
-      } catch {}
-    };
-    check();
+    const vkUserData = localStorage.getItem("vk_user");
+    const userData = localStorage.getItem("user");
+    if (vkUserData || userData) {
+      navigate("/lobby");
+    }
   }, [navigate]);
 
+  // Старт VK-логина — просто редиректим на бэкенд-роут
   const handleVkLogin = () => {
-    // Полный редирект на наш бекенд (OAuth code flow). Никакого openapi.js
-    startVkLogin('/lobby');
+    window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/auth/vk/start`;
   };
 
-  // Обработка авторизации через Telegram
-  const handleTelegramAuth = async (user: any) => {
+  // Получаем ПОЛНЫЙ объект из Telegram виджета и шлём на бэкенд как есть
+  const handleTelegramAuth = async (tgUser: any) => {
     try {
-      const userData = {
-        id: String(user.id),
-        firstName: user.first_name,
-        lastName: user.last_name || '',
-        username: user.username || '',
-        photo: user.photo_url || '',
-        authDate: user.auth_date,
-        provider: 'telegram'
-      };
+      // Сохраним "как есть" для последующей склейки аккаунтов
+      localStorage.setItem("user", JSON.stringify({ ...tgUser, provider: "telegram" }));
 
-      // Логируем авторизацию (параллельно бэк ставит aid для склейки)
-      await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/log-auth`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/log-auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: userData.id,
-          action: 'telegram_login',
-          timestamp: new Date().toISOString(),
-          userData
+          provider: "telegram",
+          // Передаём payload без переименований — бэкенд проверит подпись:
+          userData: tgUser,
         }),
+        credentials: "include",
       });
 
-      navigate('/lobby');
-    } catch (error) {
-      console.error('Telegram auth error:', error);
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.error("Telegram /log-auth failed", res.status, text);
+        return;
+      }
+
+      navigate("/lobby");
+    } catch (e) {
+      console.error("Telegram auth error", e);
     }
   };
 
@@ -64,17 +62,17 @@ const Index = () => {
           <h1 className="text-3xl font-bold text-foreground mb-2">Добро пожаловать</h1>
           <p className="text-muted-foreground">Выберите способ входа</p>
         </div>
-        
+
         <Tabs defaultValue="vk" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="vk">ВКонтакте</TabsTrigger>
             <TabsTrigger value="telegram">Telegram</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="vk" className="space-y-4">
+
+        <TabsContent value="vk" className="space-y-4">
             <VkLoginButton onLogin={handleVkLogin} />
           </TabsContent>
-          
+
           <TabsContent value="telegram" className="space-y-4">
             <TelegramLoginButton onAuth={handleTelegramAuth} />
           </TabsContent>
