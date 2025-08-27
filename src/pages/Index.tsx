@@ -4,12 +4,12 @@ import TelegramLoginButton from "@/components/TelegramLoginButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
-  const goLobby = () => window.location.replace("/lobby"); // full reload across strict guards
+  const goLobby = () => window.location.replace("/lobby"); // full reload — обходит строгие гварды
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
-    // VK return: /?vk=ok -> allow and go lobby
+    // Возврат из VK: "/?vk=ok" — сохраняем минимальный флаг и уходим в лобби
     if (params.get("vk") === "ok") {
       if (!localStorage.getItem("user")) {
         localStorage.setItem("user", JSON.stringify({ provider: "vk" }));
@@ -19,7 +19,7 @@ const Index = () => {
       return;
     }
 
-    // Already authorized? Go lobby
+    // Уже авторизован? Сразу в лобби
     if (localStorage.getItem("user")) goLobby();
   }, []);
 
@@ -37,14 +37,14 @@ const Index = () => {
       provider: "telegram" as const,
     };
 
-    // Save minimal profile that your lobby guard can accept
+    // Сохраняем минимальный профиль — этого хватает, чтобы пропустить в /lobby
     localStorage.setItem("user", JSON.stringify(normalized));
     localStorage.setItem("tg_raw", JSON.stringify(tg));
 
-    // Go lobby immediately, do not wait for network
+    // Сразу переходим в лобби (бэкграундом пойдёт валидация/склейка)
     goLobby();
 
-    // Background: validate signature + link identities on backend
+    // Бэкграунд: валидация подписи TG + фоновая склейка на бэке
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/log-auth`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
