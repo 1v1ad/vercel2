@@ -1,5 +1,3 @@
-import React from 'react';
-
 type Props = { onLogin: () => void };
 
 export default function VkLoginButton({ onLogin }: Props) {
