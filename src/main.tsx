@@ -1,4 +1,4 @@
-// IMPORTANT: keep this very first to warm the backend on Render
+// ВАЖНО: прогрев — самым первым импортом
 import './warmup';
 
 import { createRoot } from 'react-dom/client';
