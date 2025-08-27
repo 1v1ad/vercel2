@@ -1,13 +1,8 @@
-// 1) прогрев бэка — самым первым
-import './warmup'
+// IMPORTANT: keep this very first to warm the backend on Render
+import './warmup';
 
-// 2) если используешь мой хелпер для ВК — подключи его после прогрева
-import './vk-wire'  // можно убрать, если не нужен
+import { createRoot } from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
 
-// дальше — как у тебя было
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-
-createRoot(document.getElementById('root')!).render(<App />)
-
+createRoot(document.getElementById('root')!).render(<App />);

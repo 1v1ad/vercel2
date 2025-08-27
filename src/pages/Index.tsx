@@ -1,37 +1,32 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import VkLoginButton from "@/components/VkLoginButton";
 import TelegramLoginButton from "@/components/TelegramLoginButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
-  const navigate = useNavigate();
+  const goLobby = () => window.location.replace("/lobby"); // full reload across strict guards
 
   useEffect(() => {
-    // 1) Возврат с VK: /?vk=ok -> пускаем в лобби
     const params = new URLSearchParams(window.location.search);
+
+    // VK return: /?vk=ok -> allow and go lobby
     if (params.get("vk") === "ok") {
       if (!localStorage.getItem("user")) {
-        // кладём минимальную метку, чтобы роутер не выпихивал
         localStorage.setItem("user", JSON.stringify({ provider: "vk" }));
       }
-      // чистим query, чтобы не мешал
       window.history.replaceState({}, "", window.location.pathname);
-      navigate("/lobby");
+      goLobby();
       return;
     }
 
-    // 2) Уже есть пользователь? Сразу в лобби
-    const anyUser = localStorage.getItem("user");
-    if (anyUser) navigate("/lobby");
-  }, [navigate]);
+    // Already authorized? Go lobby
+    if (localStorage.getItem("user")) goLobby();
+  }, []);
 
-  // VK — не трогаем бэк, просто отправляем на старт
   const handleVkLogin = () => {
     window.location.href = `${import.meta.env.VITE_BACKEND_URL}/api/auth/vk/start`;
   };
 
-  // Telegram — нормализуем, сохраняем, мгновенно идём в лобби; лог на бэк — фоном
   const handleTelegramAuth = (tg: any) => {
     const normalized = {
       id: String(tg.id),
@@ -42,15 +37,14 @@ const Index = () => {
       provider: "telegram" as const,
     };
 
-    // 1) сохраняем то, что ожидает твой лобби-guard
+    // Save minimal profile that your lobby guard can accept
     localStorage.setItem("user", JSON.stringify(normalized));
-    // опционально — сырое тело виджета для отладки
     localStorage.setItem("tg_raw", JSON.stringify(tg));
 
-    // 2) мгновенно уходим в лобби — UX без ожиданий сети
-    navigate("/lobby");
+    // Go lobby immediately, do not wait for network
+    goLobby();
 
-    // 3) фоновая валидация подписи + склейка на бэке
+    // Background: validate signature + link identities on backend
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/log-auth`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -64,6 +58,7 @@ const Index = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">Добро пожаловать</h1>
+          <p className="text-muted-foreground">Выберите способ входа</p>
         </div>
 
         <Tabs defaultValue="vk" className="w-full">
