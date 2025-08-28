@@ -3,47 +3,80 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GG ROOM — Вход</title>
-  <link rel="preconnect" href="https://oauth.telegram.org">
+  <title>GG ROOM</title>
+
+  <!-- фавикон (необязательно) -->
+  <link rel="icon" href="/favicon.ico" />
+
+  <!-- базовые стили, если есть (можешь удалить, если у тебя другой файл) -->
+  <link rel="stylesheet" href="/assets/css/style.css">
   <style>
-    body{margin:0;background:#0b0f14;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu}
-    .wrap{display:flex;min-height:100vh;align-items:center;justify-content:center}
-    .card{width:880px;max-width:96vw;background:#0e141b;border:1px solid #222;border-radius:16px;padding:24px 28px;box-shadow:0 10px 50px rgba(0,0,0,.45);display:grid;grid-template-columns:1fr 1fr;gap:28px}
-    h1{font-weight:800;letter-spacing:.2px;margin:12px 0 20px}
-    .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 18px;border-radius:12px;border:0;cursor:pointer;font-weight:700}
-    .vk{background:#2787f5;color:#fff}
-    .tg{background:#229ed9;color:#fff}
-    .hint{font-size:12px;color:#a9b6c3;margin-top:18px}
-    img.chest{width:100%;max-width:360px;border-radius:12px;display:block;margin:0 auto}
+    /* лёгкая страховка по стилям на случай отсутствия style.css */
+    :root { color-scheme: dark; }
+    body{margin:0;background:#0c0f14;color:#eaeef6;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Inter,Arial,sans-serif}
+    .wrap{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{width:100%;max-width:960px;background:linear-gradient(180deg,#10151e,#0b0f15);border:1px solid #1f2835;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.35);padding:28px}
+    .title{text-align:center;margin:12px 0 20px;font-weight:800;letter-spacing:.02em}
+    .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:24px}
+    @media (max-width:920px){.grid{grid-template-columns:1fr}}
+    .panel{background:#0f1520;border:1px solid #1e2836;border-radius:16px;padding:20px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;width:100%;height:44px;border:0;border-radius:12px;font-weight:700;cursor:pointer}
+    .btn-vk{background:#0077ff;color:white}
+    .btn-vk:hover{filter:brightness(1.05)}
+    .muted{opacity:.7;font-size:12px;text-align:center;margin-top:12px}
+    .chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+    .chip{font-size:12px;padding:6px 10px;border-radius:999px;background:#141b25;border:1px solid #223043}
+    .art{display:flex;align-items:center;justify-content:center}
+    .art img{max-width:100%;height:auto;border-radius:12px;display:block}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
-      <div>
-        <h1>Войдите и начните выигрывать!</h1>
-        <p class="hint">Выберите способ входа:</p>
-        <p><button id="vkBtn" class="btn vk">Войти через VK ID</button></p>
-        <div id="tgRoot"></div>
-        <p class="hint">Нажимая «Войти», вы соглашаетесь с условиями использования</p>
-      </div>
-      <div>
-        <img class="chest" src="/assets/prize-chest-700w.webp" alt="Prize chest" />
+      <h1 class="title">GG ROOM</h1>
+      <div class="grid">
+        <!-- Левая панель: логины -->
+        <div class="panel">
+          <h2 class="title" style="font-size:22px;margin-top:0">Войдите и начните выигрывать!</h2>
+
+          <button id="btn-vk" class="btn btn-vk" type="button">
+            Войти через VK ID
+          </button>
+
+          <!-- Место для виджета Telegram -->
+          <div id="tg-login" style="margin-top:12px;display:flex;justify-content:center"></div>
+
+          <div class="chips">
+            <div class="chip">Розыгрыши</div>
+            <div class="chip">Гарантии призов</div>
+            <div class="chip">Турниры 24/7</div>
+          </div>
+
+          <p class="muted">
+            Нажимая «Войти», вы соглашаетесь с условиями использования
+          </p>
+        </div>
+
+        <!-- Правая панель: арт -->
+        <div class="panel art">
+          <!-- Картинка сундука лежит у тебя в /assets -->
+          <img src="/assets/prize-chest-700w.webp" alt="Призовой сундук" width="700" height="700" />
+        </div>
       </div>
     </div>
   </div>
 
-  <script src="/assets/app.js"></script>
-  <!-- Telegram login widget -->
-  <script async src="https://oauth.telegram.org/js/telegram-widget.js?22"
-          data-telegram-login="" data-size="large"
-          data-onauth="onTelegramAuth(user)" data-request-access="write">
-  </script>
-  <script>
-    // VK
-    document.getElementById('vkBtn').addEventListener('click', () => {
-      window.location.href = '/api/auth/vk/start';
-    });
+  <!-- Твой общий клиентский JS (важно: абсолютный путь и defer) -->
+  <script defer src="/assets/js/app.js"></script>
+
+  <!-- Виджет Telegram. onTelegramAuth(user) определён в app.js -->
+  <script
+    async
+    src="https://telegram.org/js/telegram-widget.js?22"
+    data-telegram-login="GGR00m_bot"
+    data-size="large"
+    data-onauth="onTelegramAuth(user)"
+    data-request-access="write">
   </script>
 </body>
 </html>
