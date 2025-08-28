@@ -1,69 +1,37 @@
-// assets/js/app.js
-(function () {
-  // === БАЗОВЫЕ НАСТРОЙКИ ===
-  // если меняешь бэкенд — поменяй только эту строку
-  const API = 'https://vercel2pr.onrender.com';
-  const TG_BOT = 'GGR00m_bot'; // ник без @
+// Shared helpers for GG ROOM static front
+const FRONT = location.origin;
 
-  // Общие хелперы доступны глобально
-  window.__GG = {
-    API,
+function setUser(u){ try{ localStorage.setItem('user', JSON.stringify(u)); }catch(e){} }
+function getUser(){ try{ return JSON.parse(localStorage.getItem('user')||'null'); }catch(e){ return null; } }
+function logout(){ localStorage.removeItem('user'); location.href = '/'; }
 
-    // VK -> редирект на бэкенд
-    vkLogin() {
-      window.location.href = `${API}/api/auth/vk/start`;
-    },
+// Telegram callback (from widget)
+async function onTelegramAuth(user){
+  try {
+    const r = await fetch('/api/auth/telegram', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(user)
+    });
+    const j = await r.json();
+    if(!j.ok){ alert('Ошибка авторизации Telegram'); return; }
+    setUser({ id: j.user.id, first_name: j.user.first_name, last_name: j.user.last_name, username: j.user.username, photo: j.user.photo_url, provider: 'telegram' });
+    location.href = '/lobby.html';
+  } catch (e) {
+    alert('Ошибка авторизации Telegram');
+  }
+}
 
-    // Telegram -> подтверждение на бэкенд
-    async tgFinish(user) {
-      try {
-        const r = await fetch(`${API}/api/auth/telegram`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(user),
-        });
-        if (r.ok) {
-          window.location.href = '/lobby';
-        } else {
-          alert('Ошибка авторизации Telegram');
-        }
-      } catch (e) {
-        console.error(e);
-        alert('Сбой сети при авторизации Telegram');
-      }
-    },
-
-    // Получить текущего юзера (для лобби)
-    async me() {
-      try {
-        const r = await fetch(`${API}/api/me`, { credentials: 'include' });
-        return r.ok ? r.json() : { ok: false };
-      } catch {
-        return { ok: false };
-      }
-    },
-  };
-
-  // Колбэк, который дергает Telegram-виджет
-  window.onTelegramAuth = function (user) {
-    window.__GG.tgFinish(user);
-  };
-
-  // Автовставка Telegram-виджета, если есть контейнер #tg-login
-  document.addEventListener('DOMContentLoaded', () => {
-    const tg = document.getElementById('tg-login');
-    if (tg && !tg.dataset.inited) {
-      tg.dataset.inited = '1';
-      const s = document.createElement('script');
-      s.async = true;
-      s.src = 'https://telegram.org/js/telegram-widget.js?22';
-      s.setAttribute('data-telegram-login', TG_BOT);
-      s.setAttribute('data-size', 'large');
-      s.setAttribute('data-userpic', 'true');
-      s.setAttribute('data-request-access', 'write');
-      s.setAttribute('data-onauth', 'onTelegramAuth(user)');
-      tg.appendChild(s);
-    }
-  });
+// Handle VK callback flags (?vk=ok / ?vk=error)
+(function(){
+  const p = new URLSearchParams(location.search);
+  if(p.get('vk') === 'ok'){
+    // We cannot fetch profile without user token in this demo; just mark as logged-in.
+    setUser({ id: 'vk', first_name: 'VK user', provider: 'vk' });
+    history.replaceState({}, '', '/lobby.html');
+    location.replace('/lobby.html');
+  } else if (p.get('vk') === 'error') {
+    alert('Ошибка авторизации VK');
+    history.replaceState({}, '', '/');
+  }
 })();
