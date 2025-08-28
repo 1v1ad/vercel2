@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GG Room — Лобби</title>
+  <style>
+    :root{
+      --bg:#0b0d12; --card:#0f1219; --text:#e8eaf0; --muted:#98a2b3; --gold:#f4d88a;
+      --border:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background:#0b0d12; color:var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    /* ── Чердак: двухрядная шапка на мобилках ───────────────────────── */
+    .hdr{
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-areas:
+        "back brand cta"
+        "user user user";
+      align-items:center;
+      gap:12px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--border);
+      background:linear-gradient(180deg,#0f131b,#0b0d12);
+    }
+    .hdr .btn{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 12px; border-radius:10px;
+      border:1px solid var(--border); background:#121621; color:#e8eaf0;
+      text-decoration:none; white-space:nowrap;
+    }
+    .hdr-back{ grid-area:back; }
+    .hdr-cta { grid-area:cta; }
+
+    .hdr .brand{ grid-area:brand; font-weight:800; color:var(--gold); text-align:center; }
+    .hdr .brand .gg{
+      background: linear-gradient(90deg, #ff3b3b, #23d160);
+      -webkit-background-clip: text; background-clip:text; color:transparent;
+    }
+
+    .hdr-user{
+      grid-area:user;
+      display:flex; align-items:center; gap:10px; min-height:44px;
+    }
+    .hdr-user img{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222; }
+    .hdr-user #user-name{ font-weight:700; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+      background:#121621; border:1px solid var(--border); color:#e8eaf0; font-weight:700
+    }
+
+    /* Мобилки */
+    @media (max-width: 480px){
+      .hdr{ gap:10px; padding:12px 12px; }
+      .hdr .brand{ font-size:clamp(16px, 5vw, 18px); }
+      .hdr .btn{ padding:6px 10px; font-size:14px; }
+      .hdr-user img{ width:36px; height:36px; }
+      .pill{ padding:6px 10px; font-size:14px; }
+    }
+    /* Сверхузкие: прячем подписи на кнопках */
+    @media (max-width: 360px){
+      .hdr .btn .label{ display:none; }
+    }
+
+    /* ── Контент ────────────────────────────────────────────────────── */
+    .wrap{max-width:980px; margin:0 auto; padding:20px 16px}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px}
+  </style>
+</head>
+<body>
+  <header class="hdr">
+    <a class="btn hdr-back" href="/index.html">
+      <span aria-hidden="true">←</span> <span class="label">На главную</span>
+    </a>
+
+    <div class="brand"><span class="gg">GG</span> ROOM — Лобби</div>
+
+    <a class="btn hdr-cta" href="#" id="topup-btn" title="Пополнить баланс">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M20 7h-2V6a2 2 0 0 0-2-2H6a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Zm-4-1v1H6a1 1 0 0 1 0-2h8a1 1 0 0 1 1 1Zm4 11H6a1 1 0 0 1-1-1V9h15v8a1 1 0 0 1-1 1Zm-3-6.5a1.5 1.5 0 1 0 0 3h2v-3h-2Z"/>
+      </svg>
+      <span class="label">Пополнить</span>
+    </a>
+
+    <div class="hdr-user">
+      <img id="user-avatar" src="" alt="Аватар" />
+      <div id="user-name">Гость</div>
+      <span id="user-balance" class="pill">₽ 0</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <p>Добро пожаловать в лобби. Тут будут комнаты, турниры и прочая красота.</p>
+      <p id="provider-note" style="color:var(--muted)"></p>
+    </div>
+  </div>
+
+  <script>
+    (async () => {
+      const API = 'https://vercel2pr.onrender.com';
+      const params = new URLSearchParams(location.search);
+
+      const nameEl = document.querySelector('#user-name');
+      const avatarEl = document.querySelector('#user-avatar');
+      const balanceEl = document.querySelector('#user-balance');
+      const note = document.getElementById('provider-note');
+
+      function rub(n){ try{ return '₽ ' + (Number(n)||0).toLocaleString('ru-RU'); }catch{ return '₽ 0'; } }
+
+      function applyUser(u) {
+        if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
+        if (avatarEl && u.avatar) avatarEl.src = u.avatar;
+        if (balanceEl) balanceEl.textContent = rub(u.balance ?? 0);
+        if (note) note.textContent = u.provider ? ('Источник данных: ' + u.provider.toUpperCase()) : 'Вы не авторизованы.';
+        document.body.dataset.auth = u.provider ? 'auth' : 'guest';
+      }
+
+      let user = null;
+
+      // 1) TG через query — имя/аватар сразу, баланс подтянем позже
+      if (params.get('provider') === 'tg') {
+        user = {
+          provider: 'tg',
+          id: params.get('id') || null,
+          first_name: params.get('first_name') || '',
+          last_name: params.get('last_name') || '',
+          username: params.get('username') || '',
+          avatar: params.get('photo_url') || '',
+          balance: 0,
+        };
+        try {
+          const cached = JSON.parse(localStorage.getItem('gg_user') || 'null');
+          if (cached && cached.balance != null) user.balance = cached.balance;
+        } catch {}
+        try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+        if (history.replaceState) history.replaceState({}, '', location.pathname);
+      }
+
+      // 2) Пробуем серверную сессию (VK cookie, а позже — и TG когда добавим куку)
+      try {
+        const r = await fetch(API + '/api/me', { credentials: 'include' });
+        const j = await r.json();
+        if (j && j.ok && j.user) {
+          user = {
+            provider: user?.provider || 'vk',
+            id: j.user.id || user?.id || null,
+            first_name: j.user.first_name || user?.first_name || '',
+            last_name: j.user.last_name || user?.last_name || '',
+            avatar: j.user.avatar || user?.avatar || '',
+            balance: j.user.balance ?? user?.balance ?? 0,
+          };
+          try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+        }
+      } catch {}
+
+      // 3) Фолбэк — кэш
+      if (!user) {
+        try { user = JSON.parse(localStorage.getItem('gg_user') || 'null'); } catch {}
+      }
+
+      applyUser(user || { first_name: 'Гость', avatar: '', balance: 0 });
+
+      // Заглушка на «Пополнить»
+      document.getElementById('topup-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        alert('Скоро тут будет пополнение баланса ✨');
+      });
+    })();
+  </script>
+</body>
+</html>
