@@ -2,80 +2,48 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GG ROOM — вход</title>
-  <meta name="color-scheme" content="dark" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GG ROOM — Вход</title>
+  <link rel="preconnect" href="https://oauth.telegram.org">
   <style>
-    :root { --gold:#f7d37a; --bg:#0e0f12; --card:#17181d; }
-    * { box-sizing: border-box; }
-    body {
-      margin:0; min-height:100dvh; background:radial-gradient(1200px 700px at 50% -200px,#1a1b20 0,#0e0f12 60%);
-      color:#e8e8ea; font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
-      display:flex; align-items:center; justify-content:center; padding:24px;
-    }
-    .wrap { width:100%; max-width:860px; }
-    .logo { text-align:center; font-weight:800; letter-spacing:.06em; margin-bottom:16px; color:#d9dee8; }
-    .card {
-      background:linear-gradient(180deg,#1b1c22 0,#15161b 100%);
-      border:1px solid #24262e; border-radius:20px; padding:28px; display:grid; grid-template-columns:1.05fr .95fr; gap:24px;
-      box-shadow:0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.02);
-    }
-    @media (max-width:880px){ .card{ grid-template-columns:1fr; } }
-    .title { font-size:24px; font-weight:800; margin:0 0 18px; }
-    .btn {
-      appearance:none; border:0; border-radius:12px; padding:14px 16px; font-weight:700; cursor:pointer;
-      width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
-      background:#2a2c35; color:#e8e8ea; transition:transform .06s ease, background .2s ease, box-shadow .2s ease;
-      box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 6px 18px rgba(0,0,0,.25);
-    }
-    .btn:hover{ background:#323544; transform:translateY(-1px); }
-    .btn:active{ transform:translateY(0); }
-    .btn--vk{ background:#0077ff; color:#fff; }
-    .btn--vk:hover{ background:#0a68d5; }
-    .row { display:flex; flex-direction:column; gap:12px; }
-    .pills { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-    .pill { font-size:12px; color:#b9beca; background:#20222a; border:1px solid #2a2c35; padding:6px 10px; border-radius:999px; }
-    .box {
-      background:radial-gradient(600px 300px at 50% 0, rgba(247,211,122,.15), transparent 70%);
-      border:1px solid #2a2c35; border-radius:18px; padding:18px; display:flex; align-items:center; justify-content:center;
-    }
-    .box img{ max-width:100%; height:auto; display:block; filter:drop-shadow(0 8px 40px rgba(255,180,60,.25)); }
-    .small { opacity:.7; font-size:12px; margin-top:8px; text-align:center; }
+    body{margin:0;background:#0b0f14;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu}
+    .wrap{display:flex;min-height:100vh;align-items:center;justify-content:center}
+    .card{width:880px;max-width:96vw;background:#0e141b;border:1px solid #222;border-radius:16px;padding:24px 28px;box-shadow:0 10px 50px rgba(0,0,0,.45);display:grid;grid-template-columns:1fr 1fr;gap:28px}
+    h1{font-weight:800;letter-spacing:.2px;margin:12px 0 20px}
+    .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 18px;border-radius:12px;border:0;cursor:pointer;font-weight:700}
+    .vk{background:#2787f5;color:#fff}
+    .tg{background:#229ed9;color:#fff}
+    .hint{font-size:12px;color:#a9b6c3;margin-top:18px}
+    img.chest{width:100%;max-width:360px;border-radius:12px;display:block;margin:0 auto}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="logo">GG ROOM</div>
     <div class="card">
-      <section>
-        <h1 class="title">Войдите и начните выигрывать!</h1>
-        <div class="row">
-          <button class="btn btn--vk" type="button" onclick="window.__GG.vkLogin()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.64 17h1.33s.41-.05.62-.27c.19-.19.19-.55.19-.55s-.03-1.67.75-1.91c.76-.24 1.74 1.6 2.77 2.31.78.54 1.37.42 1.37.42l2.76-.04s1.44-.09.76-1.21c-.06-.11-.38-.8-1.96-2.25-1.65-1.52-1.43-1.28.56-3.92 1.21-1.61 1.7-2.59 1.55-3.01-.14-.4-1.01-.3-1.01-.3l-2.9.02s-.21-.03-.36.06c-.15.09-.24.31-.24.31s-.44 1.17-1.03 2.17c-1.25 2.12-1.75 2.23-1.96 2.1-.48-.31-.36-1.27-.36-1.95 0-2.12.32-3- .63-3.23-.32-.08-.56-.14-1.38-.15-1.06-.01-1.95.01-2.45.25-.34.17-.6.54-.44.56.2.03.66.12.9.46.31.42.3 1.37.3 1.37s.18 2.61-.42 2.94c-.41.22-.98-.23-2.2-2.13-.63-1.03-1.11-2.17-1.11-2.17s-.09-.22-.24-.33c-.19-.14-.46-.18-.46-.18l-2.76.02s-.43.02-.58.2c-.14.17-.01.52-.01.52s2.16 5.05 4.61 7.59c2.24 2.31 4.79 2.16 4.79 2.16Z"/></svg>
-            Войти через VK ID
-          </button>
-
-          <div id="tg-login" aria-label="Telegram login"></div>
-
-          <div class="pills">
-            <div class="pill">Розыгрыши</div>
-            <div class="pill">Гарантии призов</div>
-            <div class="pill">Турниры 24/7</div>
-          </div>
-          <div class="small">Нажимая «Войти», вы соглашаетесь с условиями использования</div>
-        </div>
-      </section>
-
-      <section>
-        <div class="box">
-          <!-- если у тебя другой путь к сундуку — поправь src -->
-          <img src="/assets/prize-chest-700w.webp" alt="Сундук с призом" width="540" height="400" />
-        </div>
-      </section>
+      <div>
+        <h1>Войдите и начните выигрывать!</h1>
+        <p class="hint">Выберите способ входа:</p>
+        <p><button id="vkBtn" class="btn vk">Войти через VK ID</button></p>
+        <div id="tgRoot"></div>
+        <p class="hint">Нажимая «Войти», вы соглашаетесь с условиями использования</p>
+      </div>
+      <div>
+        <img class="chest" src="/assets/prize-chest-700w.webp" alt="Prize chest" />
+      </div>
     </div>
   </div>
 
-  <script src="/assets/js/app.js"></script>
-  <noscript>Для работы сайта требуется JavaScript.</noscript>
+  <script src="/assets/app.js"></script>
+  <!-- Telegram login widget -->
+  <script async src="https://oauth.telegram.org/js/telegram-widget.js?22"
+          data-telegram-login="" data-size="large"
+          data-onauth="onTelegramAuth(user)" data-request-access="write">
+  </script>
+  <script>
+    // VK
+    document.getElementById('vkBtn').addEventListener('click', () => {
+      window.location.href = '/api/auth/vk/start';
+    });
+  </script>
 </body>
 </html>

@@ -2,63 +2,23 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>GG ROOM — лобби</title>
-  <meta name="color-scheme" content="dark" />
-  <style>
-    :root { --bg:#0e0f12; --card:#15161b; }
-    * { box-sizing:border-box; }
-    body {
-      margin:0; min-height:100dvh; background:radial-gradient(1200px 700px at 50% -200px,#1a1b20 0,#0e0f12 60%);
-      color:#e8e8ea; font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
-      display:flex; align-items:center; justify-content:center; padding:24px;
-    }
-    .wrap { width:100%; max-width:940px; }
-    .top { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
-    .logo { font-weight:800; letter-spacing:.06em; color:#d9dee8; }
-    .card {
-      background:linear-gradient(180deg,#1b1c22 0,#15161b 100%);
-      border:1px solid #24262e; border-radius:20px; padding:28px;
-      box-shadow:0 10px 40px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.02);
-    }
-    .user { display:flex; align-items:center; gap:14px; }
-    .user img{ width:56px; height:56px; border-radius:50%; object-fit:cover; }
-    .muted{ opacity:.7; font-size:13px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GG ROOM — Лобби</title>
+  <style>body{margin:0;background:#0b0f14;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu}main{padding:24px}</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top">
-      <div class="logo">GG ROOM</div>
-    </div>
-
-    <div class="card">
-      <h2 style="margin:0 0 16px">Лобби</h2>
-      <div id="me" class="user">
-        <!-- сюда прилетит карточка пользователя -->
-      </div>
-
-      <div style="height:16px"></div>
-      <div class="muted">Участвуйте в розыгрышах и турнирах. Удачи!</div>
-    </div>
-  </div>
-
-  <script src="/assets/js/app.js"></script>
+  <main>
+    <h1>Лобби</h1>
+    <div id="me"></div>
+    <p><button onclick="logout()">Выйти</button></p>
+  </main>
+  <script src="/assets/app.js"></script>
   <script>
-    (async () => {
-      const box = document.getElementById('me');
-      const r = await window.__GG.me();
-      if (!r.ok || !r.user) { location.href = '/'; return; }
-      const u = r.user;
-
-      box.innerHTML = `
-        <img src="${u.photo || ''}" alt="">
-        <div>
-          <div style="font-weight:700">${(u.first_name||'').trim()} ${(u.last_name||'').trim()}</div>
-          <div class="muted">${u.provider ? 'Вход через ' + u.provider : ''}</div>
-        </div>
-      `;
-    })();
+    const u = getUser();
+    if (!u) { window.location.replace('/'); }
+    else {
+      document.getElementById('me').textContent = 'Здравствуйте, ' + (u.first_name || 'игрок') + '!';
+    }
   </script>
 </body>
 </html>
