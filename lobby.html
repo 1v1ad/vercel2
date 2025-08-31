@@ -249,5 +249,24 @@
   });
 })();
 </script>
+<script>
+(async function(){
+  const API = window.API || 'https://vercel2pr.onrender.com';
+  try{
+    const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
+    if(!r.ok) return;
+    const data = await r.json();
+    if(!data.ok || !data.user) return;
+
+    // Куда писать баланс — выбираем все разумные места:
+    const targets = document.querySelectorAll('[data-balance], .balance-amount, #balance');
+    targets.forEach(el => el.textContent = String(data.user.balance ?? 0));
+
+    // Обновим имя, если есть плейсхолдер
+    const nameEl = document.querySelector('[data-username]');
+    if (nameEl && data.user.first_name) nameEl.textContent = data.user.first_name;
+  }catch(_){}
+})();
+</script>
 </body>
 </html>
