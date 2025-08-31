@@ -173,5 +173,81 @@
       });
     })();
   </script>
+
+<script>
+(function(){
+  function b64uuid(){
+    // Simple UUID-like id; crypto if available
+    try {
+      const a = new Uint8Array(16);
+      (crypto.getRandomValues||crypto.randomFillSync).call(crypto, a);
+      return Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join('');
+    } catch(e){
+      return (Date.now().toString(16) + Math.random().toString(16).slice(2)).slice(0,32);
+    }
+  }
+  function getDeviceId(){
+    try{
+      let id = localStorage.getItem('device_id');
+      if(!id){ id = b64uuid(); localStorage.setItem('device_id', id); }
+      // also mirror in cookie for backend convenience
+      document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';
+      return id;
+    }catch(_){ return null; }
+  }
+  async function linkBackground(provider, provider_user_id, username){
+    const API = window.API || 'https://vercel2pr.onrender.com';
+    const device_id = getDeviceId();
+    try {
+      await fetch(API + '/api/link/background', {
+        method:'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ provider, provider_user_id, username, device_id })
+      });
+    } catch(_){}
+  }
+  function ensureVkStartLinkHasDevice(){
+    const API = window.API || 'https://vercel2pr.onrender.com';
+    const el = document.querySelector('#vk-login') || document.querySelector('a.vk-btn');
+    if(!el) return;
+    const href = el.getAttribute('href') || (API + '/api/auth/vk/start');
+    try {
+      const url = new URL(href, location.origin);
+      const did = getDeviceId();
+      if(did){ url.searchParams.set('device_id', did); }
+      el.setAttribute('href', url.toString());
+    } catch(_){
+      // fallback: set explicit link
+      const did = getDeviceId();
+      el.setAttribute('href', API + '/api/auth/vk/start' + (did ? ('?device_id=' + encodeURIComponent(did)) : ''));
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async function(){
+    ensureVkStartLinkHasDevice();
+
+    const p = new URLSearchParams(location.search);
+    // If came from Telegram widget callback
+    if (p.get('provider') === 'tg' && p.get('id')) {
+      const username = p.get('username') || p.get('first_name') || '';
+      await linkBackground('tg', String(p.get('id')), username);
+      return;
+    }
+
+    // Otherwise try to link currently logged-in VK account (if any)
+    try {
+      const API = window.API || 'https://vercel2pr.onrender.com';
+      const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
+      if (r.ok) {
+        const data = await r.json();
+        if (data && data.ok && data.user && data.user.vk_id) {
+          await linkBackground('vk', String(data.user.vk_id), data.user.first_name || '');
+        }
+      }
+    } catch(_){}
+  });
+})();
+</script>
 </body>
 </html>
