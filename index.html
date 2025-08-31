@@ -182,7 +182,26 @@
         s.setAttribute('data-size', 'large');
         s.setAttribute('data-userpic', 'false');
         s.setAttribute('data-request-access', 'write');
-        s.setAttribute('data-auth-url', API + '/api/auth/tg/callback');
+        function ensureDeviceId(){
+    try{
+      let id = localStorage.getItem('device_id');
+      if(!id){
+        const a = new Uint8Array(16);
+        (crypto.getRandomValues||crypto.randomFillSync).call(crypto,a);
+        id = Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join('');
+        localStorage.setItem('device_id', id);
+      }
+      document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';
+      return id;
+    }catch(e){
+      const id=(Date.now().toString(16)+Math.random().toString(16).slice(2)).slice(0,32);
+      try{localStorage.setItem('device_id', id);}catch{}
+      document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';
+      return id;
+    }
+  }
+  const did = ensureDeviceId();
+  s.setAttribute('data-auth-url', API + '/api/auth/tg/callback?device_id=' + encodeURIComponent(did));
         const mount = document.getElementById('tg-auth');
         if (mount) mount.appendChild(s);
         setTimeout(() => {
