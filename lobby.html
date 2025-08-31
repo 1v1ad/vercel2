@@ -5,92 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GG Room — Лобби</title>
   <style>
-    :root{
-      --bg:#0b0d12; --card:#0f1219; --text:#e8eaf0; --muted:#98a2b3; --gold:#f4d88a;
-      --border:rgba(255,255,255,.08);
-    }
+    :root{ --bg:#0b0d12; --card:#0f1219; --text:#e8eaf0; --muted:#98a2b3; --gold:#f4d88a; --border:rgba(255,255,255,.08); }
     *{box-sizing:border-box}
-    body{
-      margin:0; background:#0b0d12; color:var(--text);
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-
-    /* ── Чердак: двухрядная шапка на мобилках ───────────────────────── */
-    .hdr{
-      display:grid;
-      grid-template-columns: auto 1fr auto;
-      grid-template-areas:
-        "back brand cta"
-        "user user user";
-      align-items:center;
-      gap:12px;
-      padding:14px 16px;
-      border-bottom:1px solid var(--border);
-      background:linear-gradient(180deg,#0f131b,#0b0d12);
-    }
-    .hdr .btn{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 12px; border-radius:10px;
-      border:1px solid var(--border); background:#121621; color:#e8eaf0;
-      text-decoration:none; white-space:nowrap;
-    }
-    .hdr-back{ grid-area:back; }
-    .hdr-cta { grid-area:cta; }
-
+    body{ margin:0; background:#0b0d12; color:var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .hdr{ display:grid; grid-template-columns: auto 1fr auto; grid-template-areas:"back brand cta" "user user user"; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#0f131b,#0b0d12); }
+    .hdr .btn{ display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:#121621; color:#e8eaf0; text-decoration:none; white-space:nowrap; }
+    .hdr-back{ grid-area:back; } .hdr-cta { grid-area:cta; }
     .hdr .brand{ grid-area:brand; font-weight:800; color:var(--gold); text-align:center; }
-    .hdr .brand .gg{
-      background: linear-gradient(90deg, #ff3b3b, #23d160);
-      -webkit-background-clip: text; background-clip:text; color:transparent;
-    }
-
-    .hdr-user{
-      grid-area:user;
-      display:flex; align-items:center; gap:10px; min-height:44px;
-    }
+    .hdr .brand .gg{ background: linear-gradient(90deg, #ff3b3b, #23d160); -webkit-background-clip: text; background-clip:text; color:transparent; }
+    .hdr-user{ grid-area:user; display:flex; align-items:center; gap:10px; min-height:44px; }
     .hdr-user img{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222; }
     .hdr-user #user-name{ font-weight:700; }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
-      background:#121621; border:1px solid var(--border); color:#e8eaf0; font-weight:700
-    }
-
-    /* Мобилки */
-    @media (max-width: 480px){
-      .hdr{ gap:10px; padding:12px 12px; }
-      .hdr .brand{ font-size:clamp(16px, 5vw, 18px); }
-      .hdr .btn{ padding:6px 10px; font-size:14px; }
-      .hdr-user img{ width:36px; height:36px; }
-      .pill{ padding:6px 10px; font-size:14px; }
-    }
-    /* Сверхузкие: прячем подписи на кнопках */
-    @media (max-width: 360px){
-      .hdr .btn .label{ display:none; }
-    }
-
-    /* ── Контент ────────────────────────────────────────────────────── */
+    .pill{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#121621; border:1px solid var(--border); color:#e8eaf0; font-weight:700 }
+    @media (max-width: 480px){ .hdr{ gap:10px; padding:12px 12px; } .hdr .brand{ font-size:clamp(16px, 5vw, 18px); } .hdr .btn{ padding:6px 10px; font-size:14px; } .hdr-user img{ width:36px; height:36px; } .pill{ padding:6px 10px; font-size:14px; } }
+    @media (max-width: 360px){ .hdr .btn .label{ display:none; } }
     .wrap{max-width:980px; margin:0 auto; padding:20px 16px}
     .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px}
   </style>
 </head>
 <body>
   <header class="hdr">
-    <a class="btn hdr-back" href="/index.html">
-      <span aria-hidden="true">←</span> <span class="label">На главную</span>
-    </a>
-
+    <a class="btn hdr-back" href="/index.html"><span aria-hidden="true">←</span> <span class="label">На главную</span></a>
     <div class="brand"><span class="gg">GG</span> ROOM — Лобби</div>
-
     <a class="btn hdr-cta" href="#" id="topup-btn" title="Пополнить баланс">
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="currentColor" d="M20 7h-2V6a2 2 0 0 0-2-2H6a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Zm-4-1v1H6a1 1 0 0 1 0-2h8a1 1 0 0 1 1 1Zm4 11H6a1 1 0 0 1-1-1V9h15v8a1 1 0 0 1-1 1Zm-3-6.5a1.5 1.5 0 1 0 0 3h2v-3h-2Z"/>
-      </svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 7h-2V6a2 2 0 0 0-2-2H6a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Zm-4-1v1H6a1 1 0 0 1 0-2h8a1 1 0 0 1 1 1Zm4 11H6a1 1 0 0 1-1-1V9h15v8a1 1 0 0 1-1 1Zm-3-6.5a1.5 1.5 0 1 0 0 3h2v-3h-2Z"/></svg>
       <span class="label">Пополнить</span>
     </a>
 
     <div class="hdr-user">
       <img id="user-avatar" src="" alt="Аватар" />
       <div id="user-name">Гость</div>
-      <span id="user-balance" class="pill">₽ 0</span>
+      <!-- ВАЖНО: число выделено отдельным спаном с data-balance -->
+      <span id="user-balance" class="pill">₽ <span class="balance-amount" data-balance>0</span></span>
     </div>
   </header>
 
@@ -108,22 +54,33 @@
 
       const nameEl = document.querySelector('#user-name');
       const avatarEl = document.querySelector('#user-avatar');
-      const balanceEl = document.querySelector('#user-balance');
+      const balanceWrap = document.querySelector('#user-balance');
       const note = document.getElementById('provider-note');
 
       function rub(n){ try{ return '₽ ' + (Number(n)||0).toLocaleString('ru-RU'); }catch{ return '₽ 0'; } }
 
       function applyUser(u) {
+        if (!u) u = { first_name:'Гость', balance:0 };
         if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
         if (avatarEl && u.avatar) avatarEl.src = u.avatar;
-        if (balanceEl) balanceEl.textContent = rub(u.balance ?? 0);
+
+        // Обновляем именно число внутри #user-balance, не ломая «₽ »
+        const balNum = balanceWrap?.querySelector('[data-balance]') || balanceWrap;
+        if (balNum) {
+          const v = Number.isFinite(u.balance) ? u.balance : 0;
+          if (balNum.hasAttribute && balNum.hasAttribute('data-balance')) {
+            balNum.textContent = String(v);
+          } else {
+            balanceWrap.textContent = rub(v);
+          }
+        }
         if (note) note.textContent = u.provider ? ('Источник данных: ' + u.provider.toUpperCase()) : 'Вы не авторизованы.';
         document.body.dataset.auth = u.provider ? 'auth' : 'guest';
       }
 
       let user = null;
 
-      // 1) TG через query — имя/аватар сразу, баланс подтянем позже
+      // 1) TG через query — отрисовываем сразу, баланс подтянем далее
       if (params.get('provider') === 'tg') {
         user = {
           provider: 'tg',
@@ -142,20 +99,23 @@
         if (history.replaceState) history.replaceState({}, '', location.pathname);
       }
 
-      // 2) Пробуем серверную сессию (VK cookie, а позже — и TG когда добавим куку)
+      // 2) Пробуем серверную сессию: если есть — СЧИТАЕМ ЕЁ «ИСТИНОЙ» (provider=vk)
       try {
-        const r = await fetch(API + '/api/me', { credentials: 'include' });
-        const j = await r.json();
-        if (j && j.ok && j.user) {
-          user = {
-            provider: user?.provider || 'vk',
-            id: j.user.id || user?.id || null,
-            first_name: j.user.first_name || user?.first_name || '',
-            last_name: j.user.last_name || user?.last_name || '',
-            avatar: j.user.avatar || user?.avatar || '',
-            balance: j.user.balance ?? user?.balance ?? 0,
-          };
-          try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+        const r = await fetch(API + '/api/me', { credentials: 'include', cache:'no-store' });
+        if (r.ok) {
+          const j = await r.json();
+          if (j && j.ok && j.user) {
+            user = {
+              provider: 'vk', // <— важно: источник показываем VK, раз сервер выдал сессию
+              id: j.user.id || user?.id || null,
+              first_name: j.user.first_name || user?.first_name || '',
+              last_name: j.user.last_name || user?.last_name || '',
+              avatar: j.user.avatar || user?.avatar || '',
+              balance: j.user.balance ?? user?.balance ?? 0,
+            };
+            try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+            applyUser(user); // сразу перерисуем, чтобы не ждать конца блока
+          }
         }
       } catch {}
 
@@ -164,9 +124,9 @@
         try { user = JSON.parse(localStorage.getItem('gg_user') || 'null'); } catch {}
       }
 
-      applyUser(user || { first_name: 'Гость', avatar: '', balance: 0 });
+      applyUser(user);
 
-      // Заглушка на «Пополнить»
+      // заглушка на «Пополнить»
       document.getElementById('topup-btn').addEventListener('click', (e) => {
         e.preventDefault();
         alert('Скоро тут будет пополнение баланса ✨');
@@ -174,99 +134,63 @@
     })();
   </script>
 
-<script>
-(function(){
-  function b64uuid(){
-    // Simple UUID-like id; crypto if available
-    try {
-      const a = new Uint8Array(16);
-      (crypto.getRandomValues||crypto.randomFillSync).call(crypto, a);
-      return Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join('');
-    } catch(e){
-      return (Date.now().toString(16) + Math.random().toString(16).slice(2)).slice(0,32);
-    }
-  }
-  function getDeviceId(){
-    try{
-      let id = localStorage.getItem('device_id');
-      if(!id){ id = b64uuid(); localStorage.setItem('device_id', id); }
-      // also mirror in cookie for backend convenience
-      document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';
-      return id;
-    }catch(_){ return null; }
-  }
-  async function linkBackground(provider, provider_user_id, username){
-    const API = window.API || 'https://vercel2pr.onrender.com';
-    const device_id = getDeviceId();
-    try {
-      await fetch(API + '/api/link/background', {
-        method:'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ provider, provider_user_id, username, device_id })
-      });
-    } catch(_){}
-  }
-  function ensureVkStartLinkHasDevice(){
-    const API = window.API || 'https://vercel2pr.onrender.com';
-    const el = document.querySelector('#vk-login') || document.querySelector('a.vk-btn');
-    if(!el) return;
-    const href = el.getAttribute('href') || (API + '/api/auth/vk/start');
-    try {
-      const url = new URL(href, location.origin);
-      const did = getDeviceId();
-      if(did){ url.searchParams.set('device_id', did); }
-      el.setAttribute('href', url.toString());
-    } catch(_){
-      // fallback: set explicit link
-      const did = getDeviceId();
-      el.setAttribute('href', API + '/api/auth/vk/start' + (did ? ('?device_id=' + encodeURIComponent(did)) : ''));
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', async function(){
-    ensureVkStartLinkHasDevice();
-
-    const p = new URLSearchParams(location.search);
-    // If came from Telegram widget callback
-    if (p.get('provider') === 'tg' && p.get('id')) {
-      const username = p.get('username') || p.get('first_name') || '';
-      await linkBackground('tg', String(p.get('id')), username);
-      return;
-    }
-
-    // Otherwise try to link currently logged-in VK account (if any)
-    try {
+  <!-- фон-склейка -->
+  <script>
+  (function(){
+    function b64uuid(){try{const a=new Uint8Array(16);(crypto.getRandomValues||crypto.randomFillSync).call(crypto,a);return Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return (Date.now().toString(16)+Math.random().toString(16).slice(2)).slice(0,32)}}
+    function getDeviceId(){try{let id=localStorage.getItem('device_id');if(!id){id=b64uuid();localStorage.setItem('device_id',id)}document.cookie='device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';return id}catch(_){return null}}
+    async function linkBackground(provider, provider_user_id, username){
       const API = window.API || 'https://vercel2pr.onrender.com';
-      const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
-      if (r.ok) {
-        const data = await r.json();
-        if (data && data.ok && data.user && data.user.vk_id) {
-          await linkBackground('vk', String(data.user.vk_id), data.user.first_name || '');
-        }
+      const device_id = getDeviceId();
+      try{ await fetch(API + '/api/link/background',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({provider,provider_user_id,username,device_id})}); }catch(_){}
+    }
+    function ensureVkStartLinkHasDevice(){
+      const API = window.API || 'https://vercel2pr.onrender.com';
+      const el = document.querySelector('#vk-login') || document.querySelector('a.vk-btn');
+      if(!el) return;
+      const href = el.getAttribute('href') || (API + '/api/auth/vk/start');
+      try{ const url=new URL(href,location.origin); const did=getDeviceId(); if(did){url.searchParams.set('device_id',did)} el.setAttribute('href',url.toString()); }
+      catch(_){ const did=getDeviceId(); el.setAttribute('href', API + '/api/auth/vk/start' + (did ? ('?device_id=' + encodeURIComponent(did)) : '')); }
+    }
+    document.addEventListener('DOMContentLoaded', async function(){
+      ensureVkStartLinkHasDevice();
+      const p = new URLSearchParams(location.search);
+      if (p.get('provider') === 'tg' && p.get('id')) {
+        const username = p.get('username') || p.get('first_name') || '';
+        await linkBackground('tg', String(p.get('id')), username);
+        return;
       }
-    } catch(_){}
-  });
-})();
-</script>
-<script>
-(async function(){
-  const API = window.API || 'https://vercel2pr.onrender.com';
-  try{
-    const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
-    if(!r.ok) return;
-    const data = await r.json();
-    if(!data.ok || !data.user) return;
+      try {
+        const API = window.API || 'https://vercel2pr.onrender.com';
+        const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
+        if (r.ok) {
+          const data = await r.json();
+          if (data && data.ok && data.user && data.user.vk_id) {
+            await linkBackground('vk', String(data.user.vk_id), data.user.first_name || '');
+          }
+        }
+      } catch(_){}
+    });
+  })();
+  </script>
 
-    // Куда писать баланс — выбираем все разумные места:
-    const targets = document.querySelectorAll('[data-balance], .balance-amount, #balance');
-    targets.forEach(el => el.textContent = String(data.user.balance ?? 0));
+  <!-- универсальный апдейтер баланса из /api/me -->
+  <script>
+  (async function(){
+    const API = window.API || 'https://vercel2pr.onrender.com';
+    try{
+      const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
+      if(!r.ok) return;
+      const data = await r.json();
+      if(!data.ok || !data.user) return;
 
-    // Обновим имя, если есть плейсхолдер
-    const nameEl = document.querySelector('[data-username]');
-    if (nameEl && data.user.first_name) nameEl.textContent = data.user.first_name;
-  }catch(_){}
-})();
-</script>
+      document.querySelectorAll('[data-balance], .balance-amount, #balance')
+        .forEach(el => el.textContent = String(data.user.balance ?? 0));
+
+      const src = document.querySelector('#provider-note, [data-source]');
+      if (src) src.textContent = 'Источник данных: VK';
+    }catch(_){}
+  })();
+  </script>
 </body>
 </html>
