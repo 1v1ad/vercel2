@@ -1,30 +1,31 @@
 // admin/flags.js
 (function () {
   function ccToFlag(cc) {
-    if (!cc) return '';
+    if (!cc) return "";
     const s = String(cc).trim().toUpperCase();
     if (s.length !== 2) return s; // если это не ISO2 — оставим как есть
-    // 'DE' -> '🇩' + '🇪'
+    // 'DE' -> '🇩' + '🇪' (Regional Indicator Symbols)
     return s.replace(/./g, ch => String.fromCodePoint(0x1F1E6 + (ch.charCodeAt(0) - 65)));
   }
 
-  // доступно глобально при желании
-  window.flagEmoji = ccToFlag;
-
   // украшает все элементы с [data-cc] внутри root (по умолчанию document)
   function decorateFlags(root = document) {
-    const nodes = root.querySelectorAll('[data-cc]');
+    const nodes = root.querySelectorAll("[data-cc]");
     nodes.forEach(el => {
-      const cc = (el.getAttribute('data-cc') || '').trim().toUpperCase();
-      if (!cc) { el.textContent = ''; return; }
+      const cc = (el.getAttribute("data-cc") || "").trim().toUpperCase();
+      if (!cc) { el.textContent = ""; return; }
+
       const emoji = ccToFlag(cc);
-      el.textContent = (emoji ? (emoji + ' ') : '') + cc;
+      // ВАЖНО: inline-стили выключают любые transform у предков
+      el.innerHTML =
+        `<span class="flag-emoji" style="text-transform:none; font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif">${emoji || ""}</span>` +
+        ` <span class="cc" style="text-transform:none">${cc}</span>`;
     });
   }
 
-  // первый прогон — если разметка уже есть
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => decorateFlags());
+  // первый прогон
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => decorateFlags());
   } else {
     decorateFlags();
   }
