@@ -1,4 +1,4 @@
-// admin/app.js — add adminHeaders() and auto-attach X-Admin-Password to all /api/admin requests.
+// admin/app.js — shim + users table refresh with flags decoration
 (function(){
   function getApi() {
     const api = (window.API || localStorage.getItem('ADMIN_API') || '').toString().trim();
@@ -35,6 +35,61 @@
     return _fetch(input, init);
   };
 
-  // 4) Small safe helper
+  // 3) Small safe helper
   window.toArrayOrEmpty = function(x){ return Array.isArray(x) ? x : []; };
+
+  // ------------------------------
+  // USERS TABLE + FLAGS DECORATION
+  // ------------------------------
+  async function refreshUsers() {
+    try {
+      const API = (localStorage.getItem('ADMIN_API') || '').toString().trim().replace(/\/+$/, '');
+      if (!API) { alert('Укажи API и пароль серверу'); return; }
+
+      const params = new URLSearchParams();
+      const q = (document.getElementById('users_search')?.value || '').trim();
+      if (q) params.set('search', q);
+
+      const url = API + '/api/admin/users' + (params.toString() ? ('?' + params.toString()) : '');
+      const r = await fetch(url, {
+        headers: (window.adminHeaders ? window.adminHeaders() : {}),
+        cache: 'no-store'
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!data || !data.ok) throw new Error(data && data.error || 'bad_response');
+
+      const users = Array.isArray(data.users) ? data.users : [];
+      const tbody = document.getElementById('users_tbody');
+      if (!tbody) return;
+
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td>${u.id ?? ''}</td>
+          <td>${u.vk_id ?? ''}</td>
+          <td>${u.first_name ?? ''}</td>
+          <td>${u.last_name ?? ''}</td>
+          <td class="right">${u.balance ?? 0}</td>
+          <td data-cc="${((u.country_code || '') + '').toUpperCase()}"></td>
+          <td>${(u.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
+          <td>${Array.isArray(u.providers) ? u.providers.join(', ') : ''}</td>
+        </tr>
+      `).join('');
+
+      // ДОрисуем флаги для только что вставленных строк
+      if (window.decorateFlags) window.decorateFlags(tbody);
+    } catch (e) {
+      console.error('refreshUsers error:', e);
+      alert('Ошибка загрузки пользователей: ' + (e && e.message ? e.message : e));
+    }
+  }
+  window.refreshUsers = refreshUsers;
+
+  // Привяжем кнопку и сделаем автозагрузку таблицы при открытии админки
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('users_refresh');
+    if (btn) btn.addEventListener('click', refreshUsers);
+
+    // если на странице есть таблица — подтянем данные сразу
+    if (document.getElementById('users_tbody')) refreshUsers();
+  });
 })();
