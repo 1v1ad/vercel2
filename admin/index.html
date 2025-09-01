@@ -220,9 +220,6 @@
             <td>${u.first_name ?? ''}</td>
             <td>${u.last_name ?? ''}</td>
             <td class="right">${u.balance ?? 0}</td>
-            // было
-            // <td>${u.country_code ?? ''}</td>
-            // стало
             <td data-cc="${u.country_code ?? ''}"></td>
             <td>${(u.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
           </tr>
