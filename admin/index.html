@@ -40,6 +40,9 @@
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Noto Sans",
                "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 }
+    /* защита от text-transform у предков */
+[data-cc] { text-transform: none !important; }
+.flag-emoji, .cc { text-transform: none !important; }
   </style>
 </head>
 <body>
