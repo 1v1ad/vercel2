@@ -1,177 +1,119 @@
-// admin/chart.js — 7-дневный бар-чарт с подписями и осью Y.
-// Сегодня — всегда справа. Авто-трекинг API/пароля из localStorage.
+<!-- admin/chart.js -->
+<script>
+(function(){
+  const svg = document.getElementById('chart');
+  if (!svg) return;
 
-(function () {
-  const SVG_NS = "http://www.w3.org/2000/svg";
+  const API = (window.API || localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
+  const PWD = (localStorage.getItem('ADMIN_PWD') || '').toString();
+  const DAYS = 7;
 
-  function getAPI() {
-    return (window.API || localStorage.getItem("ADMIN_API") || "")
-      .toString()
-      .trim()
-      .replace(/\/+$/, "");
-  }
-  function adminHeaders() {
-    return { "X-Admin-Password": (localStorage.getItem("ADMIN_PWD") || "").toString() };
-  }
+  const RU_DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
 
-  // Аккуратные «приятные» деления по оси Y (1–2–5…)
-  function niceMax(m) {
-    if (m <= 5) return 5;
-    const p = Math.pow(10, Math.floor(Math.log10(m)));
-    const base = Math.ceil(m / p);
-    return (base <= 1 ? 1 : base <= 2 ? 2 : base <= 5 ? 5 : 10) * p;
+  function fmtLabel(iso){
+    // iso = YYYY-MM-DD
+    const [y,m,d] = iso.split('-').map(n=>parseInt(n,10));
+    const dt = new Date(Date.UTC(y, m-1, d)); // без сдвигов
+    const dow = RU_DOW[dt.getUTCDay()];
+    const dd = String(d).padStart(2,'0');
+    const mm = String(m).padStart(2,'0');
+    return `${dow}.${dd}.${mm}`;
   }
 
-  function text(el, attrs, content) {
-    const t = document.createElementNS(SVG_NS, "text");
-    for (const k in attrs) t.setAttribute(k, attrs[k]);
-    if (content != null) t.textContent = content;
-    el.appendChild(t);
-    return t;
-  }
-  function line(el, attrs) {
-    const l = document.createElementNS(SVG_NS, "line");
-    for (const k in attrs) l.setAttribute(k, attrs[k]);
-    el.appendChild(l);
-    return l;
-  }
-  function rect(el, attrs) {
-    const r = document.createElementNS(SVG_NS, "rect");
-    for (const k in attrs) r.setAttribute(k, attrs[k]);
-    el.appendChild(r);
-    return r;
+  async function get(url){
+    const r = await fetch(url, { headers: { 'X-Admin-Password': PWD }});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
   }
 
-  function drawChart(series) {
-    const svg =
-      document.getElementById("chart") ||
-      document.getElementById("daily") ||
-      document.querySelector("svg[data-chart]");
-
-    if (!svg) return;
-
-    const W = svg.clientWidth || svg.parentNode.clientWidth || 740;
-    const H = svg.clientHeight || 300;
-
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-
-    // Отступы и рисовальная область
-    const pad = { l: 52, r: 16, t: 28, b: 30 };
-    const innerW = W - pad.l - pad.r;
-    const innerH = H - pad.t - pad.b;
-
-    // Оси/сетка/легенда
-    const gAxis = document.createElementNS(SVG_NS, "g");
-    const gBars = document.createElementNS(SVG_NS, "g");
-    svg.appendChild(gAxis);
-    svg.appendChild(gBars);
-
-    const maxVal = niceMax(
-      Math.max(1, ...series.map((d) => Math.max(d.auth || 0, d.unique || 0)))
-    );
-    const baseY = pad.t + innerH;
-    const y = (v) => pad.t + innerH - (v / maxVal) * innerH;
-
-    // Горизонтальные линии + подписи по оси Y
-    const ticks = 5;
-    for (let i = 0; i <= ticks; i++) {
-      const v = Math.round((maxVal * i) / ticks);
-      const yy = y(v);
-      line(gAxis, {
-        x1: pad.l,
-        y1: yy,
-        x2: W - pad.r,
-        y2: yy,
-        stroke: "#263445",
-        "stroke-width": 1,
-        opacity: i === ticks ? 1 : 0.4,
-      });
-      text(gAxis, { x: pad.l - 8, y: yy + 4, "text-anchor": "end", "font-size": 11, fill: "#9fb3c8" }, String(v));
+  async function load() {
+    // Пытаемся сначала по "правильному" пути, если 404 — по алиасу
+    let data;
+    try {
+      data = await get(`${API}/api/admin/summary/daily?days=${DAYS}`);
+    } catch(_) {
+      data = await get(`${API}/api/admin/daily?days=${DAYS}`);
     }
+    if (!data || !data.ok) throw new Error('Bad daily payload');
 
-    // Группы столбцов (по два: авторизации / уникальные)
-    const n = series.length;
-    const groupW = innerW / Math.max(1, n);
-    const gap = Math.min(12, groupW * 0.12);
-    const barW = Math.min(18, (groupW - gap) / 2);
+    draw(data.labels.map(fmtLabel), data.auth, data.unique);
+  }
 
-    series.forEach((d, i) => {
-      const x0 = pad.l + i * groupW + (groupW - (barW * 2 + gap)) / 2;
+  function draw(labels, seriesA, seriesB){
+    // размеры и отступы
+    const W = svg.clientWidth || 900;
+    const H = 300;
+    const px = n => Math.round(n*10)/10;
 
-      const auth = Math.max(0, d.auth || 0);
-      const uniq = Math.max(0, d.unique || 0);
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = '';
 
-      const yA = y(auth);
-      const hA = baseY - yA;
-      const yU = y(uniq);
-      const hU = baseY - yU;
+    const M = {t:20,r:16,b:36,l:36};
+    const innerW = W - M.l - M.r;
+    const innerH = H - M.t - M.b;
 
-      // авторизации (синий)
-      rect(gBars, { x: x0, y: yA, width: barW, height: hA, rx: 3, fill: "#4aa8ff" });
-      text(gBars, { x: x0 + barW / 2, y: Math.max(pad.t + 12, yA - 6), "text-anchor": "middle", "font-size": 11, fill: "#cfe6ff" }, String(auth));
+    const maxV = Math.max(1, ...seriesA, ...seriesB);
+    const ticks = niceTicks(0, maxV, 4); // 4 деления по Y
+    const kY = innerH / ticks.max; // масштаб Y
+    const colW = innerW / labels.length;
+    const gap = Math.min(12, colW*0.2);
+    const barW = (colW - gap) / 2;
 
-      // уникальные (зелёный)
-      rect(gBars, { x: x0 + barW + gap, y: yU, width: barW, height: hU, rx: 3, fill: "#57d28c" });
-      text(gBars, { x: x0 + barW + gap + barW / 2, y: Math.max(pad.t + 12, yU - 6), "text-anchor": "middle", "font-size": 11, fill: "#d6f7e6" }, String(uniq));
+    // ось Y + сетка
+    const g = mk('g', {transform:`translate(${M.l},${M.t})`});
+    svg.appendChild(g);
 
-      // подпись по X
-      text(gAxis, { x: pad.l + i * groupW + groupW / 2, y: H - 8, "text-anchor": "middle", "font-size": 11, fill: "#9fb3c8" }, d.label);
+    ticks.values.forEach(v=>{
+      const y = innerH - v * kY;
+      g.appendChild(mk('line', {x1:0, y1:y, x2:innerW, y2:y, stroke:'#233', 'stroke-width':1}));
+      g.appendChild(mk('text', {x:-8, y:y+4, 'text-anchor':'end', 'font-size':11, fill:'#8aa'}, v));
     });
 
-    // Легенда
-    const lgY = pad.t - 10;
-    const lgX = pad.l + 6;
-    rect(gAxis, { x: lgX, y: lgY, width: 10, height: 10, rx: 2, fill: "#4aa8ff" });
-    text(gAxis, { x: lgX + 16, y: lgY + 9, "font-size": 11, fill: "#9fb3c8" }, "Авторизации");
-    rect(gAxis, { x: lgX + 120, y: lgY, width: 10, height: 10, rx: 2, fill: "#57d28c" });
-    text(gAxis, { x: lgX + 136, y: lgY + 9, "font-size": 11, fill: "#9fb3c8" }, "Уникальные");
-  }
+    // столбики
+    labels.forEach((lab, i)=>{
+      const x0 = i*colW + gap/2;
 
-  function toLabelUTC(iso) {
-    // iso: YYYY-MM-DD (UTC). Делаем «пн.01.09»
-    const [Y, M, D] = iso.split("-").map(Number);
-    const dt = new Date(Date.UTC(Y, (M || 1) - 1, D || 1));
-    const wd = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"][dt.getUTCDay()];
-    const dd = String(dt.getUTCDate()).padStart(2, "0");
-    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
-    return `${wd}.${dd}.${mm}`;
-  }
+      // A — авторизации (синяя)
+      const hA = seriesA[i]*kY;
+      const yA = innerH - hA;
+      g.appendChild(mk('rect', {x:x0, y:yA, width:barW, height:hA, rx:3, fill:'#3b82f6'}));
+      if (seriesA[i]>0) g.appendChild(mk('text', {x:x0+barW/2, y:yA-6, 'text-anchor':'middle', 'font-size':11, fill:'#9db'}, String(seriesA[i])));
 
-  async function refreshDailyChart() {
-    const api = getAPI();
-    if (!api) return;
+      // B — уникальные (зелёная)
+      const hB = seriesB[i]*kY;
+      const yB = innerH - hB;
+      g.appendChild(mk('rect', {x:x0+barW+4, y:yB, width:barW, height:hB, rx:3, fill:'#22c55e'}));
+      if (seriesB[i]>0) g.appendChild(mk('text', {x:x0+barW+4+barW/2, y:yB-6, 'text-anchor':'middle', 'font-size':11, fill:'#9db'}, String(seriesB[i])));
 
-    try {
-      const r = await fetch(api + "/api/admin/daily?days=7", {
-        headers: adminHeaders(),
-        cache: "no-store",
-      });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error || "bad_response");
+      // подпись X
+      g.appendChild(mk('text', {x:x0+barW, y:innerH+18, 'text-anchor':'middle', 'font-size':11, fill:'#9db'}, lab));
+    });
 
-      const arr = j.days || j.series || j.data || [];
-      // приводим к { label, auth, unique }
-      const series = arr.map((d) => ({
-        label: toLabelUTC(d.day || d.date),
-        auth: Number(d.auth || d.count || 0),
-        unique: Number(d.unique || d.uq || 0),
-      }));
+    // легенда
+    const lgY = 0;
+    g.appendChild(mk('rect', {x:0, y:lgY-14, width:10, height:10, rx:2, fill:'#3b82f6'}));
+    g.appendChild(mk('text', {x:14, y:lgY-5, 'font-size':12, fill:'#bcd'}, 'Авторизации'));
+    g.appendChild(mk('rect', {x:120, y:lgY-14, width:10, height:10, rx:2, fill:'#22c55e'}));
+    g.appendChild(mk('text', {x:134, y:lgY-5, 'font-size':12, fill:'#bcd'}, 'Уникальные'));
 
-      drawChart(series);
-    } catch (e) {
-      console.error("daily chart error:", e);
+    function mk(tag, attrs, text){
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.entries(attrs||{}).forEach(([k,v])=>el.setAttribute(k, v));
+      if (text!=null) el.textContent = text;
+      return el;
+    }
+
+    function niceTicks(min, max, steps){
+      // грубый "nice" расчёт делений
+      const span = max - min;
+      const step = Math.max(1, Math.ceil(span / steps));
+      const top = Math.ceil(max / step) * step;
+      const vals = [];
+      for (let v = 0; v <= top; v += step) vals.push(v);
+      return { max: top, values: vals };
     }
   }
 
-  // Первая отрисовка и реакции на смену API/пароля
-  document.addEventListener("DOMContentLoaded", refreshDailyChart);
-  window.addEventListener("storage", (e) => {
-    if (e.key === "ADMIN_API" || e.key === "ADMIN_PWD") {
-      setTimeout(refreshDailyChart, 150);
-    }
-  });
-
-  // Экспорт на всякий случай
-  window.refreshDailyChart = refreshDailyChart;
+  load().catch(err => console.error('daily chart error:', err));
 })();
+</script>
