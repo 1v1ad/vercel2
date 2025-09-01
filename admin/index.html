@@ -155,6 +155,9 @@
 
   <!-- Твои скрипты админки (оставь свои имена/пути, если отличаются) -->
   <script src="chart.js"></script>
+
+  <!-- подключать ПОСЛЕ admin-auth-headers.js, но ДО app.js -->
+  <script src="flags.js"></script>
   <script src="app.js"></script>
   <script src="merge-suggest.js"></script>
   <script src="topup.js"></script>
@@ -217,7 +220,10 @@
             <td>${u.first_name ?? ''}</td>
             <td>${u.last_name ?? ''}</td>
             <td class="right">${u.balance ?? 0}</td>
-            <td>${u.country_code ?? ''}</td>
+            // было
+            // <td>${u.country_code ?? ''}</td>
+            // стало
+            <td data-cc="${u.country_code ?? ''}"></td>
             <td>${(u.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
           </tr>
         `).join('');
