@@ -1,165 +1,146 @@
-// admin/chart.js — компактный барчарт на canvas, без внешних библиотек
+<script>
+// admin/chart.js — график за 7 дней, сегодня справа, с подписями над столбцами
+
 (function(){
-  const RU_DOW = ['вс','пн','вт','ср','чт','пт','сб'];
+  const API = (window.API || localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
+  const getHeaders = (window.adminHeaders ? window.adminHeaders : () => ({}));
 
-  function getAPI(){
-    return (localStorage.getItem('ADMIN_API') || '').toString().trim().replace(/\/+$/,'');
-  }
-  function adminHeaders(){
-    return (window.adminHeaders ? window.adminHeaders() : {});
-  }
+  // Плагин: числа над столбиками
+  const valueLabelPlugin = {
+    id: 'valueLabel',
+    afterDatasetsDraw(chart, args, pluginOptions) {
+      const { ctx, data } = chart;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = pluginOptions && pluginOptions.color || '#aeb6c2';
+      ctx.font = (pluginOptions && pluginOptions.font) || '12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Noto Sans", sans-serif';
 
-  function fmtDateKey(d){ // YYYY-MM-DD
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,'0');
-    const day = String(d.getDate()).padStart(2,'0');
-    return `${y}-${m}-${day}`;
-  }
-  function fmtLabel(d){ // "пн.01.09"
-    const dd = String(d.getDate()).padStart(2,'0');
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    return `${RU_DOW[d.getDay()]}.${dd}.${mm}`;
-  }
-
-  function last7days(){
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const arr = [];
-    for(let i=6;i>=0;i--){
-      const d = new Date(today);
-      d.setDate(today.getDate()-i);
-      arr.push(d);
+      data.datasets.forEach((ds, dsIndex) => {
+        const meta = chart.getDatasetMeta(dsIndex);
+        meta.data.forEach((bar, i) => {
+          const val = ds.data[i];
+          if (!val || !isFinite(val)) return;
+          const x = bar.x;
+          const y = bar.y - 6; // отступ над столбиком
+          ctx.fillText(String(val), x, y);
+        });
+      });
+      ctx.restore();
     }
-    return arr; // [ .. , today ] — сегодня справа
+  };
+  // Регистрируем плагин один раз
+  if (!Chart.registry.plugins.get('valueLabel')) {
+    Chart.register(valueLabelPlugin);
   }
 
-  async function fetchDaily(){
-    const API = getAPI();
-    if(!API) return null;
+  let visitsChart;
+
+  async function fetchDaily(days=7){
+    const url = `${API}/api/admin/summary/daily?days=${days}`;
+    const r = await fetch(url, { headers: getHeaders(), cache:'no-store' });
+    if(!r.ok) throw new Error('daily fetch failed');
+    const json = await r.json();
+    if(!json.ok) throw new Error(json.error || 'bad response');
+    return json.days || [];
+  }
+
+  function formatLabel(isoDate){
+    // isoDate = 'YYYY-MM-DD' -> 'пн.01.09'
     try{
-      const r = await fetch(`${API}/api/admin/summary/daily?days=7`, { headers: adminHeaders(), cache:'no-store' });
-      if(!r.ok) throw 0;
-      const j = await r.json();
-      // ожидаем один из вариантов: {ok:true, days:[{date,auth,unique},..]} или daily/items
-      const items = (j && (j.days || j.daily || j.items)) || [];
-      const map = new Map();
-      for(const it of items){
-        const key = String(it.date || it.day || it.d || '').slice(0,10);
-        const auth = Number(it.auth || it.total || it.count || 0) || 0;
-        const uniq = Number(it.unique || it.uniques || it.u || 0) || 0;
-        if(key) map.set(key, { auth, uniq });
-      }
-      return map;
+      const [y,m,d] = isoDate.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m-1, d));
+      // RU, короткие дни недели
+      const wd = dt.toLocaleDateString('ru-RU', { weekday:'short', timeZone:'Europe/Moscow' }).replace('.', '');
+      const ddmm = dt.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', timeZone:'Europe/Moscow' });
+      return `${wd}.${ddmm}`;
     }catch(_){
-      return null;
+      return isoDate;
     }
   }
 
-  function drawBars(canvas, labels, a, b){
-    if(!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const w = canvas.clientWidth || 800;
-    const h = canvas.clientHeight || 200;
-    canvas.width  = Math.floor(w*dpr);
-    canvas.height = Math.floor(h*dpr);
-    const ctx = canvas.getContext('2d');
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.clearRect(0,0,w,h);
+  async function renderChart(){
+    try{
+      const rows = await fetchDaily(7);
 
-    // отступы
-    const pad = { l:48, r:12, t:16, b:32 };
-    const cw = w - pad.l - pad.r;
-    const ch = h - pad.t - pad.b;
+      const labels = rows.map(r => formatLabel(r.date));
+      const auth    = rows.map(r => Number(r.auth || 0));
+      const unique  = rows.map(r => Number(r.unique || 0));
 
-    // оси/сетка
-    ctx.strokeStyle = '#1d2a3a';
-    ctx.lineWidth = 1;
-    for(let i=0;i<=4;i++){
-      const y = pad.t + ch * (i/4);
-      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w-pad.r, y); ctx.stroke();
+      const ctx = document.getElementById('visits').getContext('2d');
+
+      const data = {
+        labels,
+        datasets: [
+          {
+            label: 'Авторизации',
+            data: auth,
+            backgroundColor: 'rgba(59, 130, 246, 0.6)',   // синий
+            borderColor:   'rgba(59, 130, 246, 1)',
+            borderWidth: 1,
+            barPercentage: 0.8,
+            categoryPercentage: 0.7
+          },
+          {
+            label: 'Уникальные',
+            data: unique,
+            backgroundColor: 'rgba(16, 185, 129, 0.6)',   // зелёный
+            borderColor:   'rgba(16, 185, 129, 1)',
+            borderWidth: 1,
+            barPercentage: 0.8,
+            categoryPercentage: 0.7
+          }
+        ]
+      };
+
+      const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: { color: '#cbd5e1', boxWidth: 14, usePointStyle: true, pointStyle: 'rect' }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          },
+          // Настройки нашего плагина-подписей
+          valueLabel: {
+            color: '#cbd5e1',
+            font: '12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Noto Sans", sans-serif'
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(148,163,184,0.15)' },
+            ticks: { color: '#cbd5e1', maxRotation: 0, minRotation: 0 }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(148,163,184,0.15)' },
+            ticks: {
+              color: '#cbd5e1',
+              precision: 0,         // целые деления
+              stepSize: undefined,  // пусть Chart.js сам подберёт
+            }
+          }
+        }
+      };
+
+      if (visitsChart) {
+        visitsChart.data = data;
+        visitsChart.options = options;
+        visitsChart.update();
+      } else {
+        visitsChart = new Chart(ctx, { type: 'bar', data, options });
+      }
+    }catch(e){
+      console.error('renderChart error:', e);
     }
-
-    // шкала
-    const maxVal = Math.max(1, Math.max(...a, ...b));
-    const barGroupW = cw / labels.length;
-    const gap = Math.min(14, barGroupW*0.2);
-    const barW = Math.max(6, (barGroupW - gap)/2);
-
-    function yVal(v){ return pad.t + ch - (v/maxVal)*ch; }
-
-    // серия A: авторизации
-    ctx.fillStyle = '#2e7dd7';
-    labels.forEach((_,i)=>{
-      const x0 = pad.l + i*barGroupW + gap/2;
-      const y = yVal(a[i]);
-      const hh = pad.t + ch - y;
-      ctx.fillRect(x0, y, barW, Math.max(1, hh));
-    });
-
-    // серия B: уникальные
-    ctx.fillStyle = '#56d364';
-    labels.forEach((_,i)=>{
-      const x0 = pad.l + i*barGroupW + gap/2 + barW + 4;
-      const y = yVal(b[i]);
-      const hh = pad.t + ch - y;
-      ctx.fillRect(x0, y, barW, Math.max(1, hh));
-    });
-
-    // ось X
-    ctx.fillStyle = '#8fa4c6';
-    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif';
-    ctx.textAlign = 'center';
-    labels.forEach((lab,i)=>{
-      const x = pad.l + i*barGroupW + barGroupW/2;
-      ctx.fillText(lab, x, h-10);
-    });
-
-    // легенда
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#d7dee9';
-    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, sans-serif';
-    // квадратик
-    function legend(x,y,color,text){
-      ctx.fillStyle = color; ctx.fillRect(x,y,12,12);
-      ctx.fillStyle = '#bcd0ef'; ctx.fillText(text, x+18, y+11);
-    }
-    legend(pad.l, 8, '#2e7dd7', 'Авторизации');
-    legend(pad.l+120, 8, '#56d364', 'Уникальные');
   }
 
-  async function buildChart(){
-    const cvs = document.getElementById('visits-chart');
-    if(!cvs) return;
-
-    const days = last7days(); // сегодня — последний
-    const labels = days.map(fmtLabel);
-    const keys   = days.map(fmtDateKey);
-
-    const map = await fetchDaily(); // Map(YYYY-MM-DD -> {auth, uniq})
-    const auth = [], uniq = [];
-    for(const k of keys){
-      const it = map && map.get(k);
-      auth.push(it ? Number(it.auth||0) : 0);
-      uniq.push(it ? Number(it.uniq||it.unique||0) : 0);
-    }
-
-    drawBars(cvs, labels, auth, uniq);
-  }
-
-  // перерисовка по ресайзу
-  let resizeT = 0;
-  window.addEventListener('resize', ()=>{
-    clearTimeout(resizeT);
-    resizeT = setTimeout(buildChart, 150);
-  });
-
-  // публичный хук, чтобы дергать из других скриптов при надобности
-  window.refreshVisitsChart = buildChart;
-
-  // автозапуск
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', buildChart);
-  } else {
-    buildChart();
-  }
+  // запускаем и добавим на window ручной рефреш при надобности
+  renderChart();
+  window.refreshVisitsChart = renderChart;
 })();
+</script>
