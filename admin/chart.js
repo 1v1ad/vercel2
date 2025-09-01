@@ -1,151 +1,177 @@
-// admin/chart.js — график за 7 дней, сегодня справа, с подписями над столбцами
+// admin/chart.js — 7-дневный бар-чарт с подписями и осью Y.
+// Сегодня — всегда справа. Авто-трекинг API/пароля из localStorage.
 
 (function () {
-  const API = (window.API || localStorage.getItem('ADMIN_API') || '').replace(/\/+$/, '');
-  const getHeaders = (window.adminHeaders ? window.adminHeaders : () => ({}));
+  const SVG_NS = "http://www.w3.org/2000/svg";
 
-  // Плагин: вывод чисел над столбиками
-  const valueLabelPlugin = {
-    id: 'valueLabel',
-    afterDatasetsDraw(chart, args, pluginOptions) {
-      const { ctx, data } = chart;
-      ctx.save();
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillStyle = (pluginOptions && pluginOptions.color) || '#aeb6c2';
-      ctx.font =
-        (pluginOptions && pluginOptions.font) ||
-        '12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Noto Sans", sans-serif';
+  function getAPI() {
+    return (window.API || localStorage.getItem("ADMIN_API") || "")
+      .toString()
+      .trim()
+      .replace(/\/+$/, "");
+  }
+  function adminHeaders() {
+    return { "X-Admin-Password": (localStorage.getItem("ADMIN_PWD") || "").toString() };
+  }
 
-      data.datasets.forEach((ds, dsIndex) => {
-        const meta = chart.getDatasetMeta(dsIndex);
-        meta.data.forEach((bar, i) => {
-          const val = ds.data[i];
-          if (!val || !isFinite(val)) return;
-          const x = bar.x;
-          const y = bar.y - 6; // отступ над столбиком
-          ctx.fillText(String(val), x, y);
-        });
+  // Аккуратные «приятные» деления по оси Y (1–2–5…)
+  function niceMax(m) {
+    if (m <= 5) return 5;
+    const p = Math.pow(10, Math.floor(Math.log10(m)));
+    const base = Math.ceil(m / p);
+    return (base <= 1 ? 1 : base <= 2 ? 2 : base <= 5 ? 5 : 10) * p;
+  }
+
+  function text(el, attrs, content) {
+    const t = document.createElementNS(SVG_NS, "text");
+    for (const k in attrs) t.setAttribute(k, attrs[k]);
+    if (content != null) t.textContent = content;
+    el.appendChild(t);
+    return t;
+  }
+  function line(el, attrs) {
+    const l = document.createElementNS(SVG_NS, "line");
+    for (const k in attrs) l.setAttribute(k, attrs[k]);
+    el.appendChild(l);
+    return l;
+  }
+  function rect(el, attrs) {
+    const r = document.createElementNS(SVG_NS, "rect");
+    for (const k in attrs) r.setAttribute(k, attrs[k]);
+    el.appendChild(r);
+    return r;
+  }
+
+  function drawChart(series) {
+    const svg =
+      document.getElementById("chart") ||
+      document.getElementById("daily") ||
+      document.querySelector("svg[data-chart]");
+
+    if (!svg) return;
+
+    const W = svg.clientWidth || svg.parentNode.clientWidth || 740;
+    const H = svg.clientHeight || 300;
+
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    // Отступы и рисовальная область
+    const pad = { l: 52, r: 16, t: 28, b: 30 };
+    const innerW = W - pad.l - pad.r;
+    const innerH = H - pad.t - pad.b;
+
+    // Оси/сетка/легенда
+    const gAxis = document.createElementNS(SVG_NS, "g");
+    const gBars = document.createElementNS(SVG_NS, "g");
+    svg.appendChild(gAxis);
+    svg.appendChild(gBars);
+
+    const maxVal = niceMax(
+      Math.max(1, ...series.map((d) => Math.max(d.auth || 0, d.unique || 0)))
+    );
+    const baseY = pad.t + innerH;
+    const y = (v) => pad.t + innerH - (v / maxVal) * innerH;
+
+    // Горизонтальные линии + подписи по оси Y
+    const ticks = 5;
+    for (let i = 0; i <= ticks; i++) {
+      const v = Math.round((maxVal * i) / ticks);
+      const yy = y(v);
+      line(gAxis, {
+        x1: pad.l,
+        y1: yy,
+        x2: W - pad.r,
+        y2: yy,
+        stroke: "#263445",
+        "stroke-width": 1,
+        opacity: i === ticks ? 1 : 0.4,
       });
-      ctx.restore();
-    },
-  };
-
-  // Регистрируем плагин один раз
-  try {
-    if (!Chart.registry.plugins.get('valueLabel')) {
-      Chart.register(valueLabelPlugin);
+      text(gAxis, { x: pad.l - 8, y: yy + 4, "text-anchor": "end", "font-size": 11, fill: "#9fb3c8" }, String(v));
     }
-  } catch (_) {
-    // Если Chart ещё не загружен — просто не падаем
+
+    // Группы столбцов (по два: авторизации / уникальные)
+    const n = series.length;
+    const groupW = innerW / Math.max(1, n);
+    const gap = Math.min(12, groupW * 0.12);
+    const barW = Math.min(18, (groupW - gap) / 2);
+
+    series.forEach((d, i) => {
+      const x0 = pad.l + i * groupW + (groupW - (barW * 2 + gap)) / 2;
+
+      const auth = Math.max(0, d.auth || 0);
+      const uniq = Math.max(0, d.unique || 0);
+
+      const yA = y(auth);
+      const hA = baseY - yA;
+      const yU = y(uniq);
+      const hU = baseY - yU;
+
+      // авторизации (синий)
+      rect(gBars, { x: x0, y: yA, width: barW, height: hA, rx: 3, fill: "#4aa8ff" });
+      text(gBars, { x: x0 + barW / 2, y: Math.max(pad.t + 12, yA - 6), "text-anchor": "middle", "font-size": 11, fill: "#cfe6ff" }, String(auth));
+
+      // уникальные (зелёный)
+      rect(gBars, { x: x0 + barW + gap, y: yU, width: barW, height: hU, rx: 3, fill: "#57d28c" });
+      text(gBars, { x: x0 + barW + gap + barW / 2, y: Math.max(pad.t + 12, yU - 6), "text-anchor": "middle", "font-size": 11, fill: "#d6f7e6" }, String(uniq));
+
+      // подпись по X
+      text(gAxis, { x: pad.l + i * groupW + groupW / 2, y: H - 8, "text-anchor": "middle", "font-size": 11, fill: "#9fb3c8" }, d.label);
+    });
+
+    // Легенда
+    const lgY = pad.t - 10;
+    const lgX = pad.l + 6;
+    rect(gAxis, { x: lgX, y: lgY, width: 10, height: 10, rx: 2, fill: "#4aa8ff" });
+    text(gAxis, { x: lgX + 16, y: lgY + 9, "font-size": 11, fill: "#9fb3c8" }, "Авторизации");
+    rect(gAxis, { x: lgX + 120, y: lgY, width: 10, height: 10, rx: 2, fill: "#57d28c" });
+    text(gAxis, { x: lgX + 136, y: lgY + 9, "font-size": 11, fill: "#9fb3c8" }, "Уникальные");
   }
 
-  let visitsChart = null;
-
-  async function fetchDaily(days = 7) {
-    const url = `${API}/api/admin/summary/daily?days=${days}`;
-    const r = await fetch(url, { headers: getHeaders(), cache: 'no-store' });
-    if (!r.ok) throw new Error(`daily fetch failed: ${r.status}`);
-    const json = await r.json();
-    if (!json.ok) throw new Error(json.error || 'bad response');
-    return json.days || [];
+  function toLabelUTC(iso) {
+    // iso: YYYY-MM-DD (UTC). Делаем «пн.01.09»
+    const [Y, M, D] = iso.split("-").map(Number);
+    const dt = new Date(Date.UTC(Y, (M || 1) - 1, D || 1));
+    const wd = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"][dt.getUTCDay()];
+    const dd = String(dt.getUTCDate()).padStart(2, "0");
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+    return `${wd}.${dd}.${mm}`;
   }
 
-  function formatLabel(isoDate) {
-    // 'YYYY-MM-DD' -> 'пн.01.09'
+  async function refreshDailyChart() {
+    const api = getAPI();
+    if (!api) return;
+
     try {
-      const [y, m, d] = isoDate.split('-').map(Number);
-      const dt = new Date(Date.UTC(y, m - 1, d));
-      const wd = dt
-        .toLocaleDateString('ru-RU', { weekday: 'short', timeZone: 'Europe/Moscow' })
-        .replace('.', '');
-      const ddmm = dt.toLocaleDateString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        timeZone: 'Europe/Moscow',
+      const r = await fetch(api + "/api/admin/daily?days=7", {
+        headers: adminHeaders(),
+        cache: "no-store",
       });
-      return `${wd}.${ddmm}`;
-    } catch {
-      return isoDate;
-    }
-  }
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || "bad_response");
 
-  async function renderChart() {
-    try {
-      const rows = await fetchDaily(7);
-      const labels = rows.map((r) => formatLabel(r.date));
-      const auth = rows.map((r) => Number(r.auth || 0));
-      const unique = rows.map((r) => Number(r.unique || 0));
+      const arr = j.days || j.series || j.data || [];
+      // приводим к { label, auth, unique }
+      const series = arr.map((d) => ({
+        label: toLabelUTC(d.day || d.date),
+        auth: Number(d.auth || d.count || 0),
+        unique: Number(d.unique || d.uq || 0),
+      }));
 
-      const canvas = document.getElementById('visits');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-
-      const data = {
-        labels,
-        datasets: [
-          {
-            label: 'Авторизации',
-            data: auth,
-            backgroundColor: 'rgba(59, 130, 246, 0.6)',
-            borderColor: 'rgba(59, 130, 246, 1)',
-            borderWidth: 1,
-            barPercentage: 0.8,
-            categoryPercentage: 0.7,
-          },
-          {
-            label: 'Уникальные',
-            data: unique,
-            backgroundColor: 'rgba(16, 185, 129, 0.6)',
-            borderColor: 'rgba(16, 185, 129, 1)',
-            borderWidth: 1,
-            barPercentage: 0.8,
-            categoryPercentage: 0.7,
-          },
-        ],
-      };
-
-      const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: '#cbd5e1', boxWidth: 14, usePointStyle: true, pointStyle: 'rect' },
-          },
-          tooltip: { mode: 'index', intersect: false },
-          valueLabel: {
-            color: '#cbd5e1',
-            font:
-              '12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Noto Sans", sans-serif',
-          },
-        },
-        scales: {
-          x: {
-            grid: { color: 'rgba(148,163,184,0.15)' },
-            ticks: { color: '#cbd5e1', maxRotation: 0, minRotation: 0 },
-          },
-          y: {
-            beginAtZero: true,
-            grid: { color: 'rgba(148,163,184,0.15)' },
-            ticks: { color: '#cbd5e1', precision: 0 },
-          },
-        },
-      };
-
-      if (visitsChart) {
-        visitsChart.data = data;
-        visitsChart.options = options;
-        visitsChart.update();
-      } else {
-        visitsChart = new Chart(ctx, { type: 'bar', data, options });
-      }
+      drawChart(series);
     } catch (e) {
-      console.error('renderChart error:', e);
+      console.error("daily chart error:", e);
     }
   }
 
-  // Загружаем график
-  renderChart();
-  // На всякий — экспорт ручного рефреша
-  window.refreshVisitsChart = renderChart;
+  // Первая отрисовка и реакции на смену API/пароля
+  document.addEventListener("DOMContentLoaded", refreshDailyChart);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "ADMIN_API" || e.key === "ADMIN_PWD") {
+      setTimeout(refreshDailyChart, 150);
+    }
+  });
+
+  // Экспорт на всякий случай
+  window.refreshDailyChart = refreshDailyChart;
 })();
