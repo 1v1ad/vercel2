@@ -175,6 +175,23 @@
 
   <!-- Glue-код страницы: хранение API/пароля, действия, запросы -->
   <script>
+// Timezone helper: render UTC-ish ISO as Europe/Moscow (YYYY-MM-DD HH:mm:ss)
+function toMSK(iso){
+  if(!iso) return '';
+  try{
+    const s = String(iso);
+    const d = new Date(s.endsWith('Z') ? s : (s + 'Z')); // treat as UTC
+    const p = new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Europe/Moscow', hour12: false,
+      year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', second:'2-digit'
+    }).formatToParts(d).reduce((o,part)=> (o[part.type]=part.value,o),{});
+    return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
+  }catch(e){
+    return String(iso).slice(0,19).replace('T',' ');
+  }
+}
+
     (function(){
       // загрузка/сохранение API/пароля в UI
       const apiEl = document.getElementById('admin-api');
@@ -232,7 +249,7 @@
             <td>${u.last_name ?? ''}</td>
             <td class="right">${u.balance ?? 0}</td>
             <td data-cc="${(u.country_code || '').toUpperCase()}"></td>
-            <td>${(u.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
+            <td>${toMSK(u.created_at)}</td>
             <td>${Array.isArray(u.providers) ? u.providers.join(', ') : ''}</td> <!-- ← можно убрать, если не требуется -->
           </tr>
         `).join('');
@@ -263,7 +280,7 @@
             <td>${e.type ?? ''}</td>
             <td>${e.ip ?? ''}</td>
             <td class="muted">${(e.ua || '').slice(0,64)}</td>
-            <td>${(e.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
+            <td>${toMSK(e.created_at)}</td>
           </tr>
         `).join('');
       }
