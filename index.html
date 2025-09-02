@@ -117,7 +117,8 @@
     const TG_BOT_ID = 8236271394;
 
     document.getElementById('vk-login').onclick = () => {
-      window.location.href = API + '/api/auth/vk/start';
+      const did = getDeviceId();
+      window.location.href = API + '/api/auth/vk/start' + (did ? ('?device_id=' + encodeURIComponent(did)) : '');
     };
 
     async function warmAndMountTg() {
