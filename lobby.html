@@ -185,7 +185,7 @@
       if (p.get('provider') === 'tg' && p.get('id')) {
         const username = p.get('username') || p.get('first_name') || '';
         await linkBackground('tg', String(p.get('id')), username);
-        // fall-through: now fetch /api/me with possibly updated session
+        return;
       }
 
       try{
