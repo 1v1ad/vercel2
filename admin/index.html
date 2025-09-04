@@ -50,6 +50,7 @@
     <div class="toolbar">
       <input id="admin-api" type="text" placeholder="https://vercel2pr.onrender.com" />
       <input id="admin-pwd" type="password" placeholder="Пароль администратора" />
+      <input id="admin-name" type="text" placeholder="Имя администратора (для логов)" />
       <button id="admin-save">Сохранить</button>
       <button id="admin-check">Проверка</button>
       <span class="muted">API и пароль сохраняются в localStorage</span>
@@ -89,6 +90,29 @@
           <input id="topup-amount"  type="text" placeholder="сумма" style="width:120px" />
           <button id="topup-run">Пополнить вручную</button>
         </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h4>Ручные пополнения</h4>
+        <div class="badge">последние 50</div>
+      </div>
+      <div class="panel-body">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Админ</th>
+              <th>IP</th>
+              <th>user_id</th>
+              <th>Сумма</th>
+              <th>Причина</th>
+              <th>Создано</th>
+            </tr>
+          </thead>
+          <tbody id="topups-tbody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -198,13 +222,16 @@ function toMSK(iso){
       const pwdEl = document.getElementById('admin-pwd');
       const saveBtn = document.getElementById('admin-save');
       const checkBtn = document.getElementById('admin-check');
+      const nameEl = document.getElementById('admin-name');
 
       apiEl.value = localStorage.getItem('ADMIN_API') || (window.API || '');
       pwdEl.value = localStorage.getItem('ADMIN_PWD') || '';
+      nameEl.value = localStorage.getItem('ADMIN_NAME') || '';
 
       saveBtn.addEventListener('click', () => {
         localStorage.setItem('ADMIN_API', apiEl.value.trim());
         localStorage.setItem('ADMIN_PWD', pwdEl.value);
+        localStorage.setItem('ADMIN_NAME', (nameEl.value||'').trim());
         alert('OK');
       });
 
@@ -305,17 +332,38 @@ function toMSK(iso){
         const r = await fetch(API + '/api/admin/users/' + id + '/topup', {
           method:'POST',
           headers: Object.assign({'Content-Type':'application/json'}, (window.adminHeaders?window.adminHeaders():{})),
-          body: JSON.stringify({ amount: Number(amount)||0 })
+          body: JSON.stringify((()=>{ const reason = (prompt('Цель пополнения (обязательно):','')||'').trim(); if(!reason || reason.length<4 || /^[\s._-]+$/.test(reason) || /^\d{1,6}$/.test(reason) || /^(\d)\1{2,}$/.test(reason)){ alert('Заполни причину: не короче 4 символов, не только знаки, не простые числа'); throw new Error('bad_reason'); } return { amount: Number(amount)||0, reason }; })())
         });
         const j = await r.json().catch(()=>({}));
         alert(j && j.ok ? 'OK' : 'Ошибка');
         refreshUsers();
       });
 
+      async function refreshTopups(){
+        const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
+        if (!API) return;
+        const r = await fetch(API + '/api/admin/topups?limit=50', { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' });
+        const j = await r.json().catch(()=>({}));
+        const rows = Array.isArray(j.topups) ? j.topups : [];
+        const tbody = document.getElementById('topups-tbody');
+        if (tbody) tbody.innerHTML = rows.map(t => `
+          <tr>
+            <td>${t.id ?? ''}</td>
+            <td>${(t.admin_name || '').slice(0,24)}</td>
+            <td>${t.admin_ip || ''}</td>
+            <td>${t.user_id ?? ''}</td>
+            <td>${t.amount ?? ''}</td>
+            <td class="muted">${(t.reason || '').slice(0,120)}</td>
+            <td>${toMSK(t.created_at)}</td>
+          </tr>
+        `).join('');
+      }
+
       // Автозагрузка при входе
       refreshSummary();
       refreshUsers();
       refreshEvents();
+      refreshTopups();
     })();
   </script>
 </body>
