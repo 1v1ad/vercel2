@@ -64,8 +64,8 @@
 
       tbody.innerHTML = users.map(u => `
         <tr>
-          <td>${u.id ?? ''}</td>
-          <td>${u.hum_id ?? u.cluster_id ?? u.id ?? ''}</td>
+          <td>${u.hum_id ?? ''}</td>
+          <td>${u.user_id ?? ''}</td>
           <td>${u.vk_id ?? ''}</td>
           <td>${u.first_name ?? ''}</td>
           <td>${u.last_name ?? ''}</td>

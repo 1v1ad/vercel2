@@ -115,7 +115,6 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>HUM</th>
               <th>VK</th>
               <th>Имя</th>
               <th>Фамилия</th>
@@ -146,7 +145,6 @@
           <thead>
             <tr>
               <th>ID</th>
-              <th>HUM</th>
               <th>user_id</th>
               <th>event_type</th>
               <th>type</th>
@@ -164,7 +162,8 @@
   </div>
 
   <!-- ВАЖНО: ШИМ ДОЛЖЕН ИДТИ ПЕРВЫМ, чтобы подставлять X-Admin-Password -->
-  
+  <script src="admin-auth-headers.js"></script>
+
   <!-- flags.js подключаем до app.js, чтобы была доступна decorateFlags -->
   <script src="flags.js"></script>
  
@@ -312,14 +311,6 @@ function toMSK(iso){
         alert(j && j.ok ? 'OK' : 'Ошибка');
         refreshUsers();
       });
-
-      
-    document.addEventListener('DOMContentLoaded', () => {
-      const apiEl = document.getElementById('admin-api');
-      const pwdEl = document.getElementById('admin-pwd');
-      if (apiEl && apiEl.value) localStorage.setItem('ADMIN_API', apiEl.value.trim());
-      if (pwdEl && pwdEl.value) localStorage.setItem('ADMIN_PWD', pwdEl.value);
-    });
 
       // Автозагрузка при входе
       refreshSummary();
