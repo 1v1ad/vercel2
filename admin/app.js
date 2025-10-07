@@ -59,7 +59,7 @@
       if (!data || !data.ok) throw new Error(data && data.error || 'bad_response');
 
       const users = Array.isArray(data.users) ? data.users : [];
-      const tbody = document.getElementById('users_tbody') || document.getElementById('users-tbody');
+      const tbody = document.getElementById('users_tbody');
       if (!tbody) return;
 
       tbody.innerHTML = users.map(u => `
