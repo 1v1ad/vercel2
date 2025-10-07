@@ -4,12 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>GGRoom — Admin</title>
+
+  <!-- Встроенный фавикон (без запроса favicon.ico) -->
   <link rel="icon" type="image/svg+xml"
       href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%230a84ff"/><stop offset="1" stop-color="%234ed1a9"/></linearGradient></defs><rect rx="12" width="64" height="64" fill="%23101825"/><path d="M14 44l8-24h6l8 24h-6l-1.6-5H21.6L20 44h-6zm10-10h7l-3.5-11-3.5 11z" fill="url(%23g)"/></svg>'>
 
-
-  <!-- Стили (оставь свои пути, если отличаются) -->
-  <link rel="icon" href="favicon.ico" />
+  <!-- Стили -->
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="styles.patch.css" />
   <!-- emojis.css удалён: флаги теперь рисует flags.js -->
@@ -176,7 +176,7 @@
   <script src="app.js?v=20251007d"></script>
   <script src="merge-suggest.js"></script>
   <script src="topup.js"></script>
-  <script src="chart.js?v=20251007d"></script>
+  <script src="chart.js?v=20251008a"></script>
 
   <!-- Glue-код страницы: хранение API/пароля, действия, запросы -->
   <script>
@@ -227,12 +227,13 @@ function toMSK(iso){
   async function refreshSummary(){
     const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
     if (!API) return;
-    const r = await fetch(API + '/api/admin/summary', { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' });
+    // Явно просим МСК
+    const r = await fetch(API + '/api/admin/summary?tz=Europe/Moscow', { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' });
     const j = await r.json().catch(()=>({}));
     if (!j || !j.ok) return;
     setText('summary-users',  j.users ?? '—');
     setText('summary-events', j.events ?? '—');
-    setText('summary-auth', j.auth7_total ?? j.auth7 ?? '—');
+    setText('summary-auth',   j.auth7_total ?? j.auth7 ?? '—');
     setText('summary-unique', j.unique7 ?? '—');
   }
 
@@ -248,7 +249,7 @@ function toMSK(iso){
       const tbody = document.getElementById('users-tbody');
       if (!tbody) return;
 
-      // FIX: заполняем 9 колонок строго по thead; VK/Tg — реальный идентификатор (vk_id или tg:…)
+      // 9 колонок строго по thead; VK/Tg — реальный идентификатор (vk_id или tg:…)
       tbody.innerHTML = rows.map(u => {
         const HUM = u.hum_id ?? u.HUMid ?? u.id ?? '';
         const UID = u.user_id ?? u.id ?? '';
@@ -262,7 +263,7 @@ function toMSK(iso){
             <td>${vkTgId}</td>
             <td>${u.first_name ?? ''}</td>
             <td>${u.last_name ?? ''}</td>
-            <td class="right">${u.balance ?? 0}</td>
+            <td class="right">${u.balance_raw ?? u.balance ?? 0}</td>
             <td data-cc="${cc}"></td>
             <td>${toMSK(u.created_at)}</td>
             <td>${providers}</td>
@@ -285,7 +286,7 @@ function toMSK(iso){
     if (!API) return;
     const type = (document.getElementById('events-type')?.value || '').trim();
     const user = (document.getElementById('events-user')?.value || '').trim();
-    // FIX: шлём и type, и event_type, чтобы работать с любым бэком
+    // шлём и type, и event_type — совместимо с любым бэком
     const qs = new URLSearchParams({ take:'50', skip:'0', type, event_type:type, user_id:user });
     try{
       const r = await fetch(API + '/api/admin/events?' + qs.toString(), { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' });
@@ -294,7 +295,6 @@ function toMSK(iso){
       const tbody = document.getElementById('events-tbody');
       if (!tbody) return;
 
-      // FIX: 8 колонок строго по thead, добавлен HUMid
       tbody.innerHTML = rows.map(e => `
         <tr>
           <td>${e.id ?? e.event_id ?? ''}</td>
@@ -320,7 +320,6 @@ function toMSK(iso){
   document.getElementById('merge-suggest-run')?.addEventListener('click', async () => {
     const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
     if (!API) return;
-    // просто дергаем предложения — фактическая автосклейка уже в фоне
     await fetch(API + '/api/admin/users/merge/suggestions', { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' })
       .then(r=>r.json()).catch(()=>({}));
     alert('OK');
