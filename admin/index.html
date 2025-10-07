@@ -243,18 +243,29 @@ function toMSK(iso){
         const rows = Array.isArray(j.users) ? j.users : [];
         const tbody = document.getElementById('users-tbody');
         if (!tbody) return;
-        tbody.innerHTML = rows.map(u => `
-          <tr>
-            <td>${u.id ?? ''}</td>
-            <td>${u.vk_id ?? ''}</td>
-            <td>${u.first_name ?? ''}</td>
-            <td>${u.last_name ?? ''}</td>
-            <td class="right">${u.balance ?? 0}</td>
-            <td data-cc="${(u.country_code || '').toUpperCase()}"></td>
-            <td>${toMSK(u.created_at)}</td>
-            <td>${Array.isArray(u.providers) ? u.providers.join(', ') : ''}</td> <!-- ← можно убрать, если не требуется -->
-          </tr>
-        `).join('');
+        tbody.innerHTML = rows.map(u => {
+  const HUM   = u.hum_id ?? u.HUMid ?? u.id ?? '';
+  const UID   = u.user_id ?? u.id ?? '';
+  const provs = Array.isArray(u.providers) ? u.providers
+              : (u.vk_id ? [String(u.vk_id).startsWith('tg:') ? 'tg' : 'vk'] : []);
+  const provShort = provs[0] || '';
+  const provAll   = provs.join(', ');
+  const country   = (u.country || u.country_code || u.country_name || '').toUpperCase();
+
+  return `
+    <tr>
+      <td>${HUM}</td>
+      <td>${UID}</td>
+      <td>${provShort}</td>
+      <td>${u.first_name ?? ''}</td>
+      <td>${u.last_name ?? ''}</td>
+      <td class="right">${u.balance ?? 0}</td>
+      <td data-cc="${country}"></td>
+      <td>${toMSK(u.created_at)}</td>
+      <td>${provAll}</td>
+    </tr>
+  `;
+}).join('');
 
         // ДОрисуем флаги для только что вставленных строк
         if (window.decorateFlags) window.decorateFlags(tbody);
