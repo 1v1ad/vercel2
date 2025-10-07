@@ -1,334 +1,346 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>GGRoom — Admin</title>
-
-  <!-- Стили (оставь свои пути, если отличаются) -->
-  <link rel="icon" href="favicon.ico" />
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="styles.patch.css" />
-  <!-- emojis.css удалён: флаги теперь рисует flags.js -->
-
+  <link rel="stylesheet" href="/admin/styles.css" />
+  <link rel="stylesheet" href="/admin/styles.patch.css" />
   <style>
-    /* лёгкие дефолты на случай, если нет своих стилей */
-    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif; background:#0b0f14; color:#d7dee9; }
-    .wrap { max-width:1200px; margin:0 auto; padding:16px; }
-    .toolbar { display:flex; gap:8px; align-items:center; }
-    .toolbar input[type="text"], .toolbar input[type="password"] { background:#111923; color:#d7dee9; border:1px solid #1f2a36; border-radius:8px; padding:10px 12px; width:340px; }
-    .toolbar button { background:#1e293b; color:#e5f0ff; border:1px solid #2a3a4f; border-radius:8px; padding:10px 14px; cursor:pointer; }
-    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:16px 0; }
-    .card { background:#111923; border:1px solid #1f2a36; border-radius:12px; padding:16px; min-height:92px; }
-    .card h3 { margin:0 0 8px 0; font-weight:600; color:#9fb4d9; font-size:14px; letter-spacing:.02em; }
-    .num { font-size:28px; font-weight:700; }
-    .panel { background:#0e141d; border:1px solid #1c2735; border-radius:12px; margin:16px 0; overflow:hidden; }
-    .panel-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #1c2735; background:#0b111a; }
-    .panel-header h4 { margin:0; font-size:15px; color:#9fb4d9; }
-    .panel-body { padding:16px; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { text-align:left; padding:9px 8px; border-bottom:1px solid #182432; }
-    th { color:#8fa4c6; font-weight:600; font-size:13px; }
-    td { color:#d7dee9; font-size:14px; }
-    .actions { display:flex; gap:8px; flex-wrap:wrap; }
-    .muted { color:#8fa4c6; opacity:.8; font-size:12px; }
-    .right { text-align:right; }
-    .badge { display:inline-block; background:#182432; border:1px solid #25405b; color:#a5c4f1; border-radius:999px; padding:2px 8px; font-size:12px; }
-/* ⬇️ фикс превращения флага в "de" */
-[data-cc] {
-  text-transform: none !important;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Noto Sans",
-               "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-}
-    /* защита от text-transform у предков */
-[data-cc] { text-transform: none !important; }
-.flag-emoji, .cc { text-transform: none !important; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .topbar { display: grid; grid-template-columns: 1fr 200px auto; gap: 8px; align-items: center; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+    .card { background: #101317; border: 1px solid #222; border-radius: 10px; padding: 12px; color: #cfe3ff; }
+    .card h3 { margin: 0 0 6px; font-size: 14px; color: #9cb3c9; font-weight: 600; }
+    .card .num { font-size: 28px; font-weight: 700; color: #fff; }
+    .panel { background: #0c0f13; border: 1px solid #1f2630; border-radius: 12px; padding: 12px; margin: 14px 0; }
+    .panel h4 { margin: 0 0 10px; color: #cde; font-size: 15px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    input, select, button { background:#0e1319; color:#e7f0ff; border:1px solid #1f2630; border-radius:8px; padding:8px 10px; }
+    button { cursor:pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    thead th { text-align: left; font-weight: 600; color:#9cb3c9; border-bottom:1px solid #1f2630; padding:6px 8px; }
+    tbody td { border-top:1px solid #151b23; padding:6px 8px; color:#dfe8f5; }
+    td.right { text-align:right; }
+    .muted { color:#90a4b8; text-align:center; padding:8px 0; }
+    .chartwrap { height: 260px; }
+    .flash { position: fixed; right: 12px; bottom: 12px; background:#0b2a18; border:1px solid #1f5b39; color:#d9ffe9; padding:10px 12px; border-radius:10px; display:none; }
+    .flash[data-kind="error"]{ background:#2a0b0b; border-color:#5b1f1f; color:#ffd9d9; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="toolbar">
-      <input id="admin-api" type="text" placeholder="https://vercel2pr.onrender.com" />
-      <input id="admin-pwd" type="password" placeholder="Пароль администратора" />
-      <button id="admin-save">Сохранить</button>
-      <button id="admin-check">Проверка</button>
-      <span class="muted">API и пароль сохраняются в localStorage</span>
-    </div>
-
-    <div class="grid">
-      <div class="card">
-        <h3>Пользователи</h3>
-        <div id="summary-users" class="num">—</div>
-      </div>
-      <div class="card">
-        <h3>События</h3>
-        <div id="summary-events" class="num">—</div>
-      </div>
-      <div class="card">
-        <h3>Авторизаций (7д)</h3>
-        <div id="summary-auth" class="num">—</div>
+    <div class="topbar">
+      <input id="service" placeholder="https://vercel2pr.onrender.com" />
+      <input id="pwd" type="password" placeholder="admin password" />
+      <div class="row">
+        <button id="btn-merge-all">Склеить все</button>
       </div>
     </div>
 
-    <div class="grid">
-      <div class="card">
-        <h3>Уникальные (7д)</h3>
-        <div id="summary-unique" class="num">—</div>
-      </div>
-      <div class="card">
-        <h3>Склейка: предложения</h3>
-        <div class="actions">
-          <button id="merge-suggest-run">Склеить все</button>
-          <span class="muted">Укажи API и пароль сверху</span>
-        </div>
-      </div>
-      <div class="card">
-        <h3>Пополнение</h3>
-        <div class="actions">
-          <input id="topup-user-id" type="text" placeholder="user_id" style="width:120px" />
-          <input id="topup-amount"  type="text" placeholder="сумма" style="width:120px" />
-          <button id="topup-run">Пополнить вручную</button>
-        </div>
+    <div class="cards">
+      <div class="card"><h3>Пользователи</h3><div class="num" id="k_users">0</div></div>
+      <div class="card"><h3>События</h3><div class="num" id="k_events">0</div></div>
+      <div class="card"><h3>Уникальные (7д)</h3><div class="num" id="k_uniques7">0</div></div>
+    </div>
+
+    <div class="panel">
+      <h4>Аналитика посещений</h4>
+      <div class="chartwrap"><canvas id="chart_daily"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h4>Пополнение</h4>
+      <div class="row">
+        <input id="topup_user" placeholder="user_id" style="width:180px" />
+        <input id="topup_amount" placeholder="сумма" style="width:140px" />
+        <button id="btn-topup">Пополнить вручную</button>
       </div>
     </div>
 
     <div class="panel">
-      <div class="panel-header">
-        <h4>Аналитика посещений</h4>
-        <div class="badge">7 дней</div>
+      <h4>Пользователи</h4>
+      <div class="row">
+        <input id="users_search" placeholder="Поиск (vk_id, имя, фамилия)" style="min-width:260px" />
+        <button id="users_reload">Обновить</button>
       </div>
-      <div class="panel-body">
-        <svg id="chart" width="100%" height="300"></svg>
-      </div>
+      <table id="users">
+        <thead>
+          <tr>
+            <th>HUMid</th><th>user_id</th><th>VK/Tg</th><th>Имя</th><th>Фамилия</th>
+            <th>Баланс</th><th>Страна</th><th>Создан</th><th>Провайдеры</th>
+          </tr>
+        </thead>
+        <tbody id="users_tbody"><tr><td colspan="9" class="muted">Загрузка…</td></tr></tbody>
+      </table>
     </div>
 
     <div class="panel">
-      <div class="panel-header">
-        <h4>Пользователи</h4>
-        <div class="actions">
-          <input id="users-search" type="text" placeholder="Поиск (vk_id, имя, фамилия)" />
-          <button id="users-refresh">Обновить</button>
-        </div>
+      <h4>События</h4>
+      <div class="row">
+        <input id="events_type" placeholder="Тип (login, auth,…)" style="min-width:200px" />
+        <input id="events_user_id" placeholder="user_id" style="width:160px" />
+        <button id="events_reload">Обновить</button>
       </div>
-      <div class="panel-body">
-        <table>
-          <thead>
-            <tr>
-              <th>HUMid</th>
-              <th>user_id</th>
-              <th>VK/Tg</th>
-              <th>Имя</th>
-              <th>Фамилия</th>
-              <th class="right">Баланс</th>
-              <th>Страна</th>
-              <th>Создан</th>
-              <th>Провайдеры</th> <!-- ← можно убрать, если не требуется -->
-            </tr>
-          </thead>
-          <tbody id="users-tbody">
-            <!-- наполняется скриптом -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-header">
-        <h4>События</h4>
-        <div class="actions">
-          <input id="events-type" type="text" placeholder="Тип (login, auth_…)" />
-          <input id="events-user" type="text" placeholder="user_id" style="width:120px" />
-          <button id="events-refresh">Обновить</button>
-        </div>
-      </div>
-      <div class="panel-body">
-        <table>
-          <thead>
-            <tr>
-              <th>ID события</th>
-              <th>HUMid</th>
-              <th>user_id</th>
-              <th>event_type</th>
-              <th>type</th>
-              <th>IP</th>
-              <th>UA</th>
-              <th>Создано</th>
-            </tr>
-          </thead>
-          <tbody id="events-tbody">
-            <!-- наполняется скриптом -->
-          </tbody>
-        </table>
-      </div>
+      <table id="events">
+        <thead>
+          <tr>
+            <th>ID события</th><th>HUMid</th><th>user_id</th><th>event_type</th><th>type</th><th>IP</th><th>UA</th><th>Создано</th>
+          </tr>
+        </thead>
+        <tbody id="events_tbody"><tr><td colspan="8" class="muted">Загрузка…</td></tr></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ВАЖНО: ШИМ ДОЛЖЕН ИДТИ ПЕРВЫМ, чтобы подставлять X-Admin-Password -->
-  <script src="admin-auth-headers.js?v=20251007d"></script>
+  <div id="flash" class="flash"></div>
 
-  <!-- flags.js подключаем до app.js, чтобы была доступна decorateFlags -->
-  <script src="flags.js"></script>
- 
-  <!-- основной код админки -->
-  <script src="app.js?v=20251007d"></script>
-  <script src="merge-suggest.js"></script>
-  <script src="topup.js"></script>
-  <script src="chart.js?v=20251007d"></script>
+  <!-- Твой заголовочный хедер (не обязателен, но пусть будет) -->
+  <script src="/admin/admin-auth-headers.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Glue-код страницы: хранение API/пароля, действия, запросы -->
   <script>
-// Timezone helper: render UTC-ish ISO as Europe/Moscow (YYYY-MM-DD HH:mm:ss)
-function toMSK(iso){
-  if(!iso) return '';
-  try{
-    const s = String(iso);
-    const d = new Date(s.endsWith('Z') ? s : (s + 'Z')); // treat as UTC
-    const p = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'Europe/Moscow', hour12: false,
-      year:'numeric', month:'2-digit', day:'2-digit',
-      hour:'2-digit', minute:'2-digit', second:'2-digit'
-    }).formatToParts(d).reduce((o,part)=> (o[part.type]=part.value,o),{});
-    return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
-  }catch(e){
-    return String(iso).slice(0,19).replace('T',' ');
-  }
-}
+    // ===== helpers =====
+    const $ = (s,r=document)=>r.querySelector(s);
+    const txt = v => v==null ? '' : String(v);
+    const asInt = (v,d=0)=>{ const n=parseInt(v,10); return Number.isFinite(n)?n:d; };
 
-    (function(){
-      // загрузка/сохранение API/пароля в UI
-      const apiEl = document.getElementById('admin-api');
-      const pwdEl = document.getElementById('admin-pwd');
-      const saveBtn = document.getElementById('admin-save');
-      const checkBtn = document.getElementById('admin-check');
+    const els = {
+      service: $('#service'), pwd: $('#pwd'),
+      mergeAll: $('#btn-merge-all'),
+      topupUser: $('#topup_user'), topupAmount: $('#topup_amount'), topupBtn: $('#btn-topup'),
+      kUsers: $('#k_users'), kEvents: $('#k_events'), kUniques: $('#k_uniques7'),
+      chart: $('#chart_daily'),
+      usersSearch: $('#users_search'), usersReload: $('#users_reload'), usersTbody: $('#users_tbody'),
+      eventsType: $('#events_type'), eventsUserId: $('#events_user_id'), eventsReload: $('#events_reload'), eventsTbody: $('#events_tbody'),
+      flash: $('#flash')
+    };
 
-      apiEl.value = localStorage.getItem('ADMIN_API') || (window.API || '');
-      pwdEl.value = localStorage.getItem('ADMIN_PWD') || '';
+    const LS = { service:'adm_service', pwd:'adm_pwd' };
+    function getService(){ return (els.service?.value || localStorage.getItem(LS.service) || '').trim().replace(/\/+$/,''); }
+    function getPwd(){ return (els.pwd?.value || localStorage.getItem(LS.pwd) || '').trim(); }
+    function saveAuth(){ if(els.service) localStorage.setItem(LS.service, els.service.value.trim()); if(els.pwd) localStorage.setItem(LS.pwd, els.pwd.value.trim()); }
 
-      saveBtn.addEventListener('click', () => {
-        localStorage.setItem('ADMIN_API', apiEl.value.trim());
-        localStorage.setItem('ADMIN_PWD', pwdEl.value);
-        alert('OK');
-      });
+    function flash(msg, kind='info', ms=2500){
+      console[kind==='error'?'error':'log']('[flash]', msg);
+      if(!els.flash) return;
+      els.flash.textContent = txt(msg);
+      els.flash.dataset.kind = kind;
+      els.flash.style.display = 'block';
+      clearTimeout(els.flash._t);
+      els.flash._t = setTimeout(()=> els.flash.style.display='none', ms);
+    }
 
-      checkBtn.addEventListener('click', async () => {
-        const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
-        if (!API) return alert('Укажи API');
-        const r = await fetch(API + '/api/admin/health', { headers: window.adminHeaders ? window.adminHeaders() : {} });
-        const j = await r.json().catch(()=>({}));
-        alert(j && j.ok ? 'OK' : 'Ошибка');
-      });
-
-      // Helpers для перерисовки карточек summary
-      function setText(id, v){ const el = document.getElementById(id); if (el) el.textContent = v; }
-
-      async function refreshSummary(){
-        const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
-        if (!API) return;
-        const r = await fetch(API + '/api/admin/summary', { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' });
-        const j = await r.json().catch(()=>({}));
-        if (!j || !j.ok) return;
-        setText('summary-users',  j.users ?? '—');
-        setText('summary-events', j.events ?? '—');
-        setText('summary-auth',   j.auth7 ?? '—');
-        setText('summary-unique', j.unique7 ?? '—');
+    async function apiTry(paths, {method='GET', body}={}){
+      const base = getService();
+      if(!base) throw new Error('Не указан URL сервиса');
+      let last;
+      for(const p of paths){
+        try{
+          const res = await fetch(base+p, {
+            method,
+            headers: {
+              ...(method!=='GET'?{'Content-Type':'application/json'}:{}),
+              'X-Admin-Password': getPwd()
+            },
+            body: method==='GET' ? undefined : JSON.stringify(body ?? {})
+          });
+          const ct = res.headers.get('content-type') || '';
+          const data = ct.includes('application/json') ? await res.json() : await res.text();
+          if(res.status===204) return {ok:true};
+          if(!res.ok){ last = new Error(`HTTP ${res.status} @ ${p}`); continue; }
+          return data;
+        }catch(e){ last = e; }
       }
+      throw last || new Error('Нет доступных эндпоинтов');
+    }
 
-      // Users
-      async function refreshUsers(){
-        const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
-        if (!API) return;
-        const q = new URLSearchParams({ take:'25', skip:'0', search:(document.getElementById('users-search')?.value || '').trim() });
-        const r = await fetch(API + '/api/admin/users?' + q.toString(), { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' });
-        const j = await r.json().catch(()=>({}));
-        const rows = Array.isArray(j.users) ? j.users : [];
-        const tbody = document.getElementById('users-tbody');
-        if (!tbody) return;
-        tbody.innerHTML = rows.map(u => {
-  const HUM   = u.hum_id ?? u.HUMid ?? u.id ?? '';
-  const UID   = u.user_id ?? u.id ?? '';
-  const provs = Array.isArray(u.providers) ? u.providers
-              : (u.vk_id ? [String(u.vk_id).startsWith('tg:') ? 'tg' : 'vk'] : []);
-  const provShort = provs[0] || '';
-  const provAll   = provs.join(', ');
-  const country   = (u.country || u.country_code || u.country_name || '').toUpperCase();
+    const API = {
+      summary:(days=7)=>apiTry([`/admin/summary?days=${days}`, `/api/admin/summary?days=${days}`]),
+      daily:(days=7)=>apiTry([`/admin/daily?days=${days}`, `/api/admin/daily?days=${days}`, `/admin/summary/daily?days=${days}`]),
+      users:({take=100,skip=0,search='' }={})=>{
+        const qs = `?take=${take}&skip=${skip}&search=${encodeURIComponent(search)}`;
+        return apiTry([`/admin/users${qs}`, `/api/admin/users${qs}`]);
+      },
+      events:({take=100,skip=0,type='',user_id='' }={})=>{
+        const qs = `?take=${take}&skip=${skip}&type=${encodeURIComponent(type)}&event_type=${encodeURIComponent(type)}&user_id=${encodeURIComponent(user_id)}`;
+        return apiTry([`/admin/events${qs}`, `/api/admin/events${qs}`]);
+      },
+      mergeAll:()=>apiTry(['/admin/merge/apply-all','/api/admin/merge/apply-all','/admin/merge-all'], {method:'POST'}),
+      topup:(user_id,amount)=>apiTry(['/admin/topup','/api/admin/topup'], {method:'POST', body:{user_id, amount:asInt(amount)}}),
+      health:()=>apiTry(['/admin/health','/api/admin/health']).catch(()=>({ok:false}))
+    };
 
-  return `
-    <tr>
-      <td>${HUM}</td>
-      <td>${UID}</td>
-      <td>${provShort}</td>
-      <td>${u.first_name ?? ''}</td>
-      <td>${u.last_name ?? ''}</td>
-      <td class="right">${u.balance ?? 0}</td>
-      <td data-cc="${country}"></td>
-      <td>${toMSK(u.created_at)}</td>
-      <td>${provAll}</td>
-    </tr>
-  `;
-}).join('');
+    // ===== normalize =====
+    function normDaily(p){
+      const rows = Array.isArray(p) ? p
+        : Array.isArray(p?.days) ? p.days
+        : Array.isArray(p?.daily) ? p.daily
+        : Array.isArray(p?.rows) ? p.rows
+        : Array.isArray(p?.data) ? p.data : [];
+      return rows.map(r=>{
+        const date = r.date || r.day || r.d || r.ts || r.t;
+        const count = r.count ?? r.auth_total ?? r.c ?? 0; // все авторизации/день
+        return date ? { date:String(date), count:Number(count) } : null;
+      }).filter(Boolean);
+    }
 
-        // ДОрисуем флаги для только что вставленных строк
-        if (window.decorateFlags) window.decorateFlags(tbody);
-      }
+    function normUsers(p){
+      const rows = Array.isArray(p)?p : p?.rows ?? p?.users ?? [];
+      return rows.map(u=>({
+        HUMid: u.hum_id ?? u.HUMid ?? u.id ?? '',
+        user_id: u.user_id ?? u.id ?? '',
+        vk_id: u.vk_id ?? '',
+        first_name: u.first_name ?? '',
+        last_name: u.last_name ?? '',
+        balance: u.balance ?? 0,
+        country: (u.country || u.country_code || u.country_name || '').toUpperCase(),
+        created_at: u.created_at ?? '',
+        providers: Array.isArray(u.providers) ? u.providers : []
+      }));
+    }
 
-      // Events
-      async function refreshEvents(){
-        const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
-        if (!API) return;
-        const qs = new URLSearchParams({
-          take:'50', skip:'0',
-          event_type:(document.getElementById('events-type')?.value || '').trim(),
-          user_id: (document.getElementById('events-user')?.value || '').trim()
-        });
-        const r = await fetch(API + '/api/admin/events?' + qs.toString(), { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' });
-        const j = await r.json().catch(()=>({}));
-        const rows = Array.isArray(j.events) ? j.events : [];
-        const tbody = document.getElementById('events-tbody');
-        if (!tbody) return;
-        tbody.innerHTML = rows.map(e => `
-          <tr>
-            <td>${e.id ?? ''}</td>
-            <td>${e.user_id ?? ''}</td>
-            <td>${e.event_type ?? ''}</td>
-            <td>${e.type ?? ''}</td>
-            <td>${e.ip ?? ''}</td>
-            <td class="muted">${(e.ua || '').slice(0,64)}</td>
-            <td>${toMSK(e.created_at)}</td>
-          </tr>
-        `).join('');
-      }
+    function normEvents(p){
+      const rows = Array.isArray(p)?p : p?.rows ?? p?.events ?? [];
+      return rows.map(e=>({
+        id: e.id ?? e.event_id ?? '',
+        HUMid: e.HUMid ?? e.hum_id ?? '',
+        user_id: e.user_id ?? '',
+        event_type: e.event_type ?? e.type ?? '',
+        type: e.type ?? e.event_type ?? '',
+        ip: e.ip ?? '',
+        ua: e.ua ?? e.UA ?? e.user_agent ?? '',
+        created_at: e.created_at ?? e.ts ?? e.time ?? ''
+      }));
+    }
 
-      // Wire UI
-      document.getElementById('users-refresh')?.addEventListener('click', refreshUsers);
-      document.getElementById('events-refresh')?.addEventListener('click', refreshEvents);
-      document.getElementById('merge-suggest-run')?.addEventListener('click', async () => {
-        const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
-        if (!API) return;
-        // просто дергаем предложения — фактическая автосклейка уже в фоне
-        await fetch(API + '/api/admin/users/merge/suggestions', { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' })
-          .then(r=>r.json()).catch(()=>({}));
-        alert('OK');
+    // ===== render =====
+    let dailyChart;
+    function renderDaily(rows){
+      const labels = rows.map(r=>r.date);
+      const data = rows.map(r=>r.count);
+      if(!els.chart) return;
+      try{
+        if(dailyChart){
+          dailyChart.data.labels = labels;
+          dailyChart.data.datasets[0].data = data;
+          dailyChart.update();
+        }else{
+          dailyChart = new Chart(els.chart.getContext('2d'), {
+            type:'bar',
+            data:{ labels, datasets:[{ label:'Авторизации/день (все)', data }] },
+            options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true} } }
+          });
+        }
+      }catch(e){ console.warn('chart init failed', e); }
+    }
+
+    function renderUsers(rows){
+      const tbody = $('#users_tbody');
+      if(!tbody) return;
+      tbody.innerHTML = rows.map(u=>`
+        <tr>
+          <td>${u.HUMid}</td>
+          <td>${u.user_id}</td>
+          <td>${u.vk_id || (u.providers[0]||'')}</td>
+          <td>${u.first_name}</td>
+          <td>${u.last_name}</td>
+          <td class="right">${u.balance}</td>
+          <td data-cc="${u.country}">${u.country}</td>
+          <td>${toMSK(u.created_at)}</td>
+          <td>${u.providers.join(', ')}</td>
+        </tr>
+      `).join('') || `<tr><td colspan="9" class="muted">Пусто</td></tr>`;
+    }
+
+    function renderEvents(rows){
+      const tbody = $('#events_tbody');
+      if(!tbody) return;
+      tbody.innerHTML = rows.map(e=>`
+        <tr>
+          <td>${e.id}</td>
+          <td>${e.HUMid||''}</td>
+          <td>${e.user_id||''}</td>
+          <td>${e.event_type}</td>
+          <td>${e.type}</td>
+          <td>${e.ip}</td>
+          <td>${e.ua}</td>
+          <td>${toMSK(e.created_at)}</td>
+        </tr>
+      `).join('') || `<tr><td colspan="8" class="muted">Нет событий</td></tr>`;
+    }
+
+    function toMSK(iso){
+      if(!iso) return '';
+      const d = new Date(iso);
+      if(!isFinite(d)) return String(iso).slice(0,19).replace('T',' ');
+      // просто локальное отображение без явного TZ
+      return d.toISOString().slice(0,19).replace('T',' ');
+    }
+
+    function setCounter(el,v){ if(el) el.textContent = txt(v); }
+
+    // ===== flows =====
+    async function loadSummary(){
+      try{
+        const s = await API.summary(7);
+        setCounter(els.kUsers,   s.users ?? s.total_users ?? s.k_users ?? s.total ?? 0);
+        setCounter(els.kEvents,  s.events ?? s.total_events ?? s.k_events ?? 0);
+        setCounter(els.kUniques, s.unique7 ?? s.uniques7 ?? s.unique_7d ?? s.uniques ?? 0);
+      }catch(e){ /* не валим UI */ }
+    }
+    async function loadDaily(){
+      try{
+        const raw = await API.daily(7);
+        const norm = normDaily(raw);
+        if(norm.length) renderDaily(norm);
+      }catch(e){ /* тихо */ }
+    }
+    async function loadUsers(){
+      try{
+        const raw = await API.users({ take:100, search: els.usersSearch.value.trim() });
+        renderUsers(normUsers(raw));
+      }catch(e){ renderUsers([]); flash('Ошибка загрузки пользователей','error'); }
+    }
+    async function loadEvents(){
+      try{
+        const raw = await API.events({ take:100, type: els.eventsType.value.trim(), user_id: els.eventsUserId.value.trim() });
+        renderEvents(normEvents(raw));
+      }catch(e){ renderEvents([]); /* не флэш, чтобы не мешал */ }
+    }
+
+    // ===== wire =====
+    function wire(){
+      // заполняем из LS
+      if(els.service && !els.service.value) els.service.value = localStorage.getItem(LS.service) || '';
+      if(els.pwd && !els.pwd.value)         els.pwd.value     = localStorage.getItem(LS.pwd) || '';
+      els.service?.addEventListener('change', saveAuth);
+      els.pwd?.addEventListener('change', saveAuth);
+
+      els.usersReload?.addEventListener('click', e=>{ e.preventDefault(); saveAuth(); loadUsers(); });
+      els.eventsReload?.addEventListener('click', e=>{ e.preventDefault(); saveAuth(); loadEvents(); });
+      $('#btn-merge-all')?.addEventListener('click', async e=>{
+        e.preventDefault(); saveAuth();
+        try{ await API.mergeAll(); flash('Склейка выполнена'); await Promise.all([loadUsers(), loadSummary(), loadEvents()]); }
+        catch(err){ console.error(err); flash('Склейка: ошибка','error',4000); }
       });
-
-      document.getElementById('topup-run')?.addEventListener('click', async () => {
-        const id = document.getElementById('topup-user-id')?.value.trim();
-        const amount = document.getElementById('topup-amount')?.value.trim();
-        const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
-        if (!API || !id) return;
-        const r = await fetch(API + '/api/admin/users/' + id + '/topup', {
-          method:'POST',
-          headers: Object.assign({'Content-Type':'application/json'}, (window.adminHeaders?window.adminHeaders():{})),
-          body: JSON.stringify({ amount: Number(amount)||0 })
-        });
-        const j = await r.json().catch(()=>({}));
-        alert(j && j.ok ? 'OK' : 'Ошибка');
-        refreshUsers();
+      els.topupBtn?.addEventListener('click', async e=>{
+        e.preventDefault(); saveAuth();
+        const uid = els.topupUser.value.trim(); const amt = asInt(els.topupAmount.value, NaN);
+        if(!uid || !Number.isFinite(amt)) return flash('Укажите user_id и сумму','error');
+        try{ await API.topup(uid, amt); flash('Пополнение выполнено'); await Promise.all([loadUsers(), loadSummary(), loadEvents()]); }
+        catch(err){ console.error(err); flash('Пополнение: ошибка','error',4000); }
       });
+    }
 
-      // Автозагрузка при входе
-      refreshSummary();
-      refreshUsers();
-      refreshEvents();
+    (async function boot(){
+      try{
+        wire();
+        await API.health().catch(()=>null);
+        await Promise.all([loadSummary(), loadDaily(), loadUsers(), loadEvents()]);
+      }catch(e){ console.error('boot', e); flash('Ошибка инициализации','error',4000); }
     })();
   </script>
 </body>
