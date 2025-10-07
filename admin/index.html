@@ -248,7 +248,7 @@ function toMSK(iso){
     if (!j || !j.ok) return;
     setText('summary-users',  j.users ?? '—');
     setText('summary-events', j.events ?? '—');
-    setText('summary-auth',   j.auth7_total ?? j.auth7 ?? '—');
+    setText('summary-auth',   j.auth7 ?? '—');
     setText('summary-unique', j.unique7 ?? '—');
   }
 
