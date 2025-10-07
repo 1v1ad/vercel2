@@ -59,18 +59,17 @@
       if (!data || !data.ok) throw new Error(data && data.error || 'bad_response');
 
       const users = Array.isArray(data.users) ? data.users : [];
-      const tbody = document.getElementById('users_tbody') || document.getElementById('users-tbody');
+      const tbody = document.getElementById('users_tbody');
       if (!tbody) return;
 
       tbody.innerHTML = users.map(u => `
         <tr>
-          <td>${u.hum_id ?? ''}</td>
-          <td>${u.user_id ?? ''}</td>
+          <td>${u.id ?? ''}</td>
           <td>${u.vk_id ?? ''}</td>
           <td>${u.first_name ?? ''}</td>
           <td>${u.last_name ?? ''}</td>
-          <td class=\"right\">${u.balance ?? 0}</td>
-          <td data-cc=\"${((u.country_code || '') + '').toUpperCase()}\"></td>
+          <td class="right">${u.balance ?? 0}</td>
+          <td data-cc="${((u.country_code || '') + '').toUpperCase()}"></td>
           <td>${(u.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
           <td>${Array.isArray(u.providers) ? u.providers.join(', ') : ''}</td>
         </tr>
