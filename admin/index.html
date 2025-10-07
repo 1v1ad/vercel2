@@ -182,16 +182,16 @@
   </div>
 
   <!-- ВАЖНО: ШИМ ДОЛЖЕН ИДТИ ПЕРВЫМ, чтобы подставлять X-Admin-Password -->
-  <script src="admin-auth-headers.js?v=20251008s"></script>
+  <script src="admin-auth-headers.js?v=20251008y"></script>
 
   <!-- flags.js подключаем до app.js, чтобы была доступна decorateFlags -->
-  <script src="flags.js?v=20251008s"></script>
+  <script src="flags.js?v=20251008y"></script>
  
   <!-- основной код админки -->
-  <script src="app.js?v=20251008s"></script>
-  <script src="merge-suggest.js?v=20251008s"></script>
-  <script src="topup.js?v=20251008s"></script>
-  <script src="chart.js?v=20251008s"></script>
+  <script src="app.js?v=20251008y"></script>
+  <script src="merge-suggest.js?v=20251008y"></script>
+  <script src="topup.js?v=20251008y"></script>
+  <script src="chart.js?v=20251008y"></script>
 
   <!-- Glue-код страницы: хранение API/пароля, действия, запросы -->
   <script>
@@ -248,7 +248,7 @@ function toMSK(iso){
     if (!j || !j.ok) return;
     setText('summary-users',  j.users ?? '—');
     setText('summary-events', j.events ?? '—');
-    setText('summary-auth',   j.auth7 ?? '—');
+    setText('summary-auth',   j.auth7_total ?? '—');
     setText('summary-unique', j.unique7 ?? '—');
   }
 
