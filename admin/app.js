@@ -59,12 +59,12 @@
       if (!data || !data.ok) throw new Error(data && data.error || 'bad_response');
 
       const users = Array.isArray(data.users) ? data.users : [];
-      const tbody = document.getElementById('users_tbody');
+      const tbody = document.getElementById('users_tbody') || document.getElementById('users-tbody');
       if (!tbody) return;
 
       tbody.innerHTML = users.map(u => `
         <tr>
-          <td>${u.id ?? ''}</td>
+          <td>${u.id ?? ''}</td><td>${u.cluster_id ?? u.id ?? ''}</td>
           <td>${u.vk_id ?? ''}</td>
           <td>${u.first_name ?? ''}</td>
           <td>${u.last_name ?? ''}</td>

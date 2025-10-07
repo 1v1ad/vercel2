@@ -8,7 +8,6 @@
     if (raw) return raw.replace(/\/+$/,''); // drop trailing /
     return location.origin;
   }
-  function getName(){ return (localStorage.getItem('ADMIN_NAME') || '').toString().trim(); }
   function getPwd(){
     return (localStorage.getItem('ADMIN_PWD') || '').toString();
   }
@@ -45,7 +44,6 @@
         let headers = init.headers || {};
         const h = new Headers(headers);
         if (!h.has('X-Admin-Password')) h.set('X-Admin-Password', getPwd());
-        const n = getName(); if (n && !h.has('X-Admin-Name')) h.set('X-Admin-Name', n);
         const obj = {};
         h.forEach((v,k)=>{ obj[k]=v; });
         init.headers = obj;
