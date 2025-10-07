@@ -110,7 +110,6 @@
             const isVK = j.user && j.user.vk_id && !String(j.user.vk_id).startsWith('tg:');
             user = {
               provider: isVK ? 'vk' : (user?.provider || 'tg'),
-              vk_id: j.user.vk_id || null,
               id: j.user.id || user?.id || null,
               first_name: j.user.first_name || user?.first_name || '',
               last_name: j.user.last_name || user?.last_name || '',
@@ -119,7 +118,6 @@
             };
             try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
             applyUser(user); // перерисуем сразу, без ожиданий
-            try { if (user && user.provider==='vk' && user.vk_id) { await linkBackground('vk', String(user.vk_id), null); } } catch(_){}
           }
         }
       } catch {}

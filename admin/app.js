@@ -64,12 +64,13 @@
 
       tbody.innerHTML = users.map(u => `
         <tr>
-          <td>${u.id ?? ''}</td><td>${u.cluster_id ?? u.id ?? ''}</td>
+          <td>${u.id ?? ''}</td>
+          <td>${u.hum_id ?? u.cluster_id ?? u.id ?? ''}</td>
           <td>${u.vk_id ?? ''}</td>
           <td>${u.first_name ?? ''}</td>
           <td>${u.last_name ?? ''}</td>
-          <td class="right">${u.balance ?? 0}</td>
-          <td data-cc="${((u.country_code || '') + '').toUpperCase()}"></td>
+          <td class=\"right\">${u.balance ?? 0}</td>
+          <td data-cc=\"${((u.country_code || '') + '').toUpperCase()}\"></td>
           <td>${(u.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
           <td>${Array.isArray(u.providers) ? u.providers.join(', ') : ''}</td>
         </tr>
