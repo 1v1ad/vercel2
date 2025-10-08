@@ -223,5 +223,75 @@
     }catch(_){}
   })();
   </script>
+
+  <!-- Link accounts UI -->
+  <script>
+  (function(){
+    const API = (window.API || localStorage.getItem('ADMIN_API') || 'https://vercel2pr.onrender.com').replace(/\/+$/,'');
+    const statusEl = document.getElementById('link-status');
+    const btnTG = document.getElementById('link-tg');
+    const btnVK = document.getElementById('link-vk');
+
+    let currentUser = null;
+
+    async function fetchMe(){
+      try{
+        const r = await fetch(API + '/api/me', { credentials: 'include', cache: 'no-store' });
+        const j = await r.json();
+        if (j && j.ok && j.user) return j.user;
+      }catch(_){}
+      return null;
+    }
+
+    function showButtons(u){
+      if (!u) return;
+      // detect providers
+      const isVK = u.vk_id && !String(u.vk_id).startsWith('tg:');
+      const hasVK = !!isVK;
+      const hasTG = String(u.vk_id||'').startsWith('tg:');
+      if (hasVK && !hasTG) btnTG.style.display = 'inline-flex';
+      if (hasTG && !hasVK) btnVK.style.display = 'inline-flex';
+    }
+
+    function headerFor(u){
+      return { 'X-User-Id': String(u.id || u.user_id || '') };
+    }
+
+    async function start(target){
+      if (!currentUser) return;
+      statusEl.textContent = 'Готовим ссылку...';
+      const r = await fetch(API + '/api/profile/link/start', {
+        method:'POST',
+        headers: Object.assign({'Content-Type':'application/json'}, headerFor(currentUser)),
+        body: JSON.stringify({ target })
+      });
+      const j = await r.json().catch(()=>({}));
+      if (!j.ok) { statusEl.textContent = 'Ошибка: ' + (j.error||''); return; }
+      window.open(j.url, '_blank');
+      statusEl.textContent = 'Ожидаем подтверждение...';
+      const t0 = Date.now();
+      const poll = setInterval(async ()=>{
+        try{
+          const rs = await fetch(API + '/api/profile/link/status?token='+encodeURIComponent(j.token), { headers: headerFor(currentUser) });
+          const s  = await rs.json();
+          if (s && s.ok && s.done) {
+            clearInterval(poll);
+            statusEl.textContent = 'Готово! Аккаунты связаны.';
+            setTimeout(()=>location.reload(),800);
+          } else if ((Date.now()-t0) > (j.ttl_minutes||15)*60*1000 || (s && s.expired)) {
+            clearInterval(poll);
+            statusEl.textContent = 'Время истекло. Попробуйте снова.';
+          }
+        }catch(_){};
+      }, 2000);
+    }
+
+    btnTG?.addEventListener('click', ()=>start('tg'));
+    btnVK?.addEventListener('click', ()=>start('vk'));
+
+    fetchMe().then(u => { currentUser = u; showButtons(u); });
+  })();
+  </script>
+
 </body>
 </html>
