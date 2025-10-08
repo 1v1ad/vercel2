@@ -19,7 +19,7 @@
     .hdr-back{ grid-area:back; } .hdr-cta { grid-area:cta; }
     .hdr .brand{ grid-area:brand; font-weight:800; color:var(--gold); text-align:center; }
     .hdr .brand .gg{ background: linear-gradient(90deg, #ff3b3b, #23d160); -webkit-background-clip: text; background-clip:text; color:transparent; }
-    .hdr-user{ grid-area:user; display:flex; align-items:center; gap:10px; min-height:44px; }
+    .hdr-user{ grid-area:user; display:flex; align-items:center; gap:10px; min-height:44px; flex-wrap:wrap; }
     .hdr-user img{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222; }
     .hdr-user #user-name{ font-weight:700; }
     .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#121621; border:1px solid var(--border); color:#e8eaf0; font-weight:700 }
@@ -28,6 +28,12 @@
 
     .wrap{max-width:980px; margin:0 auto; padding:20px 16px}
     .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px}
+
+    /* UI «привязать аккаунт» */
+    .link-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-left:6px }
+    .link-actions .btn{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:8px; border:1px solid #2a3a4f; background:#111923; color:#e5f0ff; cursor:pointer }
+    .link-actions .btn:hover{ background:#0d1520 }
+    .link-actions .muted{ color:#8fa4c6; font-size:12px; opacity:.85 }
   </style>
 </head>
 <body>
@@ -44,6 +50,7 @@
       <div id="user-name">Гость</div>
       <!-- число баланса в отдельном span с data-balance -->
       <span id="user-balance" class="pill">₽ <span class="balance-amount" data-balance>0</span></span>
+      <!-- Панель с кнопками привязки будет создана динамически около этого блока -->
     </div>
   </header>
 
@@ -224,19 +231,51 @@
   })();
   </script>
 
-  <!-- Link accounts UI -->
+  <!-- Link accounts UI (динамическое создание, без ошибок) -->
   <script>
   (function(){
     const API = (window.API || localStorage.getItem('ADMIN_API') || 'https://vercel2pr.onrender.com').replace(/\/+$/,'');
-    const statusEl = document.getElementById('link-status');
-    const btnTG = document.getElementById('link-tg');
-    const btnVK = document.getElementById('link-vk');
+    const sleep = (ms)=> new Promise(r=>setTimeout(r,ms));
 
-    let currentUser = null;
+    // 1) Создаём панель и пытаемся поставить рядом с балансом
+    function ensureLinkBar(){
+      let bar = document.getElementById('link-actions');
+      if (bar) return bar;
 
+      bar = document.createElement('div');
+      bar.id = 'link-actions';
+      bar.className = 'link-actions';
+      bar.innerHTML = `
+        <button id="link-tg" class="btn" style="display:none">Связать Telegram</button>
+        <button id="link-vk" class="btn" style="display:none">Связать VK</button>
+        <span id="link-status" class="muted"></span>
+      `;
+
+      const anchors = [
+        document.getElementById('user-balance'),
+        document.querySelector('.hdr-user'),
+        document.querySelector('.hdr'),
+        document.querySelector('header')
+      ].filter(Boolean);
+
+      if (anchors.length){
+        const a = anchors[0];
+        (a.parentElement || a).appendChild(bar);
+      }else{
+        document.body.insertBefore(bar, document.body.firstChild);
+      }
+      return bar;
+    }
+
+    const bar = ensureLinkBar();
+    const btnTG = bar.querySelector('#link-tg');
+    const btnVK = bar.querySelector('#link-vk');
+    const statusEl = bar.querySelector('#link-status');
+
+    // 2) Текущий пользователь
     async function fetchMe(){
       try{
-        const r = await fetch(API + '/api/me', { credentials: 'include', cache: 'no-store' });
+        const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
         const j = await r.json();
         if (j && j.ok && j.user) return j.user;
       }catch(_){}
@@ -245,51 +284,65 @@
 
     function showButtons(u){
       if (!u) return;
-      // detect providers
       const isVK = u.vk_id && !String(u.vk_id).startsWith('tg:');
       const hasVK = !!isVK;
       const hasTG = String(u.vk_id||'').startsWith('tg:');
-      if (hasVK && !hasTG) btnTG.style.display = 'inline-flex';
-      if (hasTG && !hasVK) btnVK.style.display = 'inline-flex';
+      if (hasVK && !hasTG && btnTG) btnTG.style.display = 'inline-flex';
+      if (hasTG && !hasVK && btnVK) btnVK.style.display = 'inline-flex';
     }
 
     function headerFor(u){
-      return { 'X-User-Id': String(u.id || u.user_id || '') };
+      // пока используем X-User-Id; после миграции на JWT удалим
+      return { 'X-User-Id': String(u.id || u.user_id || '') , 'Content-Type':'application/json' };
     }
 
-    async function start(target){
+    async function start(target, currentUser){
       if (!currentUser) return;
-      statusEl.textContent = 'Готовим ссылку...';
+      if (statusEl) statusEl.textContent = 'Готовим ссылку…';
       const r = await fetch(API + '/api/profile/link/start', {
         method:'POST',
-        headers: Object.assign({'Content-Type':'application/json'}, headerFor(currentUser)),
+        headers: headerFor(currentUser),
         body: JSON.stringify({ target })
       });
       const j = await r.json().catch(()=>({}));
-      if (!j.ok) { statusEl.textContent = 'Ошибка: ' + (j.error||''); return; }
-      window.open(j.url, '_blank');
-      statusEl.textContent = 'Ожидаем подтверждение...';
+      if (!j || !j.ok){
+        if (statusEl) statusEl.textContent = 'Ошибка: ' + (j && j.error || 'unknown');
+        return;
+      }
+      try{ window.open(j.url, '_blank'); }catch(_){}
+
       const t0 = Date.now();
-      const poll = setInterval(async ()=>{
+      const ttl = (j.ttl_minutes || 15)*60*1000;
+      if (statusEl) statusEl.textContent = 'Ожидаем подтверждение…';
+
+      while (Date.now() - t0 < ttl){
+        await sleep(2000);
         try{
-          const rs = await fetch(API + '/api/profile/link/status?token='+encodeURIComponent(j.token), { headers: headerFor(currentUser) });
-          const s  = await rs.json();
-          if (s && s.ok && s.done) {
-            clearInterval(poll);
-            statusEl.textContent = 'Готово! Аккаунты связаны.';
-            setTimeout(()=>location.reload(),800);
-          } else if ((Date.now()-t0) > (j.ttl_minutes||15)*60*1000 || (s && s.expired)) {
-            clearInterval(poll);
-            statusEl.textContent = 'Время истекло. Попробуйте снова.';
+          const rs = await fetch(API + '/api/profile/link/status?token='+encodeURIComponent(j.token), {
+            headers: headerFor(currentUser)
+          });
+          const s = await rs.json();
+          if (s && s.ok && s.done){
+            if (statusEl) statusEl.textContent = 'Готово! Аккаунты связаны.';
+            setTimeout(()=>location.reload(), 800);
+            return;
           }
-        }catch(_){};
-      }, 2000);
+          if (s && s.expired){
+            if (statusEl) statusEl.textContent = 'Время истекло. Запустите снова.';
+            return;
+          }
+        }catch(_){}
+      }
+      if (statusEl) statusEl.textContent = 'Время истекло. Запустите снова.';
     }
 
-    btnTG?.addEventListener('click', ()=>start('tg'));
-    btnVK?.addEventListener('click', ()=>start('vk'));
-
-    fetchMe().then(u => { currentUser = u; showButtons(u); });
+    let __me = null;
+    fetchMe().then(u => {
+      __me = u;
+      showButtons(u);
+      btnTG && btnTG.addEventListener('click', ()=> start('tg', __me));
+      btnVK && btnVK.addEventListener('click', ()=> start('vk', __me));
+    });
   })();
   </script>
 
