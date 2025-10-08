@@ -19,21 +19,15 @@
     .hdr-back{ grid-area:back; } .hdr-cta { grid-area:cta; }
     .hdr .brand{ grid-area:brand; font-weight:800; color:var(--gold); text-align:center; }
     .hdr .brand .gg{ background: linear-gradient(90deg, #ff3b3b, #23d160); -webkit-background-clip: text; background-clip:text; color:transparent; }
-    .hdr-user{ grid-area:user; display:flex; align-items:center; gap:10px; min-height:44px; flex-wrap:wrap; }
+    .hdr-user{ grid-area:user; display:flex; align-items:center; gap:10px; min-height:44px; }
     .hdr-user img{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222; }
     .hdr-user #user-name{ font-weight:700; }
     .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#121621; border:1px solid var(--border); color:#e8eaf0; font-weight:700 }
-    @media (max-width: 480px){ .hdr{ gap:10px; padding:12px 12px; } .hdr .brand{ font-size:clamp(16px, 5vw, 18px); } .hdr .btn{ padding:6px 10px; font-size:14px; } .hdr-user img{ width:36px; height:36px; } .pill{ padding:6px 10px; font-size:14px; } }
+    .link-actions{ display:inline-flex; gap:8px; margin-left:8px; }
+    @media (max-width: 480px){ .hdr{ gap:10px; padding:12px 12px; } .hdr .brand{ font-size:clamp(16px, 5vw, 18px); } .hdr .btn{ padding:6px 10px; font-size:14px; } .hdr-user img{ width:36px; height:36px; } .pill{ padding:6px 10px; font-size:14px; } .link-actions{ gap:6px; } }
     @media (max-width: 360px){ .hdr .btn .label{ display:none; } }
-
     .wrap{max-width:980px; margin:0 auto; padding:20px 16px}
     .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px}
-
-    /* UI «привязать аккаунт» */
-    .link-actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-left:6px }
-    .link-actions .btn{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:8px; border:1px solid #2a3a4f; background:#111923; color:#e5f0ff; cursor:pointer }
-    .link-actions .btn:hover{ background:#0d1520 }
-    .link-actions .muted{ color:#8fa4c6; font-size:12px; opacity:.85 }
   </style>
 </head>
 <body>
@@ -45,12 +39,15 @@
       <span class="label">Пополнить</span>
     </a>
 
-    <div class="hdr-user">
+    <div class="hdr-user" id="hdr-user">
       <img id="user-avatar" src="" alt="Аватар" />
       <div id="user-name">Гость</div>
-      <!-- число баланса в отдельном span с data-balance -->
       <span id="user-balance" class="pill">₽ <span class="balance-amount" data-balance>0</span></span>
-      <!-- Панель с кнопками привязки будет создана динамически около этого блока -->
+      <span class="link-actions" id="link-actions" style="display:none">
+        <a class="btn" id="link-tg" style="display:none">Связать Telegram</a>
+        <a class="btn" id="link-vk" style="display:none">Связать ВКонтакте</a>
+        <span id="link-status" class="pill" style="display:none"></span>
+      </span>
     </div>
   </header>
 
@@ -78,7 +75,6 @@
         if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
         if (avatarEl && u.avatar) avatarEl.src = u.avatar;
 
-        // обновляем именно число, не стирая "₽ "
         const balNum = balanceWrap?.querySelector('[data-balance]');
         if (balNum) balNum.textContent = String(Number(u.balance ?? 0));
         else if (balanceWrap) balanceWrap.textContent = rub(u.balance ?? 0);
@@ -89,7 +85,7 @@
 
       let user = null;
 
-      // 1) Если пришли из TG — рендерим быстро по query, баланс подтянем ниже
+      // Быстрый рендер из TG query (баланс подтянем ниже)
       if (params.get('provider') === 'tg') {
         user = {
           provider: 'tg',
@@ -108,7 +104,7 @@
         if (history.replaceState) history.replaceState({}, '', location.pathname);
       }
 
-      // 2) Тянем серверную сессию; если это VK-пользователь — переключаем provider на 'vk'
+      // Тянем /api/me
       try {
         const r = await fetch(API + '/api/me', { credentials: 'include', cache: 'no-store' });
         if (r.ok) {
@@ -121,19 +117,18 @@
               first_name: j.user.first_name || user?.first_name || '',
               last_name: j.user.last_name || user?.last_name || '',
               avatar: j.user.avatar || user?.avatar || '',
-              balance: j.user.balance ?? user?.balance ?? 0,
+              balance: j.user.balance ?? user?.balance ?? 0, // ЛИЧНЫЙ баланс
+              vk_id: j.user.vk_id
             };
             try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
-            applyUser(user); // перерисуем сразу, без ожиданий
+            applyUser(user);
           }
         }
       } catch {}
 
-      // 3) Фолбэк — кэш
       if (!user) {
         try { user = JSON.parse(localStorage.getItem('gg_user') || 'null'); } catch {}
       }
-
       applyUser(user);
 
       // Заглушка «Пополнить»
@@ -220,131 +215,106 @@
       if(!data.ok || !data.user) return;
 
       document.querySelectorAll('[data-balance], .balance-amount, #balance')
-        .forEach(el => el.textContent = String(data.user.balance ?? 0));
+        .forEach(el => el.textContent = String(data.user.balance ?? 0)); // личный баланс
 
       const src = document.querySelector('#provider-note, [data-source]');
       if (src) {
-        const isVK = data.user && data.user.vk_id && !String(data.user.vk_id).startsWith('tg:');
-        src.textContent = 'Источник данных: ' + (isVK ? 'VK' : 'TG');
+        const v = String(data.user.vk_id || '');
+        const label = v && !v.startsWith('tg:') ? 'VK' : (v.startsWith('tg:') ? 'TG' : '—');
+        src.textContent = 'Источник данных: ' + label;
       }
     }catch(_){}
   })();
   </script>
 
-  <!-- Link accounts UI (динамическое создание, без ошибок) -->
+  <!-- Link accounts UI -->
   <script>
   (function(){
     const API = (window.API || localStorage.getItem('ADMIN_API') || 'https://vercel2pr.onrender.com').replace(/\/+$/,'');
-    const sleep = (ms)=> new Promise(r=>setTimeout(r,ms));
+    const statusEl = document.getElementById('link-status');
+    const btnTG = document.getElementById('link-tg');
+    const btnVK = document.getElementById('link-vk');
+    const box   = document.getElementById('link-actions');
 
-    // 1) Создаём панель и пытаемся поставить рядом с балансом
-    function ensureLinkBar(){
-      let bar = document.getElementById('link-actions');
-      if (bar) return bar;
+    let currentUser = null;
 
-      bar = document.createElement('div');
-      bar.id = 'link-actions';
-      bar.className = 'link-actions';
-      bar.innerHTML = `
-        <button id="link-tg" class="btn" style="display:none">Связать Telegram</button>
-        <button id="link-vk" class="btn" style="display:none">Связать VK</button>
-        <span id="link-status" class="muted"></span>
-      `;
-
-      const anchors = [
-        document.getElementById('user-balance'),
-        document.querySelector('.hdr-user'),
-        document.querySelector('.hdr'),
-        document.querySelector('header')
-      ].filter(Boolean);
-
-      if (anchors.length){
-        const a = anchors[0];
-        (a.parentElement || a).appendChild(bar);
-      }else{
-        document.body.insertBefore(bar, document.body.firstChild);
-      }
-      return bar;
-    }
-
-    const bar = ensureLinkBar();
-    const btnTG = bar.querySelector('#link-tg');
-    const btnVK = bar.querySelector('#link-vk');
-    const statusEl = bar.querySelector('#link-status');
-
-    // 2) Текущий пользователь
     async function fetchMe(){
       try{
-        const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
+        const r = await fetch(API + '/api/me', { credentials: 'include', cache: 'no-store' });
         const j = await r.json();
         if (j && j.ok && j.user) return j.user;
       }catch(_){}
       return null;
     }
 
+    function detect(u){
+      // 1) Явный tg из query
+      const fromQ = new URLSearchParams(location.search).get('provider');
+      if (fromQ === 'tg') return { provider:'tg', hasTG:true, hasVK:false };
+
+      // 2) По vk_id: tg:* или numeric
+      const v = String(u?.vk_id ?? '');
+      const hasTG = v.startsWith('tg:');
+      const hasVK = !!v && !hasTG;
+
+      const provider = hasVK ? 'vk' : (hasTG ? 'tg' : (JSON.parse(localStorage.getItem('gg_user')||'null')?.provider || null));
+      return { provider, hasTG, hasVK };
+    }
+
     function showButtons(u){
-      if (!u) return;
-      const isVK = u.vk_id && !String(u.vk_id).startsWith('tg:');
-      const hasVK = !!isVK;
-      const hasTG = String(u.vk_id||'').startsWith('tg:');
-      if (hasVK && !hasTG && btnTG) btnTG.style.display = 'inline-flex';
-      if (hasTG && !hasVK && btnVK) btnVK.style.display = 'inline-flex';
+      if (!u || !box) return;
+      const d = detect(u);
+
+      // показываем ровно одну кнопку: предложить привязать противоположный провайдер
+      btnTG && (btnTG.style.display = (d.hasVK && !d.hasTG) ? 'inline-flex' : 'none'); // у нас VK → предложить TG
+      btnVK && (btnVK.style.display = (d.hasTG && !d.hasVK) ? 'inline-flex' : 'none'); // у нас TG → предложить VK
+
+      // если какая-то кнопка показана — показать контейнер
+      const any = (btnTG && btnTG.style.display !== 'none') || (btnVK && btnVK.style.display !== 'none');
+      box.style.display = any ? 'inline-flex' : 'none';
+      if (statusEl) statusEl.style.display = 'none';
     }
 
-    function headerFor(u){
-      // пока используем X-User-Id; после миграции на JWT удалим
-      return { 'X-User-Id': String(u.id || u.user_id || '') , 'Content-Type':'application/json' };
-    }
+    function headerFor(u){ return { 'X-User-Id': String(u.id || u.user_id || '') }; }
 
-    async function start(target, currentUser){
+    async function start(target){
       if (!currentUser) return;
-      if (statusEl) statusEl.textContent = 'Готовим ссылку…';
+      statusEl.style.display = 'inline-flex';
+      statusEl.textContent = 'Готовим ссылку...';
+
       const r = await fetch(API + '/api/profile/link/start', {
         method:'POST',
-        headers: headerFor(currentUser),
+        headers: Object.assign({'Content-Type':'application/json'}, headerFor(currentUser)),
         body: JSON.stringify({ target })
       });
       const j = await r.json().catch(()=>({}));
-      if (!j || !j.ok){
-        if (statusEl) statusEl.textContent = 'Ошибка: ' + (j && j.error || 'unknown');
-        return;
-      }
-      try{ window.open(j.url, '_blank'); }catch(_){}
+      if (!j.ok) { statusEl.textContent = 'Ошибка: ' + (j.error||''); return; }
+
+      window.open(j.url, '_blank');
+      statusEl.textContent = 'Ожидаем подтверждение...';
 
       const t0 = Date.now();
-      const ttl = (j.ttl_minutes || 15)*60*1000;
-      if (statusEl) statusEl.textContent = 'Ожидаем подтверждение…';
-
-      while (Date.now() - t0 < ttl){
-        await sleep(2000);
+      const poll = setInterval(async ()=>{
         try{
-          const rs = await fetch(API + '/api/profile/link/status?token='+encodeURIComponent(j.token), {
-            headers: headerFor(currentUser)
-          });
-          const s = await rs.json();
-          if (s && s.ok && s.done){
-            if (statusEl) statusEl.textContent = 'Готово! Аккаунты связаны.';
-            setTimeout(()=>location.reload(), 800);
-            return;
+          const rs = await fetch(API + '/api/profile/link/status?token='+encodeURIComponent(j.token), { headers: headerFor(currentUser) });
+          const s  = await rs.json();
+          if (s && s.ok && s.done) {
+            clearInterval(poll);
+            statusEl.textContent = 'Готово! Аккаунты связаны.';
+            setTimeout(()=>location.reload(),800);
+          } else if ((Date.now()-t0) > (j.ttl_minutes||15)*60*1000 || (s && s.expired)) {
+            clearInterval(poll);
+            statusEl.textContent = 'Время истекло. Попробуйте снова.';
           }
-          if (s && s.expired){
-            if (statusEl) statusEl.textContent = 'Время истекло. Запустите снова.';
-            return;
-          }
-        }catch(_){}
-      }
-      if (statusEl) statusEl.textContent = 'Время истекло. Запустите снова.';
+        }catch(_){/* ignore */}
+      }, 2000);
     }
 
-    let __me = null;
-    fetchMe().then(u => {
-      __me = u;
-      showButtons(u);
-      btnTG && btnTG.addEventListener('click', ()=> start('tg', __me));
-      btnVK && btnVK.addEventListener('click', ()=> start('vk', __me));
-    });
+    btnTG?.addEventListener('click', ()=>start('tg'));
+    btnVK?.addEventListener('click', ()=>start('vk'));
+
+    fetchMe().then(u => { currentUser = u; showButtons(u); });
   })();
   </script>
-
 </body>
 </html>
