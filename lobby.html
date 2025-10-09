@@ -261,19 +261,17 @@
       return { provider, hasTG, hasVK };
     }
 
+    
     function showButtons(u){
-      if (!u || !box) return;
-      const d = detect(u);
-
-      // показываем ровно одну кнопку: предложить привязать противоположный провайдер
-      btnTG && (btnTG.style.display = (d.hasVK && !d.hasTG) ? 'inline-flex' : 'none'); // у нас VK → предложить TG
-      btnVK && (btnVK.style.display = (d.hasTG && !d.hasVK) ? 'inline-flex' : 'none'); // у нас TG → предложить VK
-
-      // если какая-то кнопка показана — показать контейнер
-      const any = (btnTG && btnTG.style.display !== 'none') || (btnVK && btnVK.style.display !== 'none');
-      box.style.display = any ? 'inline-flex' : 'none';
-      if (statusEl) statusEl.style.display = 'none';
+      if (!u) return;
+      const hasTG = (u.vk_id && String(u.vk_id).startsWith('tg:')) || u.provider==='tg';
+      const hasVK = (u.vk_id && !String(u.vk_id).startsWith('tg:')) || u.provider==='vk';
+      const bTG = document.getElementById('link-tg');
+      const bVK = document.getElementById('link-vk');
+      if (bTG) bTG.style.display = (!hasTG && hasVK) ? 'inline-flex' : 'none';
+      if (bVK) bVK.style.display = (hasTG && !hasVK) ? 'inline-flex' : 'none';
     }
+
 
     function headerFor(u){ return { 'X-User-Id': String(u.id || u.user_id || '') }; }
 
