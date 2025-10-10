@@ -1,4 +1,8 @@
-<script>
+// Админ-пополнение (универсальный клиент).
+// 1) POST /api/admin/users/:id/topup
+// 2) если 404 → POST /api/admin/topup
+// Отправляем синонимы полей на все случаи.
+
 (function () {
   function $(sel){ return document.querySelector(sel); }
   function toast(m){ try{ alert(m); }catch{} }
@@ -55,9 +59,10 @@
         const err=data?.error || res.statusText || `HTTP ${res.status}`;
         toast("Ошибка: "+err);
       } else {
-        toast("Готово"); if(amtEl) amtEl.value=""; if(cmtEl) cmtEl.value="";
+        toast("Готово");
+        if(amtEl) amtEl.value="";
+        if(cmtEl) cmtEl.value="";
       }
     }catch(e){ console.error(e); toast("Ошибка: "+(e?.message||e)); }
   });
 })();
-</script>
