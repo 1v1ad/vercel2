@@ -57,112 +57,143 @@
       </table>
     </div>
   </div>
+<script>
+  const $ = (s)=>document.querySelector(s);
+  const log = (s)=>{ $('#log').textContent = String(s||''); };
 
-  <script>
-    // --- helpers
-    const $ = (s)=>document.querySelector(s);
-    const log = (s)=>{ $('#log').textContent = String(s||''); };
+  function apiBase(){
+    const inField = ($('#api')?.value || '').trim();
+    if (inField) return inField;
+    const mt = document.querySelector('meta[name="api-base"]'); 
+    if (mt?.content) return mt.content;
+    return 'https://vercel2pr.onrender.com';
+  }
 
-    function apiBase(){
-      const inField = ($('#api')?.value || '').trim();
-      if (inField) return inField;
-      const mt = document.querySelector('meta[name="api-base"]'); 
-      if (mt?.content) return mt.content;
-      return 'https://vercel2pr.onrender.com';
-    }
-
-    async function post(url, body, pwd){
-      const r = await fetch(url, {
-        method:'POST',
-        headers: { 'Content-Type':'application/json', 'X-Admin-Password': pwd },
-        body: JSON.stringify(body)
-      });
-      let data={}; try{ data=await r.json(); }catch{}
-      return { r, data };
-    }
-
-    // --- submit
-    $('#go').addEventListener('click', async ()=>{
-      const API = apiBase();
-      const pwd = ($('#pwd')?.value || '').trim();
-      const uid = Number(($('#uid')?.value || '').trim());
-      const amt = Number(($('#amt')?.value || '').trim());
-      const cmt = ($('#cmt')?.value || '').trim();
-
-      if(!API || !pwd || !uid || !amt || !cmt){ log('Заполни все поля'); return; }
-
-      const payload = {
-        user_id: uid, amount: amt, comment: cmt,
-        // синонимы на все случаи
-        value: amt, sum: amt, delta: amt,
-        note: cmt, reason: cmt, description: cmt
-      };
-
-      let { r, data } = await post(`${API}/api/admin/users/${uid}/topup`, payload, pwd);
-      if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup`, payload, pwd)); }
-
-      if (!r.ok || data?.ok===false) {
-        log(`Ошибка: ${data?.error || r.statusText || ('HTTP '+r.status)}`);
-      } else {
-        log('Готово: ' + JSON.stringify(data));
-        try{ $('#amt').value=''; $('#cmt').value=''; }catch{}
-        loadHistory().catch(()=>{});
-      }
+  async function post(url, body, pwd){
+    const r = await fetch(url, {
+      method:'POST',
+      headers: { 'Content-Type':'application/json', 'X-Admin-Password': pwd },
+      body: JSON.stringify(body)
     });
+    let data={}; try{ data=await r.json(); }catch{}
+    return { r, data };
+  }
 
-    // --- history table
-    async function fetchHistory(){
-      const API = apiBase();
-      const pwd = ($('#pwd')?.value || '').trim();
+  // submit
+  $('#go').addEventListener('click', async ()=>{
+    const API = apiBase();
+    const pwd = ($('#pwd')?.value || '').trim();
+    const uid = Number(($('#uid')?.value || '').trim());
+    const amt = Number(($('#amt')?.value || '').trim());
+    const cmt = ($('#cmt')?.value || '').trim();
 
-      // 1) пробуем “типизированный” эндпоинт
-      let r = await fetch(`${API}/api/admin/events?type=admin_topup&take=100&skip=0`, {
+    if(!API || !pwd || !uid || !amt || !cmt){ log('Заполни все поля'); return; }
+
+    const payload = {
+      user_id: uid, amount: amt, comment: cmt,
+      // синонимы на все случаи
+      value: amt, sum: amt, delta: amt,
+      note: cmt, reason: cmt, description: cmt
+    };
+
+    let { r, data } = await post(`${API}/api/admin/users/${uid}/topup`, payload, pwd);
+    if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup`, payload, pwd)); }
+
+    if (!r.ok || data?.ok===false) {
+      log(`Ошибка: ${data?.error || r.statusText || ('HTTP '+r.status)}`);
+    } else {
+      log('Готово: ' + JSON.stringify(data));
+      try{ $('#amt').value=''; $('#cmt').value=''; }catch{}
+      loadHistory().catch(()=>{});
+    }
+  });
+
+  // HISTORY
+  async function fetchHistory(){
+    const API = apiBase();
+    const pwd = ($('#pwd')?.value || '').trim();
+
+    // 1) типизированный
+    let r = await fetch(`${API}/api/admin/events?type=admin_topup&take=100&skip=0`, {
+      headers: { 'X-Admin-Password': pwd }
+    });
+    if (r.status === 404) {
+      // 2) общий поиск
+      r = await fetch(`${API}/api/admin/events?take=100&skip=0&search=admin_topup`, {
         headers: { 'X-Admin-Password': pwd }
       });
-      if (r.status === 404) {
-        // 2) совместимость: общий эндпоинт с поиском
-        r = await fetch(`${API}/api/admin/events?take=100&skip=0&search=admin_topup`, {
-          headers: { 'X-Admin-Password': pwd }
-        });
-      }
-      let data={}; try{ data = await r.json(); }catch{}
-      return { r, data };
     }
+    let data={}; try{ data = await r.json(); }catch{}
+    return { r, data };
+  }
 
-    function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
+  function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
 
-    function renderHistory(list){
-      const tbody = $('#tbl tbody');
-      tbody.innerHTML = '';
-      if (!Array.isArray(list) || !list.length) {
-        tbody.innerHTML = '<tr><td class="muted" colspan="5">Пока пусто</td></tr>';
-        return;
-      }
-      for (const ev of list) {
-        const tr = document.createElement('tr');
-        const amount = Number(ev.amount || ev.delta || (ev.payload && ev.payload.amount) || 0);
-        const comment = (ev.comment || (ev.payload && (ev.payload.comment || ev.payload.note || ev.payload.reason || ev.payload.description)) || '').toString();
+  function pickAmount(ev){
+    const p = ev.payload || {};
+    return Number(
+      ev.amount ?? ev.value ?? ev.sum ?? ev.delta ??
+      p.amount ?? p.value ?? p.sum ?? p.delta ?? 0
+    );
+  }
+  function pickComment(ev){
+    const p = ev.payload || {};
+    return String(
+      ev.comment ?? p.comment ?? p.note ?? p.reason ?? p.description ?? ''
+    );
+  }
+  function pickUser(ev){
+    const p = ev.payload || {};
+    const uid = (ev.user_id ?? p.user_id ?? '—');
+    const hum = (ev.hum_id ?? p.hum_id ?? '—');
+    return { uid, hum };
+  }
+  function pickAdmin(ev){
+    const p = ev.payload || {};
+    return (ev.admin ?? ev.admin_id ?? ev.actor ?? p.admin ?? '—');
+  }
+  function pickTime(ev){
+    const p = ev.payload || {};
+    return (ev.created_at ?? ev.ts ?? ev.time ?? p.created_at ?? p.ts ?? p.time);
+  }
 
-        tr.innerHTML = `
-          <td class="muted">${fmt(ev.created_at || ev.ts || ev.time)}</td>
-          <td>${(ev.admin || ev.admin_id || ev.actor || '—')}</td>
-          <td>${(ev.user_id ?? '—')} / ${(ev.hum_id ?? '—')}</td>
-          <td><span class="pill-ok">+${amount}</span></td>
-          <td>${comment || '—'}</td>
-        `;
-        tbody.appendChild(tr);
-      }
+  function renderHistory(list){
+    const tbody = $('#tbl tbody');
+    tbody.innerHTML = '';
+    if (!Array.isArray(list) || !list.length) {
+      tbody.innerHTML = '<tr><td class="muted" colspan="5">Пока пусто</td></tr>';
+      return;
     }
+    for (const ev of list) {
+      const { uid, hum } = pickUser(ev);
+      const amount = pickAmount(ev);
+      const comment = pickComment(ev);
+      const when = pickTime(ev);
+      const who = pickAdmin(ev);
 
-    async function loadHistory(){
-      const { r, data } = await fetchHistory();
-      const list = data?.events || data?.rows || data?.list || [];
-      renderHistory(list);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="muted">${fmt(when)}</td>
+        <td>${who}</td>
+        <td>${uid} / ${hum}</td>
+        <td><span class="pill-ok">+${isFinite(amount)?amount:0}</span></td>
+        <td>${(comment||'—')
+               .toString()
+               .replace(/[<>]/g, s => s === '<' ? '&lt;' : '&gt;')}</td>
+      `;
+      tbody.appendChild(tr);
     }
+  }
 
-    $('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
-    // автозагрузка истории при открытии
-    loadHistory().catch(()=>{});
-  </script>
+  async function loadHistory(){
+    const { data } = await fetchHistory();
+    const list = data?.events || data?.rows || data?.list || [];
+    renderHistory(list);
+  }
+
+  $('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
+  loadHistory().catch(()=>{});
+</script>
+ 
 </body>
 </html>
