@@ -1,11 +1,9 @@
-// Админ-пополнение (универсальный клиент).
-// 1) POST /api/admin/users/:id/topup
-// 2) если 404 → POST /api/admin/topup
-// Отправляем синонимы полей на все случаи.
-
+// Универсальный клиент пополнения для админки.
+// Берём API/пароль из инпутов или из localStorage так же, как админка.
 (function () {
   function $(sel){ return document.querySelector(sel); }
   function toast(m){ try{ alert(m); }catch{} }
+
   function getApiBase(){
     const fromInput = $('#apiHost')?.value || $('#api')?.value;
     if (fromInput && fromInput.trim()) return fromInput.trim();
@@ -17,6 +15,16 @@
     const mt=document.querySelector('meta[name="api-base"]'); if(mt?.content) return mt.content;
     return 'https://vercel2pr.onrender.com';
   }
+  function getAdminPwd(){
+    const inp = $('#adminPassword')||$('#adminPwd')||$('#pwd');
+    if (inp && inp.value && inp.value.trim()) return inp.value.trim();
+    try{
+      // читаем те же ключи, что использует админка
+      const p = localStorage.getItem('ADMIN_PASSWORD') || localStorage.getItem('admin_password');
+      if (p) return p;
+    }catch{}
+    return '';
+  }
 
   const btn=$("#btnManualTopup")||document.getElementById("btnTopup")||document.querySelector("[data-action='manual-topup']");
   if(!btn) return;
@@ -26,15 +34,14 @@
       const API=getApiBase();
       const uidEl=$("#manualTopupUserId")||$("#topupUserId")||$("#user_id");
       const amtEl=$("#manualTopupAmount")||$("#topupAmount")||$("#amount");
-      const adminPwdEl=$("#adminPassword")||$("#adminPwd")||$("#pwd");
       const cmtEl=$("#manualTopupComment")||$("#comment");
 
       const userId=parseInt((uidEl?.value||"").trim(),10);
       const amountNum=Math.round(Number((amtEl?.value||"").toString().replace(",", ".")||0));
-      const adminPwd=(adminPwdEl?.value||"").trim();
+      const adminPwd=getAdminPwd();
       const comment=(cmtEl?.value||'admin_topup').trim();
 
-      if(!adminPwd){ toast("Укажи пароль админа."); return; }
+      if(!adminPwd){ toast("Пароль админа пуст. Введите его сверху и сохраните."); return; }
       if(!Number.isFinite(userId)||userId<=0){ toast("Укажи корректный user_id."); return; }
       if(!Number.isFinite(amountNum)||amountNum<=0){ toast("Укажи сумму (>0)."); return; }
 
