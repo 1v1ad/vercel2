@@ -1,16 +1,23 @@
-// Добавляет ссылку "Перейти на страницу" рядом с кнопкой "Пополнить вручную".
+// Вставляет кнопку "Перейти на страницу" рядом с кнопкой "Пополнить вручную".
 (function(){
-  function $(s){ return document.querySelector(s); }
   function inject(){
-    const btn = $('#btnManualTopup') || document.getElementById('btnTopup') || document.querySelector('[data-action="manual-topup"]');
+    // пробуем надёжные селекторы
+    let btn = document.getElementById('btnManualTopup')
+          || document.getElementById('btnTopup')
+          || document.querySelector('[data-action="manual-topup"]');
+
+    // если не нашли — ищем по тексту
+    if (!btn) {
+      const candidates = Array.from(document.querySelectorAll('button, .btn'));
+      btn = candidates.find(el => /попол(нить|нение)/i.test(el.textContent||''));
+    }
     if (!btn || btn.dataset._linked) return;
+
     const a = document.createElement('a');
     a.href = '/admin/topup.html';
     a.target = '_blank';
     a.textContent = 'Перейти на страницу';
     a.style.marginLeft = '8px';
-    a.className = 'btn-link-to-topup';
-    // быстрый тёмный стиль в тон
     a.style.background = '#0f1730';
     a.style.color = '#8ecbff';
     a.style.padding = '8px 12px';
