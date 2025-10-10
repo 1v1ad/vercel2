@@ -1,4 +1,4 @@
-// admin/chart.js — V3.7 (grouped bars, safe labels)
+// admin/chart.js — V3.8 (grouped bars, safe labels, outer spacing)
 (function(){
   const svg = document.getElementById('chart'); if (!svg) return;
   const NS = 'http://www.w3.org/2000/svg';
@@ -11,6 +11,11 @@
     const W = svg.clientWidth || 900, H = svg.clientHeight || 300;
     const padL = 46, padB = 28, padT = 22;
     const headroom = 1.12;
+
+    // --- ключ к «раздвижке» между днями:
+    const innerGap = 8;     // между синим и зелёным внутри дня
+    const outerGap = 12;    // отступ слева/справа внутри каждого «дня» (даёт визуальный зазор между днями)
+
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     while (svg.firstChild) svg.removeChild(svg.firstChild);
 
@@ -20,10 +25,12 @@
     const max = Math.ceil(maxBase * headroom);
 
     const plotH = H - padB - padT;
-    const groupW = Math.max(28, (W - padL - 16) / Math.max(1, days.length));
-    const innerGap = 8;
-    const barW = Math.max(10, (groupW - innerGap) / 2);
+    const groupW = Math.max(28, (W - padL - 16) / Math.max(1, days.length)); // ширина «дня» как контейнера
 
+    // ширина каждой колонки с учётом внутреннего (innerGap) и внешнего (outerGap) зазоров
+    const barW = Math.max(10, (groupW - innerGap - outerGap*2) / 2);
+
+    // оси/сетка
     const axis = document.createElementNS(NS,'line');
     axis.setAttribute('x1', padL); axis.setAttribute('y1', padT);
     axis.setAttribute('x2', padL); axis.setAttribute('y2', H-padB);
@@ -46,6 +53,7 @@
     }
 
     days.forEach((d,i)=>{
+      // левая граница «контейнера дня»
       const gx = padL + 10 + i*groupW;
       const baseY = H - padB;
 
@@ -54,8 +62,9 @@
       const ht = plotH * (vt / max);
       const hu = plotH * (vu / max);
 
-      const xT = gx;                 // total (синий)
-      const xU = gx + barW + innerGap; // unique (зелёный)
+      // внутри контейнера дня отступаем outerGap слева
+      const xT = gx + outerGap;                 // total (синий)
+      const xU = xT + barW + innerGap;          // unique (зелёный)
 
       const rt = document.createElementNS(NS,'rect');
       rt.setAttribute('x', xT); rt.setAttribute('y', baseY - ht);
@@ -79,8 +88,9 @@
       lu.setAttribute('fill', '#d6ffe8'); lu.setAttribute('font-size','11');
       lu.setAttribute('text-anchor','middle'); lu.textContent = vu; svg.appendChild(lu);
 
+      // центр подписи — по центру реального контента: 2 бара + innerGap, со сдвигом outerGap
       const tx = document.createElementNS(NS,'text');
-      tx.setAttribute('x', gx + (barW*2 + innerGap)/2);
+      tx.setAttribute('x', gx + outerGap + (barW*2 + innerGap)/2);
       tx.setAttribute('y', H - 8);
       tx.setAttribute('fill','#9fb4d9'); tx.setAttribute('font-size','11');
       tx.setAttribute('text-anchor','middle'); tx.textContent = labelDM(d.date||'');
