@@ -62,12 +62,27 @@
   const log = (s)=>{ $('#log').textContent = String(s||''); };
 
   function apiBase(){
+    const p = new URLSearchParams(location.search);
+    const fromQuery = p.get('api');
+    if (fromQuery) return fromQuery;
     const inField = ($('#api')?.value || '').trim();
     if (inField) return inField;
     const mt = document.querySelector('meta[name="api-base"]'); 
     if (mt?.content) return mt.content;
     return 'https://vercel2pr.onrender.com';
   }
+  function adminPwd(){
+    const p = new URLSearchParams(location.search);
+    const q = p.get('pwd');
+    return (q || $('#pwd')?.value || '').trim();
+  }
+  function setInitialFromQuery(){
+    const p = new URLSearchParams(location.search);
+    if (p.get('api')) $('#api').value = p.get('api');
+    if (p.get('pwd')) $('#pwd').value = p.get('pwd');
+    if (p.get('user_id')) $('#uid').value = p.get('user_id');
+  }
+  setInitialFromQuery();
 
   async function post(url, body, pwd){
     const r = await fetch(url, {
@@ -79,10 +94,9 @@
     return { r, data };
   }
 
-  // submit
   $('#go').addEventListener('click', async ()=>{
     const API = apiBase();
-    const pwd = ($('#pwd')?.value || '').trim();
+    const pwd = adminPwd();
     const uid = Number(($('#uid')?.value || '').trim());
     const amt = Number(($('#amt')?.value || '').trim());
     const cmt = ($('#cmt')?.value || '').trim();
@@ -110,28 +124,19 @@
   // ====== HISTORY ======
   async function fetchHistory(){
     const API = apiBase();
-    const pwd = ($('#pwd')?.value || '').trim();
-
-    // 1) типизированный
-    let r = await fetch(`${API}/api/admin/events?type=admin_topup&take=100&skip=0`, {
-      headers: { 'X-Admin-Password': pwd }
-    });
+    const pwd = adminPwd();
+    const url = `${API}/api/admin/events?type=admin_topup&take=100&skip=0&admin_password=${encodeURIComponent(pwd)}`;
+    let r = await fetch(url, { headers: { 'X-Admin-Password': pwd } });
     if (r.status === 404) {
-      // 2) общий поиск
-      r = await fetch(`${API}/api/admin/events?take=100&skip=0&search=admin_topup`, {
-        headers: { 'X-Admin-Password': pwd }
-      });
+      const url2 = `${API}/api/admin/events?take=100&skip=0&search=admin_topup&admin_password=${encodeURIComponent(pwd)}`;
+      r = await fetch(url2, { headers: { 'X-Admin-Password': pwd } });
     }
     let data={}; try{ data = await r.json(); }catch{}
     return { r, data };
   }
 
   function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
-
-  function pick(obj, keys, dflt){
-    for (const k of keys) { if (obj!=null && obj[k]!=null) return obj[k]; }
-    return dflt;
-  }
+  function pick(obj, keys, dflt){ for (const k of keys) { if (obj!=null && obj[k]!=null) return obj[k]; } return dflt; }
 
   function renderHistory(list){
     const tbody = $('#tbl tbody');
@@ -162,7 +167,8 @@
   }
 
   async function loadHistory(){
-    const { data } = await fetchHistory();
+    const { r, data } = await fetchHistory();
+    if (r.status === 401) { log('401: проверь пароль (вверху поля «Пароль») и нажми «Обновить историю».'); }
     const list = data?.events || data?.rows || data?.list || [];
     renderHistory(list);
   }
@@ -170,5 +176,6 @@
   $('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
   loadHistory().catch(()=>{});
 </script>
+
 </body>
 </html>
