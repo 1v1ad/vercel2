@@ -1,57 +1,64 @@
-// admin-topup-patch.js
-(function(){
+// admin/admin-topup-patch.js — single top-up handler with required comment + logging
+(() => {
   const API = (localStorage.getItem('ADMIN_API') || 'https://vercel2pr.onrender.com').replace(/\/+$/,'');
-  const adminPwd = localStorage.getItem('ADMIN_PWD') || localStorage.getItem('ADMIN_PASSWORD') || '';
+  const pwd = () => localStorage.getItem('ADMIN_PWD') || localStorage.getItem('ADMIN_PASSWORD') || '';
 
-  function badComment(s) {
-    const t = (s||'').trim();
-    if (t.length < 4) return true;
-    if (/^\d+$/.test(t)) return true;
-    const bad = ['test','тест','aaa','bbb','коммент','-', '—','111','123','1234'];
-    return bad.includes(t.toLowerCase());
-  }
+  const btn = document.querySelector('#admin-topup-btn') || document.querySelector('button#topup-btn-admin') || (()=>{
+    const cands = Array.from(document.querySelectorAll('button, input[type="button"]'));
+    return cands.find(b => /пополнить вручную/i.test(b.textContent||b.value||''));
+  })();
 
-  function findByPh(ph){
-    return Array.from(document.querySelectorAll('input,textarea')).find(el => (el.placeholder||'').toLowerCase().includes(ph));
-  }
+  const inputUser = document.querySelector('#topup_user_id') || document.querySelector('input[name="topup_user_id"]');
+  const inputAmount = document.querySelector('#topup_amount') || document.querySelector('input[name="topup_amount"]');
 
-  async function doTopup(uId, amount, comment){
-    const r = await fetch(`${API}/api/admin/users/${uId}/topup`, {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Admin-Password': adminPwd
-      },
-      body: JSON.stringify({ amount: amount, comment })
-    });
-    const j = await r.json().catch(()=>({}));
-    return { ok: !!(j && j.ok), j, status: r.status };
-  }
+  if (!btn || !inputUser || !inputAmount) return;
 
-  document.addEventListener('click', async (e)=>{
-    const btn = e.target.closest('button, input[type=button], input[type=submit]');
-    if (!btn) return;
-    const text = (btn.value || btn.textContent || '').trim().toLowerCase();
-    if (!/пополнить вручную/.test(text)) return;
+  if (btn.__ggTopupBound) return;
+  btn.__ggTopupBound = true;
 
-    e.preventDefault();
-    const idInput = document.getElementById('topup-user')   || findByPh('user') || findByPh('id');
-    const amtInput= document.getElementById('topup-amount') || findByPh('сумм') || findByPh('sum') || findByPh('amount');
+  async function topupOnce() {
+    const uid = parseInt((inputUser.value||'').trim(), 10);
+    const amount = Math.round(Number((inputAmount.value||'').replace(',', '.')) || 0);
 
-    const uid = parseInt(idInput && idInput.value, 10);
-    const amt = Number(amtInput && amtInput.value);
+    if (!uid || amount <= 0) {
+      alert('Ошибка: укажите user_id и сумму (положительное число).');
+      return;
+    }
 
-    if (!uid || !Number.isFinite(amt) || !amt) { alert('Укажи user_id и сумму'); return; }
+    const comment = (prompt('Комментарий (обязательно):', '') || '').trim();
+    if (!comment || /^\d{1,6}$/.test(comment) || comment.length < 3) {
+      alert('Ошибка: комментарий обязателен и должен быть осмысленным.');
+      return;
+    }
 
-    let cmt = prompt('Комментарий к пополнению (обязательно):', '');
-    if (cmt == null) return;
-    if (badComment(cmt)) { alert('Нужен осмысленный комментарий (не «111», «123», «test» и т.п.)'); return; }
+    try {
+      const r = await fetch(`${API}/api/admin/users/${uid}/topup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': pwd(),
+        },
+        body: JSON.stringify({ amount, comment })
+      });
+      const j = await r.json().catch(()=>({ ok:false, error:'bad_json' }));
 
-    try{
-      const {ok, j, status} = await doTopup(uid, amt, cmt);
-      if (!ok) { alert('Ошибка' + (j && j.error ? `: ${j.error}` : '')); return; }
+      if (!j || !j.ok) {
+        alert('Ошибка: ' + (j && j.error || r.status + ' ' + r.statusText));
+        return;
+      }
+
       alert('Готово!');
-      try{ window.dispatchEvent(new Event('admin:topup:done')); }catch{}
-    }catch(err){ alert('Ошибка сети'); }
-  }, true);
+      if (typeof window.refreshUsers === 'function') window.refreshUsers();
+      if (typeof window.reloadEvents === 'function') window.reloadEvents();
+      if (typeof window.reloadSummary === 'function') window.reloadSummary();
+    } catch (e) {
+      alert('Ошибка сети: ' + (e && e.message || e));
+    }
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    topupOnce();
+  }, { capture: true });
 })();
