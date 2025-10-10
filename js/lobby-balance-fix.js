@@ -29,24 +29,39 @@
     // brute-force fallback: replace ₽ #### in plain text nodes
     try{
       const walker=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-      const rx=/(^|\\s)[₽P]\\s*\\d[\\d\\s]*/;
+      const rx=/(^|\s)[₽P]\s*\d[\d\s]*/;
       const nodes=[];
       while (walker.nextNode()){ const t=walker.currentNode; if(rx.test(t.nodeValue)) nodes.push(t); }
-      nodes.forEach(t=> t.nodeValue=t.nodeValue.replace(/\\d[\\d\\s]*/, String(value)));
+      nodes.forEach(t=> t.nodeValue=t.nodeValue.replace(/\d[\d\s]*/, String(value)));
     }catch{}
   }
 
+  // --- ПРАВКА: имя/фамилия из TG (если фамилии нет в TG — оставляем пусто, не тянем VK)
   function updateNameAvatar(u){
+    const providerQ = (q.get('provider') || '').toLowerCase();
+
     const nameNode = document.querySelector('[data-user-name]')
-       || document.querySelector('.user-name')
-       || document.querySelector('.hdr-user .name')
-       || document.querySelector('.hdr-user [class*="name"]');
+        || document.querySelector('.user-name')
+        || document.querySelector('.hdr-user .name')
+        || document.querySelector('.hdr-user [class*="name"]');
+
     const avatarImg = document.querySelector('[data-user-avatar]')
-       || document.querySelector('.user-avatar img')
-       || document.querySelector('.avatar img')
-       || document.querySelector('.hdr-user img');
-    const first=u.first_name||''; const last=u.last_name||'';
-    if (nameNode) nameNode.textContent = (first + (last? ' '+last : '')).trim();
+        || document.querySelector('.user-avatar img')
+        || document.querySelector('.avatar img')
+        || document.querySelector('.hdr-user img');
+
+    // базовые значения с бэка
+    let first = u.first_name || '';
+    let last  = u.last_name  || '';
+
+    if (providerQ === 'tg') {
+      const qFirst = q.get('first_name') || '';
+      const qLast  = q.get('last_name')  || '';
+      if (qFirst) first = qFirst;     // имя из TG, если передано
+      last = qLast ? qLast : '';      // фамилия только из TG; если её нет — пусто
+    }
+
+    if (nameNode) nameNode.textContent = (first + (last ? ' ' + last : '')).trim();
     if (avatarImg && u.avatar) avatarImg.src = u.avatar;
   }
 
