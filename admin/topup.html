@@ -91,7 +91,6 @@
 
     const payload = {
       user_id: uid, amount: amt, comment: cmt,
-      // синонимы на все случаи
       value: amt, sum: amt, delta: amt,
       note: cmt, reason: cmt, description: cmt
     };
@@ -108,7 +107,7 @@
     }
   });
 
-  // HISTORY
+  // ====== HISTORY ======
   async function fetchHistory(){
     const API = apiBase();
     const pwd = ($('#pwd')?.value || '').trim();
@@ -129,32 +128,9 @@
 
   function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
 
-  function pickAmount(ev){
-    const p = ev.payload || {};
-    return Number(
-      ev.amount ?? ev.value ?? ev.sum ?? ev.delta ??
-      p.amount ?? p.value ?? p.sum ?? p.delta ?? 0
-    );
-  }
-  function pickComment(ev){
-    const p = ev.payload || {};
-    return String(
-      ev.comment ?? p.comment ?? p.note ?? p.reason ?? p.description ?? ''
-    );
-  }
-  function pickUser(ev){
-    const p = ev.payload || {};
-    const uid = (ev.user_id ?? p.user_id ?? '—');
-    const hum = (ev.hum_id ?? p.hum_id ?? '—');
-    return { uid, hum };
-  }
-  function pickAdmin(ev){
-    const p = ev.payload || {};
-    return (ev.admin ?? ev.admin_id ?? ev.actor ?? p.admin ?? '—');
-  }
-  function pickTime(ev){
-    const p = ev.payload || {};
-    return (ev.created_at ?? ev.ts ?? ev.time ?? p.created_at ?? p.ts ?? p.time);
+  function pick(obj, keys, dflt){
+    for (const k of keys) { if (obj!=null && obj[k]!=null) return obj[k]; }
+    return dflt;
   }
 
   function renderHistory(list){
@@ -165,21 +141,21 @@
       return;
     }
     for (const ev of list) {
-      const { uid, hum } = pickUser(ev);
-      const amount = pickAmount(ev);
-      const comment = pickComment(ev);
-      const when = pickTime(ev);
-      const who = pickAdmin(ev);
+      const p = ev.payload || {};
+      const when = pick(ev, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], ''));
+      const who  = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
+      const uid  = pick(ev, ['user_id'], pick(p, ['user_id'], '—'));
+      const hum  = pick(ev, ['hum_id'],  pick(p, ['hum_id'],  '—'));
+      const amt  = Number(pick(ev, ['amount','value','sum','delta'], pick(p, ['amount','value','sum','delta'], 0)));
+      const cmt  = String(pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], '')) || '');
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="muted">${fmt(when)}</td>
-        <td>${who}</td>
+        <td>${who || '—'}</td>
         <td>${uid} / ${hum}</td>
-        <td><span class="pill-ok">+${isFinite(amount)?amount:0}</span></td>
-        <td>${(comment||'—')
-               .toString()
-               .replace(/[<>]/g, s => s === '<' ? '&lt;' : '&gt;')}</td>
+        <td><span class="pill-ok">+${isFinite(amt)?amt:0}</span></td>
+        <td>${cmt ? cmt.replace(/[<>]/g, s => s === '<' ? '&lt;' : '&gt;') : '—'}</td>
       `;
       tbody.appendChild(tr);
     }
@@ -194,6 +170,5 @@
   $('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
   loadHistory().catch(()=>{});
 </script>
- 
 </body>
 </html>
