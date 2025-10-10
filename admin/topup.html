@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="api-base" content="https://vercel2pr.onrender.com"/>
   <title>Ручное пополнение</title>
+
+  <!-- FAVICONS — как в админке -->
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png">
+  <link rel="shortcut icon" href="/assets/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
   <style>
     body{font-family:Inter,system-ui,Arial,sans-serif;background:#0b1024;color:#e8f0ff;margin:0;padding:24px}
     .wrap{max-width:1040px;margin:0 auto;display:grid;gap:24px}
@@ -31,10 +39,14 @@
       <div class="row"><label>User ID</label><input id="uid" type="number" placeholder="внутренний id (например, 97)"></div>
       <div class="row"><label>Сумма</label><input id="amt" type="number" placeholder="рубли"></div>
       <div class="row"><label>Комментарий</label><textarea id="cmt" rows="3" placeholder="обязательно"></textarea></div>
+
+      <!-- ВОТ ТУТ добавлена кнопка "Сохранить" -->
       <div class="row" style="justify-content:flex-end;gap:8px">
+        <button id="save">Сохранить</button>
         <button id="go">Пополнить</button>
         <button id="reload">Обновить историю</button>
       </div>
+
       <div class="log" id="log"></div>
     </div>
 
@@ -57,32 +69,56 @@
       </table>
     </div>
   </div>
+
 <script>
   const $ = (s)=>document.querySelector(s);
   const log = (s)=>{ $('#log').textContent = String(s||''); };
 
+  // === prefs (API/пароль) из query или localStorage
+  const LS_API = 'admin_api';
+  const LS_PWD = 'admin_pwd';
+
   function apiBase(){
     const p = new URLSearchParams(location.search);
-    const fromQuery = p.get('api');
+    const fromQuery = (p.get('api')||'').trim();
     if (fromQuery) return fromQuery;
     const inField = ($('#api')?.value || '').trim();
     if (inField) return inField;
-    const mt = document.querySelector('meta[name="api-base"]'); 
+    const fromLS = (localStorage.getItem(LS_API)||'').trim();
+    if (fromLS) return fromLS;
+    const mt = document.querySelector('meta[name="api-base"]');
     if (mt?.content) return mt.content;
     return 'https://vercel2pr.onrender.com';
   }
   function adminPwd(){
     const p = new URLSearchParams(location.search);
-    const q = p.get('pwd');
-    return (q || $('#pwd')?.value || '').trim();
+    const q = (p.get('pwd')||'').trim();
+    if (q) return q;
+    const v = ($('#pwd')?.value || '').trim();
+    if (v) return v;
+    const fromLS = (localStorage.getItem(LS_PWD)||'').trim();
+    return fromLS;
   }
-  function setInitialFromQuery(){
+  function setInitialFromQueryOrLS(){
     const p = new URLSearchParams(location.search);
-    if (p.get('api')) $('#api').value = p.get('api');
-    if (p.get('pwd')) $('#pwd').value = p.get('pwd');
-    if (p.get('user_id')) $('#uid').value = p.get('user_id');
+    const qAPI = (p.get('api')||'').trim();
+    const qPWD = (p.get('pwd')||'').trim();
+    const qUID = (p.get('user_id')||'').trim();
+    $('#api').value = qAPI || localStorage.getItem(LS_API) || $('#api').value || '';
+    $('#pwd').value = qPWD || localStorage.getItem(LS_PWD) || $('#pwd').value || '';
+    if (qUID) $('#uid').value = qUID;
   }
-  setInitialFromQuery();
+  setInitialFromQueryOrLS();
+
+  // сохранить API/пароль
+  $('#save').addEventListener('click', ()=>{
+    const api = ($('#api')?.value||'').trim();
+    const pwd = ($('#pwd')?.value||'').trim();
+    if (!api || !pwd){ log('Укажи API и пароль'); return; }
+    localStorage.setItem(LS_API, api);
+    localStorage.setItem(LS_PWD, pwd);
+    log('Сохранено.');
+  });
 
   async function post(url, body, pwd){
     const r = await fetch(url, {
@@ -94,6 +130,7 @@
     return { r, data };
   }
 
+  // submit
   $('#go').addEventListener('click', async ()=>{
     const API = apiBase();
     const pwd = adminPwd();
@@ -109,8 +146,8 @@
       note: cmt, reason: cmt, description: cmt
     };
 
-    let { r, data } = await post(`${API}/api/admin/users/${uid}/topup`, payload, pwd);
-    if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup`, payload, pwd)); }
+    let { r, data } = await post(`${API}/api/admin/users/${uid}/topup?admin_password=${encodeURIComponent(pwd)}`, payload, pwd);
+    if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup?admin_password=${encodeURIComponent(pwd)}`, payload, pwd)); }
 
     if (!r.ok || data?.ok===false) {
       log(`Ошибка: ${data?.error || r.statusText || ('HTTP '+r.status)}`);
@@ -125,11 +162,11 @@
   async function fetchHistory(){
     const API = apiBase();
     const pwd = adminPwd();
-    const url = `${API}/api/admin/events?type=admin_topup&take=100&skip=0&admin_password=${encodeURIComponent(pwd)}`;
+    let url = `${API}/api/admin/events?type=admin_topup&take=100&skip=0&admin_password=${encodeURIComponent(pwd)}`;
     let r = await fetch(url, { headers: { 'X-Admin-Password': pwd } });
     if (r.status === 404) {
-      const url2 = `${API}/api/admin/events?take=100&skip=0&search=admin_topup&admin_password=${encodeURIComponent(pwd)}`;
-      r = await fetch(url2, { headers: { 'X-Admin-Password': pwd } });
+      url = `${API}/api/admin/events?take=100&skip=0&search=admin_topup&admin_password=${encodeURIComponent(pwd)}`;
+      r = await fetch(url, { headers: { 'X-Admin-Password': pwd } });
     }
     let data={}; try{ data = await r.json(); }catch{}
     return { r, data };
@@ -138,28 +175,69 @@
   function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
   function pick(obj, keys, dflt){ for (const k of keys) { if (obj!=null && obj[k]!=null) return obj[k]; } return dflt; }
 
-  function renderHistory(list){
+  // вычисление delta, если сервер не прислал явную сумму
+  function computeDeltas(list){
+    const norm = list.map(ev => {
+      const p = ev.payload || {};
+      const when = pick(ev, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], ''));
+      const uid  = pick(ev, ['user_id'], pick(p, ['user_id'], null));
+      const hum  = pick(ev, ['hum_id'],  pick(p, ['hum_id'],  null));
+      const amt  = pick(ev, ['amount','value','sum','delta'], pick(p, ['amount','value','sum','delta'], null));
+      const cmt  = pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], null));
+      const nb   = pick(ev, ['new_balance','balance'], pick(p, ['new_balance','balance'], null));
+      return { raw:ev, when, uid, hum, amt:Number(amt), cmt, nb:Number(nb) };
+    }).sort((a,b)=> new Date(a.when) - new Date(b.when));
+
+    const lastByHum = new Map();
+    for (const r of norm){
+      if (Number.isFinite(r.amt)) { // явная сумма есть
+        if (Number.isFinite(r.nb)) {
+          const key = String(r.hum ?? r.uid ?? 'null');
+          lastByHum.set(key, r.nb); // обновим «предыдущий баланс» для след. событий
+        }
+        continue;
+      }
+      if (!Number.isFinite(r.nb)) continue; // нет new_balance — нечего вычислять
+      const key = String(r.hum ?? r.uid ?? 'null');
+      const prev = lastByHum.get(key);
+      if (prev!=null && Number.isFinite(prev)){
+        r.amt = r.nb - prev;
+      } else {
+        r.amt = r.nb; // первая запись по этому HUM — считаем от нуля
+      }
+      lastByHum.set(key, r.nb);
+    }
+
+    // обратно в исходный (обычно DESC) порядок
+    return norm.sort((a,b)=> new Date(b.when) - new Date(a.when));
+  }
+
+  function renderHistory(listRaw){
     const tbody = $('#tbl tbody');
     tbody.innerHTML = '';
-    if (!Array.isArray(list) || !list.length) {
+    if (!Array.isArray(listRaw) || !listRaw.length) {
       tbody.innerHTML = '<tr><td class="muted" colspan="5">Пока пусто</td></tr>';
       return;
     }
-    for (const ev of list) {
-      const p = ev.payload || {};
-      const when = pick(ev, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], ''));
+
+    const list = computeDeltas(listRaw);
+
+    for (const r of list) {
+      const ev = r.raw;
+      const p  = ev.payload || {};
+      const when = r.when;
       const who  = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
-      const uid  = pick(ev, ['user_id'], pick(p, ['user_id'], '—'));
-      const hum  = pick(ev, ['hum_id'],  pick(p, ['hum_id'],  '—'));
-      const amt  = Number(pick(ev, ['amount','value','sum','delta'], pick(p, ['amount','value','sum','delta'], 0)));
-      const cmt  = String(pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], '')) || '');
+      const uid  = r.uid ?? '—';
+      const hum  = r.hum ?? '—';
+      const amt  = Number.isFinite(r.amt) ? r.amt : 0;
+      const cmt  = (r.cmt || '').toString();
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="muted">${fmt(when)}</td>
         <td>${who || '—'}</td>
         <td>${uid} / ${hum}</td>
-        <td><span class="pill-ok">+${isFinite(amt)?amt:0}</span></td>
+        <td><span class="pill-ok">+${amt}</span></td>
         <td>${cmt ? cmt.replace(/[<>]/g, s => s === '<' ? '&lt;' : '&gt;') : '—'}</td>
       `;
       tbody.appendChild(tr);
@@ -168,7 +246,7 @@
 
   async function loadHistory(){
     const { r, data } = await fetchHistory();
-    if (r.status === 401) { log('401: проверь пароль (вверху поля «Пароль») и нажми «Обновить историю».'); }
+    if (r.status === 401) { log('401: проверь пароль (вверху) и нажми «Обновить историю».'); }
     const list = data?.events || data?.rows || data?.list || [];
     renderHistory(list);
   }
