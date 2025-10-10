@@ -1,5 +1,4 @@
-<script>
-// вставляет кнопку справа от "Пополнить вручную"
+// Добавляет ссылку "Перейти на страницу" рядом с кнопкой "Пополнить вручную".
 (function(){
   function $(s){ return document.querySelector(s); }
   function inject(){
@@ -10,6 +9,8 @@
     a.target = '_blank';
     a.textContent = 'Перейти на страницу';
     a.style.marginLeft = '8px';
+    a.className = 'btn-link-to-topup';
+    // быстрый тёмный стиль в тон
     a.style.background = '#0f1730';
     a.style.color = '#8ecbff';
     a.style.padding = '8px 12px';
@@ -19,6 +20,5 @@
     btn.after(a);
     btn.dataset._linked = '1';
   }
-  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', inject); } else { inject(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject); else inject();
 })();
-</script>
