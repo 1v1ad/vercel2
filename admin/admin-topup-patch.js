@@ -1,41 +1,38 @@
 <script>
-/**
- * Админ-пополнение (универсальный клиент):
- * 1) POST /api/admin/users/:id/topup
- * 2) если 404 → POST /api/admin/topup
- * Отправляет синонимы полей, чтобы пройти любую строгую схему.
- */
 (function () {
   function $(sel){ return document.querySelector(sel); }
-  function toast(msg){ try{ alert(msg); }catch(e){} }
+  function toast(m){ try{ alert(m); }catch{} }
   function getApiBase(){
+    const fromInput = $('#apiHost')?.value || $('#api')?.value;
+    if (fromInput && fromInput.trim()) return fromInput.trim();
     if (typeof window.API_BASE==='string' && window.API_BASE) return window.API_BASE;
-    try{ const s=localStorage.getItem('ADMIN_API')||localStorage.getItem('admin_api'); if(s) return s; }catch{}
+    try{
+      const s=localStorage.getItem('ADMIN_API')||localStorage.getItem('admin_api');
+      if(s) return s;
+    }catch{}
     const mt=document.querySelector('meta[name="api-base"]'); if(mt?.content) return mt.content;
     return 'https://vercel2pr.onrender.com';
   }
-  const API=getApiBase();
+
   const btn=$("#btnManualTopup")||document.getElementById("btnTopup")||document.querySelector("[data-action='manual-topup']");
   if(!btn) return;
 
   btn.addEventListener("click", async ()=>{
     try{
+      const API=getApiBase();
       const uidEl=$("#manualTopupUserId")||$("#topupUserId")||$("#user_id");
       const amtEl=$("#manualTopupAmount")||$("#topupAmount")||$("#amount");
       const adminPwdEl=$("#adminPassword")||$("#adminPwd")||$("#pwd");
+      const cmtEl=$("#manualTopupComment")||$("#comment");
 
       const userId=parseInt((uidEl?.value||"").trim(),10);
       const amountNum=Math.round(Number((amtEl?.value||"").toString().replace(",", ".")||0));
       const adminPwd=(adminPwdEl?.value||"").trim();
+      const comment=(cmtEl?.value||'admin_topup').trim();
 
       if(!adminPwd){ toast("Укажи пароль админа."); return; }
       if(!Number.isFinite(userId)||userId<=0){ toast("Укажи корректный user_id."); return; }
       if(!Number.isFinite(amountNum)||amountNum<=0){ toast("Укажи сумму (>0)."); return; }
-
-      // без prompt: если хочешь оставить всплывающее окно — раскомментируй 2 строки ниже
-      // let comment = window.prompt("Комментарий к пополнению (обязательно):", "");
-      // if (comment == null) return;
-      const comment = (document.getElementById('manualTopupComment')?.value || '').trim() || 'admin_topup';
 
       const payload={ user_id:userId, amount:amountNum, comment,
         value:amountNum, sum:amountNum, delta:amountNum,
@@ -58,10 +55,7 @@
         const err=data?.error || res.statusText || `HTTP ${res.status}`;
         toast("Ошибка: "+err);
       } else {
-        toast("Готово");
-        if(amtEl) amtEl.value="";
-        // если рядом есть поле комментария — тоже очищаем
-        const cEl = document.getElementById('manualTopupComment'); if (cEl) cEl.value='';
+        toast("Готово"); if(amtEl) amtEl.value=""; if(cmtEl) cmtEl.value="";
       }
     }catch(e){ console.error(e); toast("Ошибка: "+(e?.message||e)); }
   });
