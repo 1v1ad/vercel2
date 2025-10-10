@@ -23,9 +23,9 @@
     .hdr-user img{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222; }
     .hdr-user #user-name{ font-weight:700; }
     .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#121621; border:1px solid var(--border); color:#e8eaf0; font-weight:700 }
-    .link-actions{ display:inline-flex; gap:8px; margin-left:8px; }
-    @media (max-width: 480px){ .hdr{ gap:10px; padding:12px 12px; } .hdr .brand{ font-size:clamp(16px, 5vw, 18px); } .hdr .btn{ padding:6px 10px; font-size:14px; } .hdr-user img{ width:36px; height:36px; } .pill{ padding:6px 10px; font-size:14px; } .link-actions{ gap:6px; } }
+    @media (max-width: 480px){ .hdr{ gap:10px; padding:12px 12px; } .hdr .brand{ font-size:clamp(16px, 5vw, 18px); } .hdr .btn{ padding:6px 10px; font-size:14px; } .hdr-user img{ width:36px; height:36px; } .pill{ padding:6px 10px; font-size:14px; } }
     @media (max-width: 360px){ .hdr .btn .label{ display:none; } }
+
     .wrap{max-width:980px; margin:0 auto; padding:20px 16px}
     .card{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px}
   </style>
@@ -39,15 +39,10 @@
       <span class="label">Пополнить</span>
     </a>
 
-    <div class="hdr-user" id="hdr-user">
+    <div class="hdr-user">
       <img id="user-avatar" src="" alt="Аватар" />
       <div id="user-name">Гость</div>
       <span id="user-balance" class="pill">₽ <span class="balance-amount" data-balance>0</span></span>
-      <span class="link-actions" id="link-actions" style="display:none">
-        <a class="btn" id="link-tg" style="display:none">Связать Telegram</a>
-        <a class="btn" id="link-vk" style="display:none">Связать ВКонтакте</a>
-        <span id="link-status" class="pill" style="display:none"></span>
-      </span>
     </div>
   </header>
 
@@ -59,87 +54,84 @@
   </div>
 
   <script>
-    (async () => {
-      const API = 'https://vercel2pr.onrender.com';
-      const params = new URLSearchParams(location.search);
+  (async () => {
+    const API = 'https://vercel2pr.onrender.com';
+    const params = new URLSearchParams(location.search);
 
-      const nameEl = document.querySelector('#user-name');
-      const avatarEl = document.querySelector('#user-avatar');
-      const balanceWrap = document.querySelector('#user-balance');
-      const note = document.getElementById('provider-note');
+    const nameEl    = document.querySelector('#user-name');
+    const avatarEl  = document.querySelector('#user-avatar');
+    const balanceEl = document.querySelector('#user-balance [data-balance]');
+    const noteEl    = document.getElementById('provider-note');
 
-      function rub(n){ try{ return '₽ ' + (Number(n)||0).toLocaleString('ru-RU'); }catch{ return '₽ 0'; } }
+    function applyUser(u){
+      const full = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
+      if (nameEl)   nameEl.textContent = full;
+      if (avatarEl && u.avatar) avatarEl.src = u.avatar;
+      if (balanceEl) balanceEl.textContent = String(Number(u.balance||0));
+      if (noteEl) noteEl.textContent = u.provider ? ('Источник данных: ' + u.provider.toUpperCase()) : 'Вы не авторизованы.';
+      document.body.dataset.auth = u.provider ? 'auth' : 'guest';
+      try { localStorage.setItem('gg_user', JSON.stringify(u)); } catch {}
+    }
 
-      function applyUser(u) {
-        if (!u) u = { first_name:'Гость', balance: 0 };
-        if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
-        if (avatarEl && u.avatar) avatarEl.src = u.avatar;
+    let user = null;
+    const cameFromTG = (params.get('provider') === 'tg' && params.get('id'));
 
-        const balNum = balanceWrap?.querySelector('[data-balance]');
-        if (balNum) balNum.textContent = String(Number(u.balance ?? 0));
-        else if (balanceWrap) balanceWrap.textContent = rub(u.balance ?? 0);
-
-        if (note) note.textContent = u.provider ? ('Источник данных: ' + u.provider.toUpperCase()) : 'Вы не авторизованы.';
-        document.body.dataset.auth = u.provider ? 'auth' : 'guest';
-      }
-
-      let user = null;
-
-      // Быстрый рендер из TG query (баланс подтянем ниже)
-      if (params.get('provider') === 'tg') {
-        user = {
-          provider: 'tg',
-          id: params.get('id') || null,
-          first_name: params.get('first_name') || '',
-          last_name: params.get('last_name') || '',
-          username: params.get('username') || '',
-          avatar: params.get('photo_url') || '',
-          balance: 0,
-        };
-        try {
-          const cached = JSON.parse(localStorage.getItem('gg_user') || 'null');
-          if (cached && cached.balance != null) user.balance = cached.balance;
-        } catch {}
-        try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
-        if (history.replaceState) history.replaceState({}, '', location.pathname);
-      }
-
-      // Тянем /api/me
+    if (cameFromTG) {
+      user = {
+        provider: 'tg',
+        id: params.get('id'),
+        first_name: params.get('first_name') || '',
+        last_name : params.get('last_name')  || '',
+        username  : params.get('username')   || '',
+        avatar    : params.get('photo_url')  || '',
+        balance   : 0,
+      };
+      applyUser(user);
+      if (history.replaceState) history.replaceState({}, '', location.pathname);
       try {
-        const r = await fetch(API + '/api/me', { credentials: 'include', cache: 'no-store' });
+        const r = await fetch(`${API}/api/profile/me?provider=tg&id=${encodeURIComponent(user.id)}`, { credentials:'include', cache:'no-store' });
         if (r.ok) {
           const j = await r.json();
           if (j && j.ok && j.user) {
-            const isVK = j.user && j.user.vk_id && !String(j.user.vk_id).startsWith('tg:');
-            user = {
-              provider: isVK ? 'vk' : (user?.provider || 'tg'),
-              id: j.user.id || user?.id || null,
-              first_name: j.user.first_name || user?.first_name || '',
-              last_name: j.user.last_name || user?.last_name || '',
-              avatar: j.user.avatar || user?.avatar || '',
-              balance: j.user.balance ?? user?.balance ?? 0, // ЛИЧНЫЙ баланс
-              vk_id: j.user.vk_id
-            };
-            try { localStorage.setItem('gg_user', JSON.stringify(user)); } catch {}
+            user.balance = Number(j.user.balance || 0);
             applyUser(user);
           }
         }
       } catch {}
+    } else {
+      try {
+        const r = await fetch(API + '/api/me', { credentials:'include', cache:'no-store' });
+        if (r.ok) {
+          const j = await r.json();
+          if (j && j.ok && j.user) {
+            const isVK = j.user.vk_id && !String(j.user.vk_id).startsWith('tg:');
+            user = {
+              provider: isVK ? 'vk' : 'tg',
+              id: j.user.id,
+              first_name: j.user.first_name || '',
+              last_name : j.user.last_name  || '',
+              avatar    : j.user.avatar     || '',
+              balance   : Number(j.user.balance || 0),
+            };
+            applyUser(user);
+          }
+        }
+      } catch {}
+    }
 
-      if (!user) {
-        try { user = JSON.parse(localStorage.getItem('gg_user') || 'null'); } catch {}
-      }
-      applyUser(user);
+    if (!user) {
+      try { user = JSON.parse(localStorage.getItem('gg_user') || 'null'); } catch {}
+      if (user) applyUser(user);
+    }
 
-      // Заглушка «Пополнить»
-      document.getElementById('topup-btn').addEventListener('click', (e) => {
-        e.preventDefault();
-        alert('Скоро тут будет пополнение баланса ✨');
-      });
-    })();
+    document.getElementById('topup-btn')?.addEventListener('click', (e)=>{
+      e.preventDefault();
+      alert('Скоро тут будет пополнение баланса ✨');
+    });
+  })();
   </script>
 
-  <!-- фон-склейка -->
+  <!-- фон-склейка (как было) -->
   <script>
   (function(){
     function b64uuid(){
@@ -204,7 +196,7 @@
   })();
   </script>
 
-  <!-- универсальный апдейтер баланса + подписи источника -->
+  <!-- апдейтер баланса/подписи (как было) -->
   <script>
   (async function(){
     const API = window.API || 'https://vercel2pr.onrender.com';
@@ -215,26 +207,24 @@
       if(!data.ok || !data.user) return;
 
       document.querySelectorAll('[data-balance], .balance-amount, #balance')
-        .forEach(el => el.textContent = String(data.user.balance ?? 0)); // личный баланс
+        .forEach(el => el.textContent = String(data.user.balance ?? 0));
 
       const src = document.querySelector('#provider-note, [data-source]');
       if (src) {
-        const v = String(data.user.vk_id || '');
-        const label = v && !v.startsWith('tg:') ? 'VK' : (v.startsWith('tg:') ? 'TG' : '—');
-        src.textContent = 'Источник данных: ' + label;
+        const isVK = data.user && data.user.vk_id && !String(data.user.vk_id).startsWith('tg:');
+        src.textContent = 'Источник данных: ' + (isVK ? 'VK' : 'TG');
       }
     }catch(_){}
   })();
   </script>
 
-  <!-- Link accounts UI -->
+  <!-- Link accounts UI (как было) -->
   <script>
   (function(){
     const API = (window.API || localStorage.getItem('ADMIN_API') || 'https://vercel2pr.onrender.com').replace(/\/+$/,'');
     const statusEl = document.getElementById('link-status');
     const btnTG = document.getElementById('link-tg');
     const btnVK = document.getElementById('link-vk');
-    const box   = document.getElementById('link-actions');
 
     let currentUser = null;
 
@@ -247,50 +237,29 @@
       return null;
     }
 
-    function detect(u){
-      // 1) Явный tg из query
-      const fromQ = new URLSearchParams(location.search).get('provider');
-      if (fromQ === 'tg') return { provider:'tg', hasTG:true, hasVK:false };
-
-      // 2) По vk_id: tg:* или numeric
-      const v = String(u?.vk_id ?? '');
-      const hasTG = v.startsWith('tg:');
-      const hasVK = !!v && !hasTG;
-
-      const provider = hasVK ? 'vk' : (hasTG ? 'tg' : (JSON.parse(localStorage.getItem('gg_user')||'null')?.provider || null));
-      return { provider, hasTG, hasVK };
-    }
-
-    
     function showButtons(u){
       if (!u) return;
-      const hasTG = (u.vk_id && String(u.vk_id).startsWith('tg:')) || u.provider==='tg';
-      const hasVK = (u.vk_id && !String(u.vk_id).startsWith('tg:')) || u.provider==='vk';
-      const bTG = document.getElementById('link-tg');
-      const bVK = document.getElementById('link-vk');
-      if (bTG) bTG.style.display = (!hasTG && hasVK) ? 'inline-flex' : 'none';
-      if (bVK) bVK.style.display = (hasTG && !hasVK) ? 'inline-flex' : 'none';
+      const isVK = u.vk_id && !String(u.vk_id).startsWith('tg:');
+      const hasVK = !!isVK;
+      const hasTG = String(u.vk_id||'').startsWith('tg:');
+      if (btnTG) btnTG.style.display = (hasVK && !hasTG) ? 'inline-flex' : 'none';
+      if (btnVK) btnVK.style.display = (hasTG && !hasVK) ? 'inline-flex' : 'none';
     }
-
 
     function headerFor(u){ return { 'X-User-Id': String(u.id || u.user_id || '') }; }
 
     async function start(target){
       if (!currentUser) return;
-      statusEl.style.display = 'inline-flex';
-      statusEl.textContent = 'Готовим ссылку...';
-
+      if (statusEl) statusEl.textContent = 'Готовим ссылку...';
       const r = await fetch(API + '/api/profile/link/start', {
         method:'POST',
         headers: Object.assign({'Content-Type':'application/json'}, headerFor(currentUser)),
         body: JSON.stringify({ target })
       });
       const j = await r.json().catch(()=>({}));
-      if (!j.ok) { statusEl.textContent = 'Ошибка: ' + (j.error||''); return; }
-
+      if (!j.ok) { if (statusEl) statusEl.textContent = 'Ошибка: ' + (j.error||''); return; }
       window.open(j.url, '_blank');
-      statusEl.textContent = 'Ожидаем подтверждение...';
-
+      if (statusEl) statusEl.textContent = 'Ожидаем подтверждение...';
       const t0 = Date.now();
       const poll = setInterval(async ()=>{
         try{
@@ -298,13 +267,13 @@
           const s  = await rs.json();
           if (s && s.ok && s.done) {
             clearInterval(poll);
-            statusEl.textContent = 'Готово! Аккаунты связаны.';
+            if (statusEl) statusEl.textContent = 'Готово! Аккаунты связаны.';
             setTimeout(()=>location.reload(),800);
           } else if ((Date.now()-t0) > (j.ttl_minutes||15)*60*1000 || (s && s.expired)) {
             clearInterval(poll);
-            statusEl.textContent = 'Время истекло. Попробуйте снова.';
+            if (statusEl) statusEl.textContent = 'Время истекло. Попробуйте снова.';
           }
-        }catch(_){/* ignore */}
+        }catch(_){};
       }, 2000);
     }
 
@@ -314,5 +283,6 @@
     fetchMe().then(u => { currentUser = u; showButtons(u); });
   })();
   </script>
+
 </body>
 </html>
