@@ -1,5 +1,5 @@
 /**
- * r4: provider-aware fallback + stronger DOM updates
+ * r5: provider-aware fallback + stronger DOM updates + TG last-name logic
  */
 (function (){
   const TAG='[LBAL]';
@@ -36,14 +36,17 @@
     }catch{}
   }
 
-  // --- ПРАВКА: имя/фамилия из TG (если фамилии нет в TG — оставляем пусто, не тянем VK)
+  // --- имя/фамилия: из ТГ, если пришли через TG; VK-фаcмилию не тянем, когда у TG пусто
   function updateNameAvatar(u){
-    const providerQ = (q.get('provider') || '').toLowerCase();
-
     const nameNode = document.querySelector('[data-user-name]')
         || document.querySelector('.user-name')
         || document.querySelector('.hdr-user .name')
         || document.querySelector('.hdr-user [class*="name"]');
+
+    const lastNode = document.querySelector('[data-user-last]')
+        || document.querySelector('.user-last')
+        || document.querySelector('.hdr-user .last')
+        || null;
 
     const avatarImg = document.querySelector('[data-user-avatar]')
         || document.querySelector('.user-avatar img')
@@ -54,14 +57,28 @@
     let first = u.first_name || '';
     let last  = u.last_name  || '';
 
-    if (providerQ === 'tg') {
+    if (provider === 'tg') {
       const qFirst = q.get('first_name') || '';
       const qLast  = q.get('last_name')  || '';
-      if (qFirst) first = qFirst;     // имя из TG, если передано
-      last = qLast ? qLast : '';      // фамилия только из TG; если её нет — пусто
+      if (qFirst) first = qFirst;
+      // фамилию берём СТРОГО из параметров ТГ; если её нет — пуста
+      last = qLast ? qLast : '';
     }
 
-    if (nameNode) nameNode.textContent = (first + (last ? ' ' + last : '')).trim();
+    // если верстка одним узлом — пишем "Имя" либо "Имя Фамилия";
+    // если есть отдельный lastNode — кладём отдельно и даём пустоту, если у ТГ нет last_name
+    if (nameNode && !lastNode) {
+      nameNode.textContent = (first + (last ? ' ' + last : '')).trim();
+    } else {
+      if (nameNode) nameNode.textContent = first.trim();
+      if (lastNode)  lastNode.textContent = last.trim();
+    }
+
+    // на всякий — вычищаем любые "остаточные фамилии" в явных спанах
+    if (!last) {
+      document.querySelectorAll('[data-user-last], .user-last, .hdr-user .last').forEach(n => n.textContent = '');
+    }
+
     if (avatarImg && u.avatar) avatarImg.src = u.avatar;
   }
 
