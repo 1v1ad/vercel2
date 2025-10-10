@@ -1,3 +1,10 @@
+<script>
+/**
+ * Админ-пополнение (универсальный клиент):
+ * 1) POST /api/admin/users/:id/topup
+ * 2) если 404 → POST /api/admin/topup
+ * Отправляет синонимы полей, чтобы пройти любую строгую схему.
+ */
 (function () {
   function $(sel){ return document.querySelector(sel); }
   function toast(msg){ try{ alert(msg); }catch(e){} }
@@ -25,10 +32,10 @@
       if(!Number.isFinite(userId)||userId<=0){ toast("Укажи корректный user_id."); return; }
       if(!Number.isFinite(amountNum)||amountNum<=0){ toast("Укажи сумму (>0)."); return; }
 
-      let comment=window.prompt("Комментарий к пополнению (обязательно):","");
-      if(comment==null) return;
-      comment=(comment||"").trim();
-      if(!comment){ toast("Комментарий обязателен."); return; }
+      // без prompt: если хочешь оставить всплывающее окно — раскомментируй 2 строки ниже
+      // let comment = window.prompt("Комментарий к пополнению (обязательно):", "");
+      // if (comment == null) return;
+      const comment = (document.getElementById('manualTopupComment')?.value || '').trim() || 'admin_topup';
 
       const payload={ user_id:userId, amount:amountNum, comment,
         value:amountNum, sum:amountNum, delta:amountNum,
@@ -53,7 +60,10 @@
       } else {
         toast("Готово");
         if(amtEl) amtEl.value="";
+        // если рядом есть поле комментария — тоже очищаем
+        const cEl = document.getElementById('manualTopupComment'); if (cEl) cEl.value='';
       }
     }catch(e){ console.error(e); toast("Ошибка: "+(e?.message||e)); }
   });
 })();
+</script>
