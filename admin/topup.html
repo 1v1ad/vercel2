@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="api-base" content="https://vercel2pr.onrender.com"/>
+  <title>Ручное пополнение</title>
+  <style>
+    body{font-family:Inter,system-ui,Arial,sans-serif;background:#0b1024;color:#e8f0ff;margin:0;padding:24px}
+    .card{background:#121c2e;border:1px solid #23324a;border-radius:16px;max-width:520px;padding:20px}
+    .row{display:flex;gap:12px;margin-bottom:12px}
+    label{width:120px;opacity:.8}
+    input,textarea{flex:1;background:#0c1426;color:#e8f0ff;border:1px solid #2a3a57;border-radius:10px;padding:10px}
+    button{background:#2b79ff;border:0;color:white;padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer}
+    .log{margin-top:16px;font-size:13px;opacity:.9;white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Ручное пополнение</h2>
+    <div class="row"><label>API</label><input id="api" placeholder="https://vercel2pr.onrender.com"></div>
+    <div class="row"><label>Пароль</label><input id="pwd" type="password" placeholder="X-Admin-Password"></div>
+    <div class="row"><label>User ID</label><input id="uid" type="number" placeholder="внутренний id (97)"></div>
+    <div class="row"><label>Сумма</label><input id="amt" type="number" placeholder="рубли"></div>
+    <div class="row"><label>Комментарий</label><textarea id="cmt" rows="3" placeholder="обязательно"></textarea></div>
+    <div class="row" style="justify-content:flex-end"><button id="go">Пополнить</button></div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    function apiBase(){
+      const mt=document.querySelector('meta[name="api-base"]'); if (mt?.content) return mt.content;
+      return document.getElementById('api').value.trim();
+    }
+    const log = (s)=>{ document.getElementById('log').textContent = String(s||''); };
+
+    async function post(url, body, pwd){
+      const r = await fetch(url, {
+        method:'POST',
+        headers: { 'Content-Type':'application/json', 'X-Admin-Password': pwd },
+        body: JSON.stringify(body)
+      });
+      let data={}; try{ data=await r.json(); }catch{}
+      return { r, data };
+    }
+
+    document.getElementById('go').addEventListener('click', async ()=>{
+      const API = document.getElementById('api').value.trim() || apiBase();
+      const pwd = document.getElementById('pwd').value.trim();
+      const uid = Number(document.getElementById('uid').value.trim());
+      const amt = Number(document.getElementById('amt').value.trim());
+      const cmt = document.getElementById('cmt').value.trim();
+
+      if(!API || !pwd || !uid || !amt || !cmt){ log('Заполни все поля'); return; }
+
+      const payload = {
+        user_id: uid, amount: amt, comment: cmt,
+        value: amt, sum: amt, delta: amt,
+        note: cmt, reason: cmt, description: cmt
+      };
+
+      let { r, data } = await post(`${API}/api/admin/users/${uid}/topup`, payload, pwd);
+      if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup`, payload, pwd)); }
+
+      if (!r.ok || data?.ok===false) {
+        log(`Ошибка: ${data?.error || r.statusText || ('HTTP '+r.status)}`);
+      } else {
+        log('Готово: ' + JSON.stringify(data));
+      }
+    });
+  </script>
+</body>
+</html>
