@@ -53,7 +53,7 @@
       Telegram.Login.auth({ bot_id: botId, request_access:'write' }, function(user){
         if(!user || !user.id){ alert('Telegram не прислал профиль.'); return; }
         const p = new URLSearchParams(Object.assign({}, user, { mode:'link', primary_uid:'', device_id:String(did||'') }));
-        location.href = API() + '/tg/callback?' + p.toString();
+        location.href = API() + '/api/auth/tg/callback?' + p.toString();
       });
     }catch(e){
       console.error(e);
