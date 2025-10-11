@@ -1,24 +1,37 @@
-// Жёсткая очистка обработчиков: клонируем кнопку, чтобы снять старые слушатели, и вешаем только наш редирект.
+// Жёстко снимаем любые старые слушатели с кнопки пополнения и вешаем редирект на /admin/topup.html
 (function () {
   function $(s){ return document.querySelector(s); }
-  function val(el){ return (el && el.value || '').trim(); }
+  function pickBtn(){
+    // набор селекторов, первый найденный пойдёт в работу
+    const sels = [
+      '#topup-run', '#btnManualTopup', '#btnTopup',
+      '[data-action="manual-topup"]'
+    ];
+    for (const s of sels) {
+      const el = document.querySelector(s);
+      if (el) return el;
+    }
+    // последняя попытка — ищем по тексту
+    const candidates = Array.from(document.querySelectorAll('button,.btn'));
+    return candidates.find(el => /попол(нить|нение)/i.test(el.textContent||''));
+  }
 
   function run(){
-    let btn = $('#btnManualTopup') || document.getElementById('btnTopup') || document.querySelector('[data-action="manual-topup"]');
+    let btn = pickBtn();
     if (!btn || btn.dataset._wired) return;
 
-    // replaceWith clone — срубает все старые слушатели
+    // Отрезаем все старые слушатели одним ударом
     const clone = btn.cloneNode(true);
+    clone.type = 'button'; // чтобы форма (если есть) не отправлялась
     btn.replaceWith(clone);
     btn = clone;
 
     btn.addEventListener('click', (e)=>{
       e.preventDefault();
-      e.stopPropagation();
-
-      const uid = val($('#manualTopupUserId')) || val($('#topupUserId')) || val($('#user_id')) || '';
-      const api = val($('#apiHost')) || val($('#api')) || localStorage.getItem('admin_api') || '';
-      const pwd = val($('#adminPassword')) || val($('#adminPwd')) || val($('#pwd')) || localStorage.getItem('admin_pwd') || '';
+      // пытаемся забрать текущее API/пароль из полей админки
+      const api = (document.getElementById('apiBase')?.value || localStorage.getItem('admin_api') || '').trim();
+      const pwd = (document.getElementById('adminPassword')?.value || localStorage.getItem('admin_pwd') || '').trim();
+      const uid = (document.getElementById('topup-user-id')?.value || '').trim();
 
       const p = new URLSearchParams();
       if (uid) p.set('user_id', uid);
