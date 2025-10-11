@@ -28,7 +28,16 @@
     @media (max-width:480px){ .hdr{ gap:10px; padding:12px } .hdr .brand{ font-size:clamp(16px,5vw,18px) } .hdr .btn{ padding:6px 10px; font-size:14px } .hdr-user img{ width:36px; height:36px } .pill{ padding:6px 10px; font-size:14px } }
     @media (max-width:360px){ .hdr .btn .label{ display:none } }
     .wrap{ max-width:980px; margin:0 auto; padding:20px 16px } .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px }
-  </style>
+  
+/* --- link actions (VK/TG) --- */
+.link-actions{display:none;gap:8px;margin:12px 0;display:flex;flex-wrap:wrap}
+.link-actions .btn{background:#1d2a40;border:1px solid #2b3a57;border-radius:12px;padding:8px 12px;color:#e8f0ff;font-weight:700;cursor:pointer}
+.link-actions .btn[disabled]{opacity:.5;cursor:default}
+.link-actions .btn.tg{background:#229ED9;border-color:#229ED9}
+.link-actions .btn.vk{background:#2787F5;border-color:#2787F5}
+.hidden{display:none !important}
+
+</style>
 </head>
 <body>
   <header class="hdr">
@@ -47,6 +56,13 @@
       <button id="link-vk"  class="btn" style="display:none">Связать Вконтакте</button>
     </div>
   </header>
+
+  <!-- Link VK/TG actions -->
+  <div id="link-actions" class="link-actions hidden">
+    <button id="btnLinkVK" class="btn vk" data-link="vk" type="button">Связать ВКонтакте</button>
+    <button id="btnLinkTG" class="btn tg" data-link="tg" type="button">Связать Telegram</button>
+  </div>
+
 
   <!-- linkers: связывание аккаунтов -->
 <div class="hdr-linkers" style="display:flex; gap:8px; align-items:center; margin-left:8px">
@@ -208,6 +224,36 @@
     'https://vercel2pr.onrender.com';
   </script>
   <script src="/js/lobby-balance-fix.js"></script>
+
+
+<script>
+// lightweight glue for link buttons — uses lobby-balance-fix.js helpers if present
+(function(){
+  function qs(s){return document.querySelector(s);}
+  var a = qs('#link-actions');
+  if(!a) return;
+  function show(){ a.classList.remove('hidden'); }
+  // expose small API for lobby-balance-fix.js
+  window.__setLinkButtons = function(mode){
+    // mode: 'vk' or 'tg' — what the current user ALREADY has
+    // then we show the opposite button
+    if(mode==='vk'){ qs('#btnLinkVK')?.classList.add('hidden'); qs('#btnLinkTG')?.classList.remove('hidden'); }
+    else if(mode==='tg'){ qs('#btnLinkTG')?.classList.add('hidden'); qs('#btnLinkVK')?.classList.remove('hidden'); }
+    show();
+  };
+  // fallback onclick if helper didn't attach
+  a.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-link]'); if(!btn) return;
+    var target = btn.getAttribute('data-link');
+    var api = (document.querySelector('meta[name="api-base"]')?.content || '').trim();
+    if(!api) return;
+    var ret = encodeURIComponent(location.href);
+    // we call GET /api/profile/link/start which should 302 to provider
+    var url = api + '/api/profile/link/start?target=' + encodeURIComponent(target) + '&return=' + ret;
+    window.location.href = url;
+  });
+})();
+</script>
 
 </body>
 </html>
