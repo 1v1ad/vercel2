@@ -120,41 +120,60 @@
   }
 
   // ----- init -----
-  document.addEventListener('DOMContentLoaded', async function(){
-    const p = new URLSearchParams(location.search);
-    const fromProvider = (p.get('provider')||'').toLowerCase(); // 'tg' | 'vk' | ''
-    const pid = p.get('id') || '';
+ // ----- init -----
+document.addEventListener('DOMContentLoaded', async function(){
+  const p = new URLSearchParams(location.search);
+  const fromProvider = (p.get('provider')||'').toLowerCase(); // 'tg' | 'vk' | ''
+  const pid = p.get('id') || '';
 
-    let u = null;
+  // пробуем оба источника: по провайдеру и по текущей сессии
+  const [up, me] = await Promise.all([
+    (fromProvider === 'tg' && pid) ? fetchByProvider('tg', pid) : Promise.resolve(null),
+    fetchMe()
+  ]);
 
-    if (fromProvider === 'tg' && pid){
-      // пробуем достать ТГ-пользователя (его баланс)
-      const up = await fetchByProvider('tg', pid);
-      if (up){
-        u = Object.assign({ provider:'tg' }, up);
-      }
-    }
+  let u = null;
+  let merged = false;
 
-    if (!u){
-      // fallback — текущая сессия
-      const me = await fetchMe();
-      if (me){
-        const isVK = me.vk_id && !String(me.vk_id).startsWith('tg:');
-        u = {
-          provider: isVK ? 'vk' : 'tg',
-          id: me.id || null,
-          first_name: me.first_name || '',
-          last_name: me.last_name || '',
-          avatar: me.avatar || '',
-          balance: Number(me.balance||0),
-        };
-      } else {
-        u = { provider: fromProvider||'vk', first_name:'Гость', last_name:'', avatar:'', balance:0 };
-      }
-    }
+  if (up && me && up.id === me.id) {
+    // TG уже привязан к primary — кошелёк общий
+    merged = true;
+    u = {
+      provider: (me.vk_id && !String(me.vk_id).startsWith('tg:')) ? 'vk' : 'tg',
+      id: me.id,
+      first_name: me.first_name || up.first_name || '',
+      last_name:  me.last_name  || up.last_name  || '',
+      avatar:     me.avatar     || up.avatar     || '',
+      balance: Number(me.balance || 0)
+    };
+  } else if (up) {
+    // отдельный (ещё не объединённый) TG-пользователь
+    u = Object.assign({ provider:'tg' }, up);
+  } else if (me) {
+    const isVK = me.vk_id && !String(me.vk_id).startsWith('tg:');
+    u = {
+      provider: isVK ? 'vk' : 'tg',
+      id: me.id || null,
+      first_name: me.first_name || '',
+      last_name:  me.last_name  || '',
+      avatar:     me.avatar     || '',
+      balance: Number(me.balance||0),
+    };
+  } else {
+    u = { provider: fromProvider||'vk', first_name:'Гость', last_name:'', avatar:'', balance:0 };
+  }
 
-    try{ localStorage.setItem('gg_user', JSON.stringify(u)); }catch(_){}
-    applyUser(u);
-    placeHeaderLinkButton(u.provider);
-  });
+  try{ localStorage.setItem('gg_user', JSON.stringify(u)); }catch(_){}
+  applyUser(u);
+
+  // пометка в интерфейсе, чтобы не путало
+  const note = document.getElementById('provider-note');
+  if (note) {
+    if (merged) note.textContent = 'Источник данных: общий кошелёк (VK↔TG)';
+    else        note.textContent = 'Источник данных: ' + u.provider.toUpperCase();
+  }
+
+  placeHeaderLinkButton(u.provider);
+});
+
 })();
