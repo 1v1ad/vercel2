@@ -1,7 +1,6 @@
-// /js/lobby-balance-fix.js — HUM-баланс + «связан»/блокировка + одна кнопка в шапке
+// /js/lobby-balance-fix.js — HUM-баланс + «связан»/блокировка + одна кнопка в шапке (по флагам linked)
 (function(){
   // ----- helpers -----
-  function qs(s){ return document.querySelector(s); }
   function byId(id){ return document.getElementById(id); }
   function readMeta(name){ const m=document.querySelector(`meta[name="${name}"]`); return m?(m.getAttribute('content')||'').trim():''; }
   function API(){ return readMeta('api-base') || (window.API_BASE||'').trim() || 'https://vercel2pr.onrender.com'; }
@@ -131,7 +130,7 @@
     const avatarEl = byId('user-avatar');
     const balanceWrap = byId('user-balance');
     const balSpan = balanceWrap ? balanceWrap.querySelector('[data-balance]') : null;
-    const note = byId('provider-note');
+    const note = document.getElementById('provider-note');
 
     if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
     if (avatarEl && u.avatar) avatarEl.src = u.avatar;
@@ -153,11 +152,9 @@
     ]);
 
     let u = null;
-    let merged = false;
+    let merged = !!(me && me.linked && me.linked.vk && me.linked.tg);
 
     if (up && me && up.id === me.id) {
-      // TG уже привязан к primary — кошелёк общий
-      merged = true;
       u = {
         provider: (me.vk_id && !String(me.vk_id).startsWith('tg:')) ? 'vk' : 'tg',
         id: me.id,
