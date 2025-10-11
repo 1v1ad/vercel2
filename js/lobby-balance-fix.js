@@ -1,130 +1,136 @@
-/**
- * FEAT: lobby_balance_fix v6
- * WHY:  корректный провайдер, HUM-баланс; при TG и пустой фамилии — жёстко убираем следы VK-фамилии
- * DATE: 2025-10-11
- */
-(function (){
-  const TAG='[LBAL]';
-  function apiBase(){
-    if (typeof window.API_BASE==='string' && window.API_BASE) return window.API_BASE;
-    try{ const v=localStorage.getItem('ADMIN_API')||localStorage.getItem('admin_api'); if(v) return v; }catch{}
-    const mt=document.querySelector('meta[name="api-base"]'); if (mt?.content) return mt.content;
-    return 'https://vercel2pr.onrender.com';
+// /js/lobby-balance-fix.js — восстановление баланса и правильное размещение кнопки «Связать …»
+(function(){
+  // ------- helpers -------
+  function qs(s){ return document.querySelector(s); }
+  function byId(id){ return document.getElementById(id); }
+  function readMeta(name){
+    var m = document.querySelector('meta[name="'+name+'"]');
+    return m ? (m.getAttribute('content')||'').trim() : '';
   }
-  const API=apiBase();
-
-  const q=new URLSearchParams(location.search);
-  const provider=(q.get('provider')||'').trim().toLowerCase(); // 'tg'|'vk'
-  const rawId=(q.get('id')||'').trim();
-  const idNum=/^\d+$/.test(rawId)? Number(rawId) : NaN;
-
-  function setTxt(n,t){ if(n) n.textContent=String(t); }
-
-  function updateBalance(value){
-    const targets=[
-      document.querySelector('[data-balance]'),
-      document.getElementById('balance'),
-      document.querySelector('.pill .amount'),
-      document.querySelector('.balance-value')
-    ].filter(Boolean);
-    targets.forEach(n=>setTxt(n, value));
+  function API(){
+    return readMeta('api-base') || (window.API_BASE||'').trim() || 'https://vercel2pr.onrender.com';
+  }
+  function rub(n){
+    try { return '₽ ' + (Number(n)||0).toLocaleString('ru-RU'); } catch(_){ return '₽ 0'; }
+  }
+  function getDeviceId(){
     try{
-      const walker=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-      const rx=/(^|\s)[₽P]\s*\d[\d\s]*/;
-      const nodes=[];
-      while (walker.nextNode()){ const t=walker.currentNode; if(rx.test(t.nodeValue)) nodes.push(t); }
-      nodes.forEach(t=> t.nodeValue=t.nodeValue.replace(/\d[\d\s]*/, String(value)));
-    }catch{}
-  }
-
-  function nukeSurnameArtifacts(){
-    // очевидные элементы
-    document.querySelectorAll(
-      '.user-last,.surname,.family,.fam,[data-lastname],[data-user-last],.hdr-user .surname,.hdr-user .last'
-    ).forEach(n=>{ try{ n.textContent=''; }catch{} });
-
-    // в некоторых шаблонах имя и фамилия в разных <span>; оставим только первый текстовый
-    const box = document.querySelector('.hdr-user');
-    if (box) {
-      const texts = Array.from(box.querySelectorAll('span,div,p,strong,em')).filter(
-        el => el.childElementCount===0 && (el.textContent||'').trim().length>0
-      );
-      if (texts.length>1) texts.slice(1).forEach(el=>{ try{ el.textContent=''; }catch{} });
-    }
-  }
-
-  function updateNameAvatar(u){
-    const isTG = (u.provider||provider)==='tg';
-    const first = u.first_name || '';
-    const last  = isTG ? (u.last_name || '') : (u.last_name || '');
-    const full  = (first + (last ? ' ' + last : '')).trim();
-
-    let nameNode = document.querySelector('[data-user-name]')
-       || document.querySelector('.user-name')
-       || document.querySelector('.hdr-user .name')
-       || document.querySelector('.hdr-user [class*="name"]');
-
-    if (!nameNode) {
-      // жёсткий fallback: первый «текстовый» элемент в .hdr-user
-      const box = document.querySelector('.hdr-user');
-      if (box) {
-        const candidates = Array.from(box.querySelectorAll('span,div,p,strong,em')).filter(
-          el => el.childElementCount===0 && !/img|button|a/i.test(el.tagName) && (el.textContent||'').trim().length>0
-        );
-        nameNode = candidates[0] || null;
+      var id = localStorage.getItem('device_id');
+      if(!id){
+        id = (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(16)+Math.random().toString(16).slice(2)));
+        localStorage.setItem('device_id', id);
       }
-    }
-
-    if (nameNode) setTxt(nameNode, full);
-    if (isTG && !last) nukeSurnameArtifacts();
-
-    const avatarImg = document.querySelector('[data-user-avatar]')
-       || document.querySelector('.user-avatar img')
-       || document.querySelector('.avatar img')
-       || document.querySelector('.hdr-user img');
-    if (avatarImg && u.avatar) avatarImg.src = u.avatar;
+      document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';
+      return id;
+    }catch(_){ return null; }
   }
 
-  function updateSource(u){
-    const n=document.querySelector('[data-source]')||document.getElementById('data_source');
-    if (n) n.textContent = String(u.provider || provider || '').toUpperCase();
-    try{ if (window.__setLinkButtons) window.__setLinkButtons(u.provider || provider); }catch{}
-  }
-
-  async function fetchUserById(){
-    if (!Number.isFinite(idNum)) return null;
-    const r = await fetch(`${API}/api/user/${idNum}`, { credentials:'include', cache:'no-store' });
-    if (r.ok) return r.json();
-    return null;
-  }
-  async function fetchByProvider(){
-    if (!provider || !rawId) return null;
-    const pid = encodeURIComponent(rawId);
-    const r = await fetch(`${API}/api/user/p/${provider}/${pid}`, { credentials:'include', cache:'no-store' });
-    if (r.ok) return r.json();
-    return null;
-  }
-
-  async function run(){
+  // ------- баланс из /api/me -------
+  async function refreshBalance(){
     try{
-      let data = await fetchUserById();
-      if (!data || data.ok===false) data = await fetchByProvider();
-      if (!data || data.ok===false) return;
-      const u = data.user || data;
-      if (typeof u.balance === 'number') updateBalance(u.balance);
-      updateNameAvatar(u);
-      updateSource(u);
-    }catch(e){ console.warn(TAG,e); }
+      var r = await fetch(API() + '/api/me', { credentials:'include', cache:'no-store' });
+      if(!r.ok) throw 0;
+      var j = await r.json();
+      if (!j || !j.ok || !j.user) throw 0;
+      var bal = Number(j.user.balance || 0);
+      var balSpan = document.querySelector('[data-balance]');
+      if (balSpan) balSpan.textContent = String(bal);
+      else {
+        var pill = byId('user-balance');
+        if (pill) pill.textContent = rub(bal);
+      }
+      // проставим подпись источника, если её ещё не выставили
+      var note = byId('provider-note');
+      if (note && !note.textContent) {
+        var provider = (j.user.vk_id && !String(j.user.vk_id).startsWith('tg:')) ? 'vk' : 'tg';
+        note.textContent = 'Источник данных: ' + provider.toUpperCase();
+      }
+      return j.user;
+    }catch(_){
+      return null; // тихо падаем, страница рендерится дальше
+    }
   }
 
-  function wireLinkers(){
-    const btnVK=document.getElementById('btnLinkVK')||document.querySelector('[data-link-vk]');
-    const btnTG=document.getElementById('btnLinkTG')||document.querySelector('[data-link-tg]');
-    const open=(url)=>{ try{ location.href=url; }catch{ window.open(url,'_self'); } };
-    if(btnVK) btnVK.addEventListener('click', e=>{ e.preventDefault(); open(`${API}/api/profile/link/start?vk=1`); });
-    if(btnTG) btnTG.addEventListener('click', e=>{ e.preventDefault(); open(`${API}/api/profile/link/start?tg=1`); });
+  // ------- запуск линковки ВК/TG -------
+  function startLinkVK(){
+    var ret = encodeURIComponent(location.href);
+    var url = API() + '/api/auth/vk/start?mode=link&return=' + ret;
+    var did = getDeviceId();
+    if (did) url += '&device_id=' + encodeURIComponent(did);
+    window.location.href = url;
+  }
+  function ensureTelegramScript(){
+    if (window.Telegram && window.Telegram.Login && typeof Telegram.Login.auth === 'function') return Promise.resolve(true);
+    return new Promise(function(resolve){
+      var s = document.createElement('script');
+      s.src = 'https://telegram.org/js/telegram-widget.js?22';
+      s.async = true;
+      s.onload = function(){ resolve(true); };
+      s.onerror = function(){ resolve(false); };
+      document.head.appendChild(s);
+    });
+  }
+  async function startLinkTG(){
+    var ok = await ensureTelegramScript();
+    if(!ok){ alert('Не удалось загрузить Telegram Login. Обновите страницу и повторите.'); return; }
+    var did = getDeviceId();
+    var botId = (window.TG_BOT_ID ? Number(window.TG_BOT_ID) : null);
+    if (!botId) { 
+      console.warn('[link-tg] нет TG_BOT_ID'); 
+      alert('Не указан ID Telegram-бота для линковки.'); 
+      return; 
+    }
+    try{
+      Telegram.Login.auth({ bot_id: botId, request_access: 'write' }, function(user){
+        if(!user || !user.id){ alert('Telegram не прислал профиль.'); return; }
+        var p = new URLSearchParams(Object.assign({}, user, { mode:'link', primary_uid:'', device_id:String(did||'') }));
+        window.location.href = API() + '/tg/callback?' + p.toString();
+      });
+    }catch(e){
+      console.error(e);
+      alert('Не удалось запустить Telegram Login.');
+    }
   }
 
-  wireLinkers();
-  run();
+  // ------- правильная кнопка рядом с балансом -------
+  function placeHeaderLinkButton(currentProvider){
+    // прячем левый «самодельный» блок
+    var leftBox = byId('link-actions');
+    if (leftBox) leftBox.classList.add('hidden');
+
+    var btnTG = byId('link-tg');
+    var btnVK = byId('link-vk');
+
+    if (currentProvider === 'tg'){
+      // показываем синюю VK-кнопку у баланса
+      if (btnVK){
+        btnVK.classList.add('vk');
+        btnVK.style.display = 'inline-flex';
+        btnVK.onclick = function(e){ e.preventDefault(); startLinkVK(); };
+      }
+      if (btnTG) btnTG.style.display = 'none';
+    } else if (currentProvider === 'vk'){
+      if (btnTG){
+        btnTG.classList.add('tg');
+        btnTG.style.display = 'inline-flex';
+        btnTG.onclick = function(e){ e.preventDefault(); startLinkTG(); };
+      }
+      if (btnVK) btnVK.style.display = 'none';
+    }
+  }
+
+  // ------- init -------
+  document.addEventListener('DOMContentLoaded', async function(){
+    var user = await refreshBalance();
+    var provider = 'tg';
+    try{
+      if (user) {
+        provider = (user.vk_id && !String(user.vk_id).startsWith('tg:')) ? 'vk' : 'tg';
+      } else {
+        var p = new URLSearchParams(location.search);
+        provider = p.get('provider') || 'tg';
+      }
+    }catch(_){}
+    placeHeaderLinkButton(provider);
+  });
 })();
