@@ -1,34 +1,33 @@
 /**
- * FEAT: lobby_balance_fix v5
- * WHY:  корректный провайдер, баланс HUM, безопасное обновление имени/аватара;
- *       при TG и пустой last_name — затираем любые артефакты фамилии в DOM
+ * FEAT: lobby_balance_fix v6
+ * WHY:  корректный провайдер, HUM-баланс; при TG и пустой фамилии — жёстко убираем следы VK-фамилии
  * DATE: 2025-10-11
  */
 (function (){
   const TAG='[LBAL]';
-  function getApiBase(){
+  function apiBase(){
     if (typeof window.API_BASE==='string' && window.API_BASE) return window.API_BASE;
     try{ const v=localStorage.getItem('ADMIN_API')||localStorage.getItem('admin_api'); if(v) return v; }catch{}
     const mt=document.querySelector('meta[name="api-base"]'); if (mt?.content) return mt.content;
     return 'https://vercel2pr.onrender.com';
   }
-  const API=getApiBase();
+  const API=apiBase();
 
   const q=new URLSearchParams(location.search);
-  const provider=(q.get('provider')||'').trim().toLowerCase(); // 'tg' | 'vk'
+  const provider=(q.get('provider')||'').trim().toLowerCase(); // 'tg'|'vk'
   const rawId=(q.get('id')||'').trim();
   const idNum=/^\d+$/.test(rawId)? Number(rawId) : NaN;
 
-  function setText(node, txt){ if(node) node.textContent=String(txt); }
+  function setTxt(n,t){ if(n) n.textContent=String(t); }
 
-  function updateBalanceEverywhere(value){
+  function updateBalance(value){
     const targets=[
       document.querySelector('[data-balance]'),
       document.getElementById('balance'),
       document.querySelector('.pill .amount'),
       document.querySelector('.balance-value')
     ].filter(Boolean);
-    targets.forEach(n=>setText(n, value));
+    targets.forEach(n=>setTxt(n, value));
     try{
       const walker=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
       const rx=/(^|\s)[₽P]\s*\d[\d\s]*/;
@@ -38,37 +37,60 @@
     }catch{}
   }
 
-  function clearLastNameArtifacts(){
-    document.querySelectorAll('.user-last,.surname,.hdr-user .last,[data-lastname]')
-      .forEach(n=>{ try{ n.textContent=''; }catch{} });
+  function nukeSurnameArtifacts(){
+    // очевидные элементы
+    document.querySelectorAll(
+      '.user-last,.surname,.family,.fam,[data-lastname],[data-user-last],.hdr-user .surname,.hdr-user .last'
+    ).forEach(n=>{ try{ n.textContent=''; }catch{} });
+
+    // в некоторых шаблонах имя и фамилия в разных <span>; оставим только первый текстовый
+    const box = document.querySelector('.hdr-user');
+    if (box) {
+      const texts = Array.from(box.querySelectorAll('span,div,p,strong,em')).filter(
+        el => el.childElementCount===0 && (el.textContent||'').trim().length>0
+      );
+      if (texts.length>1) texts.slice(1).forEach(el=>{ try{ el.textContent=''; }catch{} });
+    }
   }
 
   function updateNameAvatar(u){
-    const nameNode = document.querySelector('[data-user-name]')
-       || document.querySelector('.user-name')
-       || document.querySelector('.hdr-user .name')
-       || document.querySelector('.hdr-user [class*="name"]');
-    const avatarImg = document.querySelector('[data-user-avatar]')
-       || document.querySelector('.user-avatar img')
-       || document.querySelector('.avatar img')
-       || document.querySelector('.hdr-user img');
-
     const isTG = (u.provider||provider)==='tg';
     const first = u.first_name || '';
     const last  = isTG ? (u.last_name || '') : (u.last_name || '');
     const full  = (first + (last ? ' ' + last : '')).trim();
 
-    if (nameNode) nameNode.textContent = full;
-    if (isTG && !last) clearLastNameArtifacts();
+    let nameNode = document.querySelector('[data-user-name]')
+       || document.querySelector('.user-name')
+       || document.querySelector('.hdr-user .name')
+       || document.querySelector('.hdr-user [class*="name"]');
+
+    if (!nameNode) {
+      // жёсткий fallback: первый «текстовый» элемент в .hdr-user
+      const box = document.querySelector('.hdr-user');
+      if (box) {
+        const candidates = Array.from(box.querySelectorAll('span,div,p,strong,em')).filter(
+          el => el.childElementCount===0 && !/img|button|a/i.test(el.tagName) && (el.textContent||'').trim().length>0
+        );
+        nameNode = candidates[0] || null;
+      }
+    }
+
+    if (nameNode) setTxt(nameNode, full);
+    if (isTG && !last) nukeSurnameArtifacts();
+
+    const avatarImg = document.querySelector('[data-user-avatar]')
+       || document.querySelector('.user-avatar img')
+       || document.querySelector('.avatar img')
+       || document.querySelector('.hdr-user img');
     if (avatarImg && u.avatar) avatarImg.src = u.avatar;
   }
 
-  function updateSourceLabel(u){
-    const srcNode=document.querySelector('[data-source]')||document.getElementById('data_source');
-    if (srcNode) srcNode.textContent = String(u.provider || provider || '').toUpperCase();
+  function updateSource(u){
+    const n=document.querySelector('[data-source]')||document.getElementById('data_source');
+    if (n) n.textContent = String(u.provider || provider || '').toUpperCase();
   }
 
-  async function fetchByInternalId(){
+  async function fetchUserById(){
     if (!Number.isFinite(idNum)) return null;
     const r = await fetch(`${API}/api/user/${idNum}`, { credentials:'include', cache:'no-store' });
     if (r.ok) return r.json();
@@ -83,18 +105,17 @@
   }
 
   async function run(){
-    try {
-      let data = await fetchByInternalId();
-      if (!data || data.ok === false) data = await fetchByProvider();
-      if (!data || data.ok === false) { console.warn(TAG,'no data'); return; }
+    try{
+      let data = await fetchUserById();
+      if (!data || data.ok===false) data = await fetchByProvider();
+      if (!data || data.ok===false) return;
       const u = data.user || data;
-      if (typeof u.balance === 'number') updateBalanceEverywhere(u.balance);
+      if (typeof u.balance === 'number') updateBalance(u.balance);
       updateNameAvatar(u);
-      updateSourceLabel(u);
-    } catch(e){ console.warn(TAG,e); }
+      updateSource(u);
+    }catch(e){ console.warn(TAG,e); }
   }
 
-  // linkers
   function wireLinkers(){
     const btnVK=document.getElementById('btnLinkVK')||document.querySelector('[data-link-vk]');
     const btnTG=document.getElementById('btnLinkTG')||document.querySelector('[data-link-tg]');
