@@ -64,170 +64,164 @@
 
 <script>
 /** ==== utils ==== */
-const $ = (s)=>document.querySelector(s);
-const log = (s)=>{ $('#log').textContent = String(s||''); };
+<script>
+  const $ = (s)=>document.querySelector(s);
+  const log = (s)=>{ $('#log')?.textContent = String(s||''); };
 
-function apiBase(){
-  const p = new URLSearchParams(location.search);
-  const fromQuery = p.get('api'); if (fromQuery) return fromQuery;
-  const inField = ($('#api')?.value || '').trim(); if (inField) return inField;
-  const mt = document.querySelector('meta[name="api-base"]'); if (mt?.content) return mt.content;
-  return 'https://vercel2pr.onrender.com';
-}
-function adminPwd(){
-  const q = new URLSearchParams(location.search).get('pwd');
-  if (q) return q.trim();
-  try {
-    const s = sessionStorage.getItem('admin_pwd'); if (s) return s;
-    const l = localStorage.getItem('admin_pwd');  if (l) return l;
-  } catch {}
-  return ($('#pwd')?.value || '').trim();
-}
-function setInitialFromStorage(){
-  const p = new URLSearchParams(location.search);
-  if (p.get('api')) $('#api').value = p.get('api');
-  if (p.get('user_id')) $('#uid').value = p.get('user_id');
-  try {
-    const s = sessionStorage.getItem('admin_pwd') || localStorage.getItem('admin_pwd') || '';
-    if (s) $('#pwd').value = s;
-    const a = localStorage.getItem('admin_api') || '';
-    if (a && !$('#api').value) $('#api').value = a;
-  } catch {}
-}
-setInitialFromStorage();
+  function apiBase(){
+    const p = new URLSearchParams(location.search);
+    const fromQuery = p.get('api');
+    if (fromQuery) return fromQuery;
+    const inField = ($('#api')?.value || '').trim();
+    if (inField) return inField;
+    const mt = document.querySelector('meta[name="api-base"]');
+    if (mt?.content) return mt.content;
+    return 'https://vercel2pr.onrender.com';
+  }
+  function adminPwd(){
+    const p = new URLSearchParams(location.search);
+    return (p.get('pwd') || $('#pwd')?.value || '').trim();
+  }
+  (function setInitial(){
+    const p = new URLSearchParams(location.search);
+    if (p.get('api')) $('#api').value = p.get('api');
+    if (p.get('user_id')) $('#uid').value = p.get('user_id');
+  })();
 
-async function post(url, body, pwd){
-  const r = await fetch(url, {
-    method:'POST',
-    headers: { 'Content-Type':'application/json', 'X-Admin-Password': pwd },
-    body: JSON.stringify(body)
+  async function post(url, body, pwd){
+    const r = await fetch(url, {
+      method:'POST',
+      headers: { 'Content-Type':'application/json', 'X-Admin-Password': pwd },
+      body: JSON.stringify(body)
+    });
+    let data={}; try{ data=await r.json(); }catch{}
+    return { r, data };
+  }
+
+  // Сохранить API/пароль в localStorage (чтобы не светить в адресной строке)
+  $('#save')?.addEventListener('click', ()=>{
+    try {
+      localStorage.setItem('admin_api', ($('#api')?.value||'').trim());
+      localStorage.setItem('admin_pwd', ($('#pwd')?.value||'').trim());
+      log('Сохранено.');
+    } catch {}
   });
-  let data={}; try{ data=await r.json(); }catch{}
-  return { r, data };
-}
+  // Подставляем сохранённое
+  (function loadSaved(){
+    try{
+      const a = localStorage.getItem('admin_api'); if (a) $('#api').value = a;
+      const p = localStorage.getItem('admin_pwd'); if (p) $('#pwd').value = p;
+    }catch{}
+  })();
 
-$('#save').addEventListener('click', ()=>{
-  const api = ($('#api')?.value || '').trim();
-  const pwd = ($('#pwd')?.value || '').trim();
-  try {
-    if (api) localStorage.setItem('admin_api', api);
-    if (pwd) localStorage.setItem('admin_pwd', pwd);
-    log('Сохранено локально.');
-  } catch { log('Не удалось сохранить в localStorage'); }
-});
+  $('#go').addEventListener('click', async ()=>{
+    const API = apiBase();
+    const pwd = adminPwd() || localStorage.getItem('admin_pwd') || '';
+    const uid = Number(($('#uid')?.value || '').trim());
+    const amt = Number(($('#amt')?.value || '').trim());
+    const cmt = ($('#cmt')?.value || '').trim();
 
-$('#go').addEventListener('click', async ()=>{
-  const API = apiBase();
-  const pwd = adminPwd();
-  const uid = Number(($('#uid')?.value || '').trim());
-  const amt = Math.trunc(Number(($('#amt')?.value || '').trim() || 0));
-  const cmt = ($('#cmt')?.value || '').trim();
+    if(!API || !pwd || !uid || !amt || !cmt){ log('Заполни все поля'); return; }
 
-  if(!API || !pwd || !uid || !amt || !cmt){
-    log('Заполни все поля (нужны API, пароль, user_id, сумма ≠ 0, комментарий).'); return;
+    const payload = { user_id: uid, amount: amt, comment: cmt };
+
+    let { r, data } = await post(`${API}/api/admin/users/${uid}/topup`, payload, pwd);
+    if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup`, payload, pwd)); }
+
+    if (!r.ok || data?.ok===false) {
+      log(`Ошибка: ${data?.error || r.statusText || ('HTTP '+r.status)}`);
+    } else {
+      log('Готово: ' + JSON.stringify(data));
+      try{ $('#amt').value=''; $('#cmt').value=''; }catch{}
+      loadHistory().catch(()=>{});
+    }
+  });
+
+  // ====== HISTORY ======
+  async function fetchHistory(){
+    const API = apiBase();
+    const pwd = adminPwd() || localStorage.getItem('admin_pwd') || '';
+    const url = `${API}/api/admin/events?type=admin_topup&take=100&skip=0`;
+    const r = await fetch(url, { headers: { 'X-Admin-Password': pwd } });
+    let data={}; try{ data = await r.json(); }catch{}
+    return { r, data };
   }
 
-  const payload = {
-    user_id: uid, amount: amt, comment: cmt,
-    value: amt, sum: amt, delta: amt,
-    note: cmt, reason: cmt, description: cmt
-  };
+  function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
 
-  let { r, data } = await post(`${API}/api/admin/users/${uid}/topup`, payload, pwd);
-  if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup`, payload, pwd)); }
+  let lastRows = [];
+  let sortKey = 'created_at';
+  let sortDir = -1; // desc
 
-  if (!r.ok || data?.ok===false) {
-    log(`Ошибка: ${data?.error || r.statusText || ('HTTP '+r.status)}`);
-  } else {
-    log('Готово: ' + JSON.stringify(data));
-    try{ $('#amt').value=''; $('#cmt').value=''; }catch{}
-    loadHistory().catch(()=>{});
+  function applySort(arr){
+    const a = [...arr];
+    a.sort((x,y)=>{
+      const vx = x[sortKey]; const vy = y[sortKey];
+      if (vx==null && vy==null) return 0;
+      if (vx==null) return 1;
+      if (vy==null) return -1;
+      if (sortKey === 'amount' || sortKey === 'user_id') {
+        return (vx - vy) * sortDir;
+      }
+      // created_at string
+      return (vx < vy ? -1 : vx > vy ? 1 : 0) * sortDir;
+    });
+    return a;
   }
-});
 
-/** ====== HISTORY + сортировки ====== */
-let HIST = [];  // нормализованные строки
-let sortKey = 'time'; // time|uid|amt
-let sortDir = -1;     // 1 asc, -1 desc
+  function renderHistory(list){
+    lastRows = Array.isArray(list) ? list : [];
+    const tbody = $('#tbl tbody');
+    tbody.innerHTML = '';
+    const rows = applySort(lastRows);
 
-async function fetchHistory(){
-  const API = apiBase();
-  const pwd = adminPwd();
-  const urls = [
-    `${API}/api/admin/events?type=admin_topup&take=100&skip=0`,
-    `${API}/api/admin/events?take=100&skip=0&search=admin_topup`
-  ];
-  for (const url of urls) {
-    const r = await fetch(url, { headers: { 'X-Admin-Password': pwd }, cache:'no-store' });
-    if (r.ok) {
-      const data = await r.json();
-      return data?.events || data?.rows || data?.list || [];
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td class="muted" colspan="5">Пока пусто</td></tr>';
+      return;
+    }
+    for (const ev of rows) {
+      const when = ev.created_at;
+      const uid  = ev.user_id ?? '—';
+      const hum  = ev.hum_id ?? ev.HUMid ?? '—';
+      const amt  = Number(ev.amount || 0);
+      const cmt  = (ev.comment || '—').toString();
+
+      const pillClass = amt < 0 ? 'pill-neg' : 'pill-ok';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="muted">${fmt(when)}</td>
+        <td>${ev.admin || '—'}</td>
+        <td>${uid} / ${hum}</td>
+        <td><span class="${pillClass}">${amt>0 ? '+'+amt : amt}</span></td>
+        <td>${cmt.replace(/[<>]/g, s => s === '<' ? '&lt;' : '&gt;')}</td>
+      `;
+      tbody.appendChild(tr);
     }
   }
-  return [];
-}
-const pick = (o,ks,d)=>{ for(const k of ks){ if(o && o[k]!=null) return o[k]; } return d; };
-const toNum = (x)=>{ const n=Number(x); return Number.isFinite(n)?n:0; };
 
-function normalize(list){
-  return list.map(raw=>{
-    const p = raw.payload || {};
-    let amt = pick(raw, ['amount'], null);
-    if (amt==null) amt = pick(p, ['amount','value','sum','delta'], 0);
-    amt = toNum(amt);
-    return {
-      when: new Date(pick(raw, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], Date.now()))),
-      admin: pick(raw, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—')),
-      uid: pick(raw, ['user_id'], pick(p, ['user_id'], '—')),
-      hum: pick(raw, ['hum_id'], pick(p, ['hum_id'], '—')),
-      amt,
-      comment: String(pick(raw, ['comment'], pick(p, ['comment','note','reason','description'], '')) || '')
-    };
-  });
-}
-function applySort(){
-  const ths = Array.from(document.querySelectorAll('#tbl thead th[data-sort]'));
-  ths.forEach(th=>th.classList.toggle('th-active', th.dataset.sort===sortKey));
-  const arr = [...HIST].sort((a,b)=>{
-    if (sortKey==='time') return sortDir*(a.when - b.when);
-    if (sortKey==='uid')  return sortDir*((a.uid||0)-(b.uid||0) || (a.hum||0)-(b.hum||0));
-    if (sortKey==='amt')  return sortDir*(a.amt - b.amt);
-    return 0;
-  });
-  render(arr);
-}
-function render(list){
-  const tbody = $('#tbl tbody'); tbody.innerHTML='';
-  if (!list.length){ tbody.innerHTML='<tr><td colspan="5" class="muted">Пока пусто</td></tr>'; return; }
-  for (const r of list){
-    const cls = r.amt>=0 ? 'pill-ok' : 'pill-bad';
-    const sign = r.amt>0 ? '+' : '';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="muted">${r.when.toLocaleString()}</td>
-      <td>${r.admin || '—'}</td>
-      <td>${r.uid} / ${r.hum}</td>
-      <td><span class="${cls}">${sign}${r.amt}</span></td>
-      <td>${r.comment ? r.comment.replace(/[<>]/g, s => s==='<'?'&lt;':'&gt;') : '—'}</td>
-    `;
-    tbody.appendChild(tr);
+  async function loadHistory(){
+    const { r, data } = await fetchHistory();
+    if (!r.ok || data?.ok===false) {
+      log(data?.error || ('HTTP '+r.status)); return;
+    }
+    renderHistory(data?.events || data?.rows || []);
   }
-}
 
-async function loadHistory(){
-  const raw = await fetchHistory();
-  HIST = normalize(raw);
-  applySort();
-}
-document.querySelectorAll('#tbl thead th[data-sort]').forEach(th=>{
-  th.addEventListener('click', ()=>{
-    const k = th.dataset.sort;
-    if (k===sortKey) sortDir *= -1; else { sortKey=k; sortDir = (k==='time'?-1:1); }
-    applySort();
-  });
-});
-$('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
-loadHistory().catch(()=>{});
+  // Заголовки сортировки
+  (function wireSort(){
+    const ths = document.querySelectorAll('#tbl thead th');
+    ths[0]?.addEventListener('click', ()=>{ sortKey='created_at'; sortDir = sortDir*(sortKey==='created_at'?-1:-1); renderHistory(lastRows); });
+    ths[2]?.addEventListener('click', ()=>{ sortKey='user_id';   sortDir = sortKey==='user_id'? -sortDir : 1; renderHistory(lastRows); });
+    ths[3]?.addEventListener('click', ()=>{ sortKey='amount';    sortDir = sortKey==='amount'? -sortDir : -1; renderHistory(lastRows); });
+  })();
+
+  $('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
+  loadHistory().catch(()=>{});
 </script>
+<style>
+  .pill-ok{background:#1f8a4c;color:#eafff3;padding:2px 8px;border-radius:999px;font-weight:700}
+  .pill-neg{background:#a33a3a;color:#ffeaea;padding:2px 8px;border-radius:999px;font-weight:700}
+</style>
+ 
 </body>
 </html>
