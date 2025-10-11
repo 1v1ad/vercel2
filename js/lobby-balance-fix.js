@@ -1,5 +1,8 @@
 /**
- * r5: provider-aware fallback + stronger DOM updates + TG last-name logic
+ * FEAT: lobby_balance_fix v5
+ * WHY:  корректный провайдер, баланс HUM, безопасное обновление имени/аватара;
+ *       при TG и пустой last_name — затираем любые артефакты фамилии в DOM
+ * DATE: 2025-10-11
  */
 (function (){
   const TAG='[LBAL]';
@@ -26,7 +29,6 @@
       document.querySelector('.balance-value')
     ].filter(Boolean);
     targets.forEach(n=>setText(n, value));
-    // brute-force fallback: replace ₽ #### in plain text nodes
     try{
       const walker=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
       const rx=/(^|\s)[₽P]\s*\d[\d\s]*/;
@@ -36,49 +38,28 @@
     }catch{}
   }
 
-  // --- имя/фамилия: из ТГ, если пришли через TG; VK-фаcмилию не тянем, когда у TG пусто
+  function clearLastNameArtifacts(){
+    document.querySelectorAll('.user-last,.surname,.hdr-user .last,[data-lastname]')
+      .forEach(n=>{ try{ n.textContent=''; }catch{} });
+  }
+
   function updateNameAvatar(u){
     const nameNode = document.querySelector('[data-user-name]')
-        || document.querySelector('.user-name')
-        || document.querySelector('.hdr-user .name')
-        || document.querySelector('.hdr-user [class*="name"]');
-
-    const lastNode = document.querySelector('[data-user-last]')
-        || document.querySelector('.user-last')
-        || document.querySelector('.hdr-user .last')
-        || null;
-
+       || document.querySelector('.user-name')
+       || document.querySelector('.hdr-user .name')
+       || document.querySelector('.hdr-user [class*="name"]');
     const avatarImg = document.querySelector('[data-user-avatar]')
-        || document.querySelector('.user-avatar img')
-        || document.querySelector('.avatar img')
-        || document.querySelector('.hdr-user img');
+       || document.querySelector('.user-avatar img')
+       || document.querySelector('.avatar img')
+       || document.querySelector('.hdr-user img');
 
-    // базовые значения с бэка
-    let first = u.first_name || '';
-    let last  = u.last_name  || '';
+    const isTG = (u.provider||provider)==='tg';
+    const first = u.first_name || '';
+    const last  = isTG ? (u.last_name || '') : (u.last_name || '');
+    const full  = (first + (last ? ' ' + last : '')).trim();
 
-    if (provider === 'tg') {
-      const qFirst = q.get('first_name') || '';
-      const qLast  = q.get('last_name')  || '';
-      if (qFirst) first = qFirst;
-      // фамилию берём СТРОГО из параметров ТГ; если её нет — пуста
-      last = qLast ? qLast : '';
-    }
-
-    // если верстка одним узлом — пишем "Имя" либо "Имя Фамилия";
-    // если есть отдельный lastNode — кладём отдельно и даём пустоту, если у ТГ нет last_name
-    if (nameNode && !lastNode) {
-      nameNode.textContent = (first + (last ? ' ' + last : '')).trim();
-    } else {
-      if (nameNode) nameNode.textContent = first.trim();
-      if (lastNode)  lastNode.textContent = last.trim();
-    }
-
-    // на всякий — вычищаем любые "остаточные фамилии" в явных спанах
-    if (!last) {
-      document.querySelectorAll('[data-user-last], .user-last, .hdr-user .last').forEach(n => n.textContent = '');
-    }
-
+    if (nameNode) nameNode.textContent = full;
+    if (isTG && !last) clearLastNameArtifacts();
     if (avatarImg && u.avatar) avatarImg.src = u.avatar;
   }
 
