@@ -16,10 +16,12 @@
     .log{margin-top:12px;font-size:13px;opacity:.9;white-space:pre-wrap}
     table{width:100%;border-collapse:separate;border-spacing:0;border:1px solid #23324a;border-radius:14px;overflow:hidden}
     th,td{padding:10px 12px;border-bottom:1px solid #1d2a40;font-size:14px}
-    th{background:#0f1730;color:#9fb4d9;text-align:left}
+    th{background:#0f1730;color:#9fb4d9;text-align:left;cursor:pointer;user-select:none}
     tr:nth-child(even) td{background:#0b1327}
     .muted{opacity:.75}
     .pill-ok{background:#1f8a4c;color:#eafff3;padding:2px 8px;border-radius:999px;font-weight:700}
+    .pill-bad{background:#9b1c31;color:#ffecee;padding:2px 8px;border-radius:999px;font-weight:700}
+    .th-active{color:#d6e6ff}
   </style>
   <link rel="icon" href="/assets/favicon.ico">
 </head>
@@ -42,14 +44,14 @@
 
     <div class="card">
       <h3 style="margin:0 0 12px">История ручных пополнений</h3>
-      <div class="muted" style="margin:-6px 0 10px">Показываем последние 100 событий типа <code>admin_topup</code>.</div>
+      <div class="muted" style="margin:-6px 0 10px">Показываем последние 100 событий типа <code>admin_topup</code>. Клик по заголовку сортирует.</div>
       <table id="tbl">
         <thead>
           <tr>
-            <th>Время</th>
+            <th data-sort="time">Время</th>
             <th>Админ</th>
-            <th>Кому (user_id / HUMid)</th>
-            <th>Сумма</th>
+            <th data-sort="uid">Кому (user_id / HUMid)</th>
+            <th data-sort="amt">Сумма</th>
             <th>Комментарий</th>
           </tr>
         </thead>
@@ -67,12 +69,9 @@ const log = (s)=>{ $('#log').textContent = String(s||''); };
 
 function apiBase(){
   const p = new URLSearchParams(location.search);
-  const fromQuery = p.get('api');
-  if (fromQuery) return fromQuery;
-  const inField = ($('#api')?.value || '').trim();
-  if (inField) return inField;
-  const mt = document.querySelector('meta[name="api-base"]');
-  if (mt?.content) return mt.content;
+  const fromQuery = p.get('api'); if (fromQuery) return fromQuery;
+  const inField = ($('#api')?.value || '').trim(); if (inField) return inField;
+  const mt = document.querySelector('meta[name="api-base"]'); if (mt?.content) return mt.content;
   return 'https://vercel2pr.onrender.com';
 }
 function adminPwd(){
@@ -124,9 +123,10 @@ $('#go').addEventListener('click', async ()=>{
   const amt = Math.trunc(Number(($('#amt')?.value || '').trim() || 0));
   const cmt = ($('#cmt')?.value || '').trim();
 
-  if(!API || !pwd || !uid || !amt || !cmt){ log('Заполни все поля (нужны API, пароль, user_id, сумма ≠ 0, комментарий).'); return; }
+  if(!API || !pwd || !uid || !amt || !cmt){
+    log('Заполни все поля (нужны API, пароль, user_id, сумма ≠ 0, комментарий).'); return;
+  }
 
-  // Разрешаем и положительные, и отрицательные суммы
   const payload = {
     user_id: uid, amount: amt, comment: cmt,
     value: amt, sum: amt, delta: amt,
@@ -145,79 +145,87 @@ $('#go').addEventListener('click', async ()=>{
   }
 });
 
-/** ====== HISTORY ====== */
+/** ====== HISTORY + сортировки ====== */
+let HIST = [];  // нормализованные строки
+let sortKey = 'time'; // time|uid|amt
+let sortDir = -1;     // 1 asc, -1 desc
+
 async function fetchHistory(){
   const API = apiBase();
   const pwd = adminPwd();
-
-  // Только заголовок — без передачи пароля в URL
-  const variants = [
+  const urls = [
     `${API}/api/admin/events?type=admin_topup&take=100&skip=0`,
     `${API}/api/admin/events?take=100&skip=0&search=admin_topup`
   ];
-  for (const url of variants) {
+  for (const url of urls) {
     const r = await fetch(url, { headers: { 'X-Admin-Password': pwd }, cache:'no-store' });
-    try {
-      if (r.ok) {
-        const data = await r.json();
-        return { r, data };
-      }
-    } catch {}
+    if (r.ok) {
+      const data = await r.json();
+      return data?.events || data?.rows || data?.list || [];
+    }
   }
-  return { r: { ok:false, status:500 }, data:{} };
+  return [];
 }
+const pick = (o,ks,d)=>{ for(const k of ks){ if(o && o[k]!=null) return o[k]; } return d; };
+const toNum = (x)=>{ const n=Number(x); return Number.isFinite(n)?n:0; };
 
-function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
-function pick(obj, keys, dflt){ for (const k of keys) { if (obj!=null && obj[k]!=null) return obj[k]; } return dflt; }
-
-// вспомогалка для старых записей без amount
-function computeDeltas(list){ return list.map(x=>({ raw:x, when: x.created_at || x.ts || x.time, uid: x.user_id, hum: x.HUMid, amt: Number(x.amount||0) })); }
-
-function renderHistory(listRaw){
-  const tbody = $('#tbl tbody');
-  tbody.innerHTML = '';
-  if (!Array.isArray(listRaw) || !listRaw.length) {
-    tbody.innerHTML = '<tr><td class="muted" colspan="5">Пока пусто</td></tr>';
-    return;
-  }
-
-  const withFallback = computeDeltas(listRaw);
-
-  for (const r of withFallback) {
-    const ev = r.raw || {};
-    const p  = ev.payload || {};
-    const when = r.when;
-    const who  = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
-    const uid  = r.uid ?? '—';
-    const hum  = r.hum ?? '—';
-
-    let amt = Number(pick(ev, ['amount'], null));
-    if (!Number.isFinite(amt)) amt = Number(pick(p, ['amount','value','sum','delta'], null));
-    if (!Number.isFinite(amt)) amt = Number(r.amt || 0);
-
-    const cmt = String(
-      pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], '')) || ''
-    );
-
+function normalize(list){
+  return list.map(raw=>{
+    const p = raw.payload || {};
+    let amt = pick(raw, ['amount'], null);
+    if (amt==null) amt = pick(p, ['amount','value','sum','delta'], 0);
+    amt = toNum(amt);
+    return {
+      when: new Date(pick(raw, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], Date.now()))),
+      admin: pick(raw, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—')),
+      uid: pick(raw, ['user_id'], pick(p, ['user_id'], '—')),
+      hum: pick(raw, ['hum_id'], pick(p, ['hum_id'], '—')),
+      amt,
+      comment: String(pick(raw, ['comment'], pick(p, ['comment','note','reason','description'], '')) || '')
+    };
+  });
+}
+function applySort(){
+  const ths = Array.from(document.querySelectorAll('#tbl thead th[data-sort]'));
+  ths.forEach(th=>th.classList.toggle('th-active', th.dataset.sort===sortKey));
+  const arr = [...HIST].sort((a,b)=>{
+    if (sortKey==='time') return sortDir*(a.when - b.when);
+    if (sortKey==='uid')  return sortDir*((a.uid||0)-(b.uid||0) || (a.hum||0)-(b.hum||0));
+    if (sortKey==='amt')  return sortDir*(a.amt - b.amt);
+    return 0;
+  });
+  render(arr);
+}
+function render(list){
+  const tbody = $('#tbl tbody'); tbody.innerHTML='';
+  if (!list.length){ tbody.innerHTML='<tr><td colspan="5" class="muted">Пока пусто</td></tr>'; return; }
+  for (const r of list){
+    const cls = r.amt>=0 ? 'pill-ok' : 'pill-bad';
+    const sign = r.amt>0 ? '+' : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="muted">${fmt(when)}</td>
-      <td>${who || '—'}</td>
-      <td>${uid} / ${hum}</td>
-      <td><span class="pill-ok">+${Number.isFinite(amt)?amt:0}</span></td>
-      <td>${cmt ? cmt.replace(/[<>]/g, s => s === '<' ? '&lt;' : '&gt;') : '—'}</td>
+      <td class="muted">${r.when.toLocaleString()}</td>
+      <td>${r.admin || '—'}</td>
+      <td>${r.uid} / ${r.hum}</td>
+      <td><span class="${cls}">${sign}${r.amt}</span></td>
+      <td>${r.comment ? r.comment.replace(/[<>]/g, s => s==='<'?'&lt;':'&gt;') : '—'}</td>
     `;
     tbody.appendChild(tr);
   }
 }
 
 async function loadHistory(){
-  const { r, data } = await fetchHistory();
-  if (r.status === 401) { log('401: проверь пароль (поле «Пароль») и нажми «Обновить историю».'); }
-  const list = data?.events || data?.rows || data?.list || [];
-  renderHistory(list);
+  const raw = await fetchHistory();
+  HIST = normalize(raw);
+  applySort();
 }
-
+document.querySelectorAll('#tbl thead th[data-sort]').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const k = th.dataset.sort;
+    if (k===sortKey) sortDir *= -1; else { sortKey=k; sortDir = (k==='time'?-1:1); }
+    applySort();
+  });
+});
 $('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
 loadHistory().catch(()=>{});
 </script>
