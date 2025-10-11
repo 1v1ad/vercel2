@@ -1,90 +1,59 @@
-// /js/lobby-balance-fix.js — восстановление баланса и правильное размещение кнопки «Связать …»
+// /js/lobby-balance-fix.js — баланс + бренд-кнопка рядом с балансом + линковка
 (function(){
-  // ------- helpers -------
+  // ----- helpers -----
   function qs(s){ return document.querySelector(s); }
   function byId(id){ return document.getElementById(id); }
-  function readMeta(name){
-    var m = document.querySelector('meta[name="'+name+'"]');
-    return m ? (m.getAttribute('content')||'').trim() : '';
-  }
-  function API(){
-    return readMeta('api-base') || (window.API_BASE||'').trim() || 'https://vercel2pr.onrender.com';
-  }
-  function rub(n){
-    try { return '₽ ' + (Number(n)||0).toLocaleString('ru-RU'); } catch(_){ return '₽ 0'; }
-  }
+  function readMeta(name){ const m=document.querySelector(`meta[name="${name}"]`); return m?(m.getAttribute('content')||'').trim():''; }
+  function API(){ return readMeta('api-base') || (window.API_BASE||'').trim() || 'https://vercel2pr.onrender.com'; }
+  function rub(n){ try{ return '₽ ' + (Number(n)||0).toLocaleString('ru-RU'); }catch(_){ return '₽ 0'; } }
   function getDeviceId(){
     try{
-      var id = localStorage.getItem('device_id');
+      let id = localStorage.getItem('device_id');
       if(!id){
-        id = (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(16)+Math.random().toString(16).slice(2)));
+        id = (crypto.randomUUID?crypto.randomUUID():(Date.now().toString(16)+Math.random().toString(16).slice(2)));
         localStorage.setItem('device_id', id);
       }
-      document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';
+      document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';
       return id;
     }catch(_){ return null; }
   }
-
-  // ------- баланс из /api/me -------
-  async function refreshBalance(){
-    try{
-      var r = await fetch(API() + '/api/me', { credentials:'include', cache:'no-store' });
-      if(!r.ok) throw 0;
-      var j = await r.json();
-      if (!j || !j.ok || !j.user) throw 0;
-      var bal = Number(j.user.balance || 0);
-      var balSpan = document.querySelector('[data-balance]');
-      if (balSpan) balSpan.textContent = String(bal);
-      else {
-        var pill = byId('user-balance');
-        if (pill) pill.textContent = rub(bal);
-      }
-      // проставим подпись источника, если её ещё не выставили
-      var note = byId('provider-note');
-      if (note && !note.textContent) {
-        var provider = (j.user.vk_id && !String(j.user.vk_id).startsWith('tg:')) ? 'vk' : 'tg';
-        note.textContent = 'Источник данных: ' + provider.toUpperCase();
-      }
-      return j.user;
-    }catch(_){
-      return null; // тихо падаем, страница рендерится дальше
-    }
-  }
-
-  // ------- запуск линковки ВК/TG -------
-  function startLinkVK(){
-    var ret = encodeURIComponent(location.href);
-    var url = API() + '/api/auth/vk/start?mode=link&return=' + ret;
-    var did = getDeviceId();
-    if (did) url += '&device_id=' + encodeURIComponent(did);
-    window.location.href = url;
+  function tgBotId(){
+    const raw = readMeta('tg-bot-id') || (window.TG_BOT_ID||'');
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
   }
   function ensureTelegramScript(){
     if (window.Telegram && window.Telegram.Login && typeof Telegram.Login.auth === 'function') return Promise.resolve(true);
     return new Promise(function(resolve){
-      var s = document.createElement('script');
+      const s = document.createElement('script');
       s.src = 'https://telegram.org/js/telegram-widget.js?22';
-      s.async = true;
-      s.onload = function(){ resolve(true); };
-      s.onerror = function(){ resolve(false); };
+      s.async = true; s.onload = ()=>resolve(true); s.onerror = ()=>resolve(false);
       document.head.appendChild(s);
     });
   }
+
+  // ----- действия линковки -----
+  function startLinkVK(){
+    const ret = encodeURIComponent(location.href);
+    const did = getDeviceId();
+    let url = API() + '/api/auth/vk/start?mode=link&return=' + ret;
+    if (did) url += '&device_id=' + encodeURIComponent(did);
+    location.href = url;
+  }
   async function startLinkTG(){
-    var ok = await ensureTelegramScript();
-    if(!ok){ alert('Не удалось загрузить Telegram Login. Обновите страницу и повторите.'); return; }
-    var did = getDeviceId();
-    var botId = (window.TG_BOT_ID ? Number(window.TG_BOT_ID) : null);
-    if (!botId) { 
-      console.warn('[link-tg] нет TG_BOT_ID'); 
-      alert('Не указан ID Telegram-бота для линковки.'); 
-      return; 
+    const ok = await ensureTelegramScript();
+    if(!ok){ alert('Не удалось загрузить Telegram Login. Обновите страницу.'); return; }
+    const botId = tgBotId();
+    if(!botId){
+      alert('Не указан ID Telegram-бота. Добавь <meta name="tg-bot-id" content="ЧИСЛО"> в <head>.');
+      return;
     }
+    const did = getDeviceId();
     try{
-      Telegram.Login.auth({ bot_id: botId, request_access: 'write' }, function(user){
+      Telegram.Login.auth({ bot_id: botId, request_access:'write' }, function(user){
         if(!user || !user.id){ alert('Telegram не прислал профиль.'); return; }
-        var p = new URLSearchParams(Object.assign({}, user, { mode:'link', primary_uid:'', device_id:String(did||'') }));
-        window.location.href = API() + '/tg/callback?' + p.toString();
+        const p = new URLSearchParams(Object.assign({}, user, { mode:'link', primary_uid:'', device_id:String(did||'') }));
+        location.href = API() + '/tg/callback?' + p.toString();
       });
     }catch(e){
       console.error(e);
@@ -92,17 +61,12 @@
     }
   }
 
-  // ------- правильная кнопка рядом с балансом -------
+  // ----- показать правильную кнопку у баланса -----
   function placeHeaderLinkButton(currentProvider){
-    // прячем левый «самодельный» блок
-    var leftBox = byId('link-actions');
-    if (leftBox) leftBox.classList.add('hidden');
-
-    var btnTG = byId('link-tg');
-    var btnVK = byId('link-vk');
-
+    const btnTG = byId('link-tg');
+    const btnVK = byId('link-vk');
     if (currentProvider === 'tg'){
-      // показываем синюю VK-кнопку у баланса
+      // показываем VK-кнопку рядом с балансом, бренд-вид
       if (btnVK){
         btnVK.classList.add('vk');
         btnVK.style.display = 'inline-flex';
@@ -117,20 +81,80 @@
       }
       if (btnVK) btnVK.style.display = 'none';
     }
+    // левый блок не прячем — пусть остаётся запасным
   }
 
-  // ------- init -------
-  document.addEventListener('DOMContentLoaded', async function(){
-    var user = await refreshBalance();
-    var provider = 'tg';
+  // ----- баланс -----
+  async function fetchMe(){
     try{
-      if (user) {
-        provider = (user.vk_id && !String(user.vk_id).startsWith('tg:')) ? 'vk' : 'tg';
-      } else {
-        var p = new URLSearchParams(location.search);
-        provider = p.get('provider') || 'tg';
-      }
+      const r = await fetch(API() + '/api/me', { credentials:'include', cache:'no-store' });
+      if(!r.ok) return null;
+      const j = await r.json();
+      if (j && j.ok && j.user) return j.user;
     }catch(_){}
-    placeHeaderLinkButton(provider);
+    return null;
+  }
+  async function fetchByProvider(provider, provider_user_id){
+    try{
+      const url = API() + '/api/balance/by-provider?provider=' + encodeURIComponent(provider) + '&provider_user_id=' + encodeURIComponent(provider_user_id);
+      const r = await fetch(url, { credentials:'include', cache:'no-store' });
+      if(!r.ok) return null;
+      const j = await r.json();
+      if (j && j.ok && j.user) return j.user;
+    }catch(_){}
+    return null;
+  }
+  function applyUser(u){
+    const nameEl = byId('user-name');
+    const avatarEl = byId('user-avatar');
+    const balanceWrap = byId('user-balance');
+    const balSpan = balanceWrap ? balanceWrap.querySelector('[data-balance]') : null;
+    const note = byId('provider-note');
+
+    if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
+    if (avatarEl && u.avatar) avatarEl.src = u.avatar;
+    const n = Number(u.balance || 0);
+    if (balSpan) balSpan.textContent = String(n);
+    else if (balanceWrap) balanceWrap.textContent = rub(n);
+    if (note) note.textContent = 'Источник данных: ' + (u.provider||'').toUpperCase();
+  }
+
+  // ----- init -----
+  document.addEventListener('DOMContentLoaded', async function(){
+    const p = new URLSearchParams(location.search);
+    const fromProvider = (p.get('provider')||'').toLowerCase(); // 'tg' | 'vk' | ''
+    const pid = p.get('id') || '';
+
+    let u = null;
+
+    if (fromProvider === 'tg' && pid){
+      // пробуем достать ТГ-пользователя (его баланс)
+      const up = await fetchByProvider('tg', pid);
+      if (up){
+        u = Object.assign({ provider:'tg' }, up);
+      }
+    }
+
+    if (!u){
+      // fallback — текущая сессия
+      const me = await fetchMe();
+      if (me){
+        const isVK = me.vk_id && !String(me.vk_id).startsWith('tg:');
+        u = {
+          provider: isVK ? 'vk' : 'tg',
+          id: me.id || null,
+          first_name: me.first_name || '',
+          last_name: me.last_name || '',
+          avatar: me.avatar || '',
+          balance: Number(me.balance||0),
+        };
+      } else {
+        u = { provider: fromProvider||'vk', first_name:'Гость', last_name:'', avatar:'', balance:0 };
+      }
+    }
+
+    try{ localStorage.setItem('gg_user', JSON.stringify(u)); }catch(_){}
+    applyUser(u);
+    placeHeaderLinkButton(u.provider);
   });
 })();
