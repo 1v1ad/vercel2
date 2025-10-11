@@ -5,14 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="api-base" content="https://vercel2pr.onrender.com"/>
   <title>Ручное пополнение</title>
-
-  <!-- FAVICONS — как в админке -->
-  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png">
-  <link rel="shortcut icon" href="/assets/favicon.ico">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
-
   <style>
     body{font-family:Inter,system-ui,Arial,sans-serif;background:#0b1024;color:#e8f0ff;margin:0;padding:24px}
     .wrap{max-width:1040px;margin:0 auto;display:grid;gap:24px}
@@ -29,6 +21,7 @@
     .muted{opacity:.75}
     .pill-ok{background:#1f8a4c;color:#eafff3;padding:2px 8px;border-radius:999px;font-weight:700}
   </style>
+  <link rel="icon" href="/assets/favicon.ico">
 </head>
 <body>
   <div class="wrap">
@@ -39,14 +32,11 @@
       <div class="row"><label>User ID</label><input id="uid" type="number" placeholder="внутренний id (например, 97)"></div>
       <div class="row"><label>Сумма</label><input id="amt" type="number" placeholder="рубли"></div>
       <div class="row"><label>Комментарий</label><textarea id="cmt" rows="3" placeholder="обязательно"></textarea></div>
-
-      <!-- ВОТ ТУТ добавлена кнопка "Сохранить" -->
       <div class="row" style="justify-content:flex-end;gap:8px">
         <button id="save">Сохранить</button>
         <button id="go">Пополнить</button>
         <button id="reload">Обновить историю</button>
       </div>
-
       <div class="log" id="log"></div>
     </div>
 
@@ -71,148 +61,119 @@
   </div>
 
 <script>
-  const $ = (s)=>document.querySelector(s);
-  const log = (s)=>{ $('#log').textContent = String(s||''); };
+/** ==== utils ==== */
+const $ = (s)=>document.querySelector(s);
+const log = (s)=>{ $('#log').textContent = String(s||''); };
 
-  // === prefs (API/пароль) из query или localStorage
-  const LS_API = 'admin_api';
-  const LS_PWD = 'admin_pwd';
+function apiBase(){
+  const p = new URLSearchParams(location.search);
+  const fromQuery = p.get('api');
+  if (fromQuery) return fromQuery;
+  const inField = ($('#api')?.value || '').trim();
+  if (inField) return inField;
+  const mt = document.querySelector('meta[name="api-base"]');
+  if (mt?.content) return mt.content;
+  return 'https://vercel2pr.onrender.com';
+}
+function adminPwd(){
+  const q = new URLSearchParams(location.search).get('pwd');
+  if (q) return q.trim();
+  try {
+    const s = sessionStorage.getItem('admin_pwd'); if (s) return s;
+    const l = localStorage.getItem('admin_pwd');  if (l) return l;
+  } catch {}
+  return ($('#pwd')?.value || '').trim();
+}
+function setInitialFromStorage(){
+  const p = new URLSearchParams(location.search);
+  if (p.get('api')) $('#api').value = p.get('api');
+  if (p.get('user_id')) $('#uid').value = p.get('user_id');
+  try {
+    const s = sessionStorage.getItem('admin_pwd') || localStorage.getItem('admin_pwd') || '';
+    if (s) $('#pwd').value = s;
+    const a = localStorage.getItem('admin_api') || '';
+    if (a && !$('#api').value) $('#api').value = a;
+  } catch {}
+}
+setInitialFromStorage();
 
-  function apiBase(){
-    const p = new URLSearchParams(location.search);
-    const fromQuery = (p.get('api')||'').trim();
-    if (fromQuery) return fromQuery;
-    const inField = ($('#api')?.value || '').trim();
-    if (inField) return inField;
-    const fromLS = (localStorage.getItem(LS_API)||'').trim();
-    if (fromLS) return fromLS;
-    const mt = document.querySelector('meta[name="api-base"]');
-    if (mt?.content) return mt.content;
-    return 'https://vercel2pr.onrender.com';
-  }
-  function adminPwd(){
-    const p = new URLSearchParams(location.search);
-    const q = (p.get('pwd')||'').trim();
-    if (q) return q;
-    const v = ($('#pwd')?.value || '').trim();
-    if (v) return v;
-    const fromLS = (localStorage.getItem(LS_PWD)||'').trim();
-    return fromLS;
-  }
-  function setInitialFromQueryOrLS(){
-    const p = new URLSearchParams(location.search);
-    const qAPI = (p.get('api')||'').trim();
-    const qPWD = (p.get('pwd')||'').trim();
-    const qUID = (p.get('user_id')||'').trim();
-    $('#api').value = qAPI || localStorage.getItem(LS_API) || $('#api').value || '';
-    $('#pwd').value = qPWD || localStorage.getItem(LS_PWD) || $('#pwd').value || '';
-    if (qUID) $('#uid').value = qUID;
-  }
-  setInitialFromQueryOrLS();
-
-  // сохранить API/пароль
-  $('#save').addEventListener('click', ()=>{
-    const api = ($('#api')?.value||'').trim();
-    const pwd = ($('#pwd')?.value||'').trim();
-    if (!api || !pwd){ log('Укажи API и пароль'); return; }
-    localStorage.setItem(LS_API, api);
-    localStorage.setItem(LS_PWD, pwd);
-    log('Сохранено.');
+async function post(url, body, pwd){
+  const r = await fetch(url, {
+    method:'POST',
+    headers: { 'Content-Type':'application/json', 'X-Admin-Password': pwd },
+    body: JSON.stringify(body)
   });
+  let data={}; try{ data=await r.json(); }catch{}
+  return { r, data };
+}
 
-  async function post(url, body, pwd){
-    const r = await fetch(url, {
-      method:'POST',
-      headers: { 'Content-Type':'application/json', 'X-Admin-Password': pwd },
-      body: JSON.stringify(body)
-    });
-    let data={}; try{ data=await r.json(); }catch{}
-    return { r, data };
+$('#save').addEventListener('click', ()=>{
+  const api = ($('#api')?.value || '').trim();
+  const pwd = ($('#pwd')?.value || '').trim();
+  try {
+    if (api) localStorage.setItem('admin_api', api);
+    if (pwd) localStorage.setItem('admin_pwd', pwd);
+    log('Сохранено локально.');
+  } catch { log('Не удалось сохранить в localStorage'); }
+});
+
+$('#go').addEventListener('click', async ()=>{
+  const API = apiBase();
+  const pwd = adminPwd();
+  const uid = Number(($('#uid')?.value || '').trim());
+  const amt = Math.trunc(Number(($('#amt')?.value || '').trim() || 0));
+  const cmt = ($('#cmt')?.value || '').trim();
+
+  if(!API || !pwd || !uid || !amt || !cmt){ log('Заполни все поля (нужны API, пароль, user_id, сумма ≠ 0, комментарий).'); return; }
+
+  // Разрешаем и положительные, и отрицательные суммы
+  const payload = {
+    user_id: uid, amount: amt, comment: cmt,
+    value: amt, sum: amt, delta: amt,
+    note: cmt, reason: cmt, description: cmt
+  };
+
+  let { r, data } = await post(`${API}/api/admin/users/${uid}/topup`, payload, pwd);
+  if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup`, payload, pwd)); }
+
+  if (!r.ok || data?.ok===false) {
+    log(`Ошибка: ${data?.error || r.statusText || ('HTTP '+r.status)}`);
+  } else {
+    log('Готово: ' + JSON.stringify(data));
+    try{ $('#amt').value=''; $('#cmt').value=''; }catch{}
+    loadHistory().catch(()=>{});
   }
+});
 
-  // submit
-  $('#go').addEventListener('click', async ()=>{
-    const API = apiBase();
-    const pwd = adminPwd();
-    const uid = Number(($('#uid')?.value || '').trim());
-    const amt = Number(($('#amt')?.value || '').trim());
-    const cmt = ($('#cmt')?.value || '').trim();
+/** ====== HISTORY ====== */
+async function fetchHistory(){
+  const API = apiBase();
+  const pwd = adminPwd();
 
-    if(!API || !pwd || !uid || !amt || !cmt){ log('Заполни все поля'); return; }
-
-    const payload = {
-      user_id: uid, amount: amt, comment: cmt,
-      value: amt, sum: amt, delta: amt,
-      note: cmt, reason: cmt, description: cmt
-    };
-
-    let { r, data } = await post(`${API}/api/admin/users/${uid}/topup?admin_password=${encodeURIComponent(pwd)}`, payload, pwd);
-    if (r.status === 404) { ({ r, data } = await post(`${API}/api/admin/topup?admin_password=${encodeURIComponent(pwd)}`, payload, pwd)); }
-
-    if (!r.ok || data?.ok===false) {
-      log(`Ошибка: ${data?.error || r.statusText || ('HTTP '+r.status)}`);
-    } else {
-      log('Готово: ' + JSON.stringify(data));
-      try{ $('#amt').value=''; $('#cmt').value=''; }catch{}
-      loadHistory().catch(()=>{});
-    }
-  });
-
-  // ====== HISTORY ======
-  async function fetchHistory(){
-    const API = apiBase();
-    const pwd = adminPwd();
-    let url = `${API}/api/admin/events?type=admin_topup&take=100&skip=0&admin_password=${encodeURIComponent(pwd)}`;
-    let r = await fetch(url, { headers: { 'X-Admin-Password': pwd } });
-    if (r.status === 404) {
-      url = `${API}/api/admin/events?take=100&skip=0&search=admin_topup&admin_password=${encodeURIComponent(pwd)}`;
-      r = await fetch(url, { headers: { 'X-Admin-Password': pwd } });
-    }
-    let data={}; try{ data = await r.json(); }catch{}
-    return { r, data };
-  }
-
-  function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
-  function pick(obj, keys, dflt){ for (const k of keys) { if (obj!=null && obj[k]!=null) return obj[k]; } return dflt; }
-
-  // вычисление delta, если сервер не прислал явную сумму
-  function computeDeltas(list){
-    const norm = list.map(ev => {
-      const p = ev.payload || {};
-      const when = pick(ev, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], ''));
-      const uid  = pick(ev, ['user_id'], pick(p, ['user_id'], null));
-      const hum  = pick(ev, ['hum_id'],  pick(p, ['hum_id'],  null));
-      const amt  = pick(ev, ['amount','value','sum','delta'], pick(p, ['amount','value','sum','delta'], null));
-      const cmt  = pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], null));
-      const nb   = pick(ev, ['new_balance','balance'], pick(p, ['new_balance','balance'], null));
-      return { raw:ev, when, uid, hum, amt:Number(amt), cmt, nb:Number(nb) };
-    }).sort((a,b)=> new Date(a.when) - new Date(b.when));
-
-    const lastByHum = new Map();
-    for (const r of norm){
-      if (Number.isFinite(r.amt)) { // явная сумма есть
-        if (Number.isFinite(r.nb)) {
-          const key = String(r.hum ?? r.uid ?? 'null');
-          lastByHum.set(key, r.nb); // обновим «предыдущий баланс» для след. событий
-        }
-        continue;
+  // Только заголовок — без передачи пароля в URL
+  const variants = [
+    `${API}/api/admin/events?type=admin_topup&take=100&skip=0`,
+    `${API}/api/admin/events?take=100&skip=0&search=admin_topup`
+  ];
+  for (const url of variants) {
+    const r = await fetch(url, { headers: { 'X-Admin-Password': pwd }, cache:'no-store' });
+    try {
+      if (r.ok) {
+        const data = await r.json();
+        return { r, data };
       }
-      if (!Number.isFinite(r.nb)) continue; // нет new_balance — нечего вычислять
-      const key = String(r.hum ?? r.uid ?? 'null');
-      const prev = lastByHum.get(key);
-      if (prev!=null && Number.isFinite(prev)){
-        r.amt = r.nb - prev;
-      } else {
-        r.amt = r.nb; // первая запись по этому HUM — считаем от нуля
-      }
-      lastByHum.set(key, r.nb);
-    }
-
-    // обратно в исходный (обычно DESC) порядок
-    return norm.sort((a,b)=> new Date(b.when) - new Date(a.when));
+    } catch {}
   }
+  return { r: { ok:false, status:500 }, data:{} };
+}
 
- function renderHistory(listRaw){
+function fmt(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ts; } }
+function pick(obj, keys, dflt){ for (const k of keys) { if (obj!=null && obj[k]!=null) return obj[k]; } return dflt; }
+
+// вспомогалка для старых записей без amount
+function computeDeltas(list){ return list.map(x=>({ raw:x, when: x.created_at || x.ts || x.time, uid: x.user_id, hum: x.HUMid, amt: Number(x.amount||0) })); }
+
+function renderHistory(listRaw){
   const tbody = $('#tbl tbody');
   tbody.innerHTML = '';
   if (!Array.isArray(listRaw) || !listRaw.length) {
@@ -220,7 +181,6 @@
     return;
   }
 
-  // на всякий: старые записи без amount — посчитаем дельту
   const withFallback = computeDeltas(listRaw);
 
   for (const r of withFallback) {
@@ -231,22 +191,12 @@
     const uid  = r.uid ?? '—';
     const hum  = r.hum ?? '—';
 
-    // 1) новый стандарт: amount из строки events
     let amt = Number(pick(ev, ['amount'], null));
-    if (!Number.isFinite(amt)) {
-      // 2) бэкапы из payload (на старых версиях)
-      amt = Number(pick(p, ['amount','value','sum','delta'], null));
-    }
-    if (!Number.isFinite(amt)) {
-      // 3) окончательный запасной — наша посчитанная дельта
-      amt = Number(r.amt || 0);
-    }
+    if (!Number.isFinite(amt)) amt = Number(pick(p, ['amount','value','sum','delta'], null));
+    if (!Number.isFinite(amt)) amt = Number(r.amt || 0);
 
-    // комментарий: сначала ev.comment (новый бэк), дальше — из meta/payload
     const cmt = String(
-      pick(ev, ['comment'],
-        pick(p, ['comment','note','reason','description'], '')
-      ) || ''
+      pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], '')) || ''
     );
 
     const tr = document.createElement('tr');
@@ -261,17 +211,15 @@
   }
 }
 
+async function loadHistory(){
+  const { r, data } = await fetchHistory();
+  if (r.status === 401) { log('401: проверь пароль (поле «Пароль») и нажми «Обновить историю».'); }
+  const list = data?.events || data?.rows || data?.list || [];
+  renderHistory(list);
+}
 
-  async function loadHistory(){
-    const { r, data } = await fetchHistory();
-    if (r.status === 401) { log('401: проверь пароль (вверху) и нажми «Обновить историю».'); }
-    const list = data?.events || data?.rows || data?.list || [];
-    renderHistory(list);
-  }
-
-  $('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
-  loadHistory().catch(()=>{});
+$('#reload').addEventListener('click', ()=> loadHistory().catch(e=>log('Ошибка истории: '+e)));
+loadHistory().catch(()=>{});
 </script>
-
 </body>
 </html>
