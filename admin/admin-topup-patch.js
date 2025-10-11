@@ -1,8 +1,11 @@
-// Жёстко снимаем любые старые слушатели с кнопки пополнения и вешаем редирект на /admin/topup.html
+<script>
+/**
+ * FEAT: admin_topup_redirect_safely
+ * WHY:  не светим пароль в URL; открываем topup в новой вкладке; передаём pwd через sessionStorage
+ * DATE: 2025-10-11
+ */
 (function () {
-  function $(s){ return document.querySelector(s); }
-  function pickBtn(){
-    // набор селекторов, первый найденный пойдёт в работу
+  function pickBtn() {
     const sels = [
       '#topup-run', '#btnManualTopup', '#btnTopup',
       '[data-action="manual-topup"]'
@@ -11,38 +14,46 @@
       const el = document.querySelector(s);
       if (el) return el;
     }
-    // последняя попытка — ищем по тексту
     const candidates = Array.from(document.querySelectorAll('button,.btn'));
-    return candidates.find(el => /попол(нить|нение)/i.test(el.textContent||''));
+    return candidates.find(el => /попол(нить|нение)/i.test(el.textContent || ''));
   }
+  function val(id) { return (document.getElementById(id)?.value || '').trim(); }
 
-  function run(){
+  function run() {
     let btn = pickBtn();
     if (!btn || btn.dataset._wired) return;
 
-    // Отрезаем все старые слушатели одним ударом
     const clone = btn.cloneNode(true);
-    clone.type = 'button'; // чтобы форма (если есть) не отправлялась
+    clone.type = 'button';
     btn.replaceWith(clone);
     btn = clone;
 
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', (e) => {
       e.preventDefault();
-      // пытаемся забрать текущее API/пароль из полей админки
-      const api = (document.getElementById('apiBase')?.value || localStorage.getItem('admin_api') || '').trim();
-      const pwd = (document.getElementById('adminPassword')?.value || localStorage.getItem('admin_pwd') || '').trim();
-      const uid = (document.getElementById('topup-user-id')?.value || '').trim();
+
+      const api = val('apiBase') || localStorage.getItem('admin_api') || '';
+      const pwd = val('adminPassword') || localStorage.getItem('admin_pwd') || '';
+      const uid = val('topup-user-id') || '';
+
+      // пароль кладём в sessionStorage (живёт до закрытия вкладки)
+      try { if (pwd) sessionStorage.setItem('admin_pwd', pwd); } catch {}
 
       const p = new URLSearchParams();
       if (uid) p.set('user_id', uid);
       if (api) p.set('api', api);
-      if (pwd) p.set('pwd', pwd);
 
-      location.href = '/admin/topup.html' + (p.toString() ? ('?' + p.toString()) : '');
+      const url = '/admin/topup.html' + (p.toString() ? ('?' + p.toString()) : '');
+      // открываем в новой вкладке; не даём доступ к opener
+      window.open(url, '_blank', 'noopener');
     });
 
     btn.dataset._wired = '1';
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run);
+  } else {
+    run();
+  }
 })();
+</script>
