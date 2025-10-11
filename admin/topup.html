@@ -212,37 +212,55 @@
     return norm.sort((a,b)=> new Date(b.when) - new Date(a.when));
   }
 
-  function renderHistory(listRaw){
-    const tbody = $('#tbl tbody');
-    tbody.innerHTML = '';
-    if (!Array.isArray(listRaw) || !listRaw.length) {
-      tbody.innerHTML = '<tr><td class="muted" colspan="5">Пока пусто</td></tr>';
-      return;
-    }
-
-    const list = computeDeltas(listRaw);
-
-    for (const r of list) {
-      const ev = r.raw;
-      const p  = ev.payload || {};
-      const when = r.when;
-      const who  = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
-      const uid  = r.uid ?? '—';
-      const hum  = r.hum ?? '—';
-      const amt  = Number.isFinite(r.amt) ? r.amt : 0;
-      const cmt  = (r.cmt || '').toString();
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="muted">${fmt(when)}</td>
-        <td>${who || '—'}</td>
-        <td>${uid} / ${hum}</td>
-        <td><span class="pill-ok">+${amt}</span></td>
-        <td>${cmt ? cmt.replace(/[<>]/g, s => s === '<' ? '&lt;' : '&gt;') : '—'}</td>
-      `;
-      tbody.appendChild(tr);
-    }
+ function renderHistory(listRaw){
+  const tbody = $('#tbl tbody');
+  tbody.innerHTML = '';
+  if (!Array.isArray(listRaw) || !listRaw.length) {
+    tbody.innerHTML = '<tr><td class="muted" colspan="5">Пока пусто</td></tr>';
+    return;
   }
+
+  // на всякий: старые записи без amount — посчитаем дельту
+  const withFallback = computeDeltas(listRaw);
+
+  for (const r of withFallback) {
+    const ev = r.raw || {};
+    const p  = ev.payload || {};
+    const when = r.when;
+    const who  = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
+    const uid  = r.uid ?? '—';
+    const hum  = r.hum ?? '—';
+
+    // 1) новый стандарт: amount из строки events
+    let amt = Number(pick(ev, ['amount'], null));
+    if (!Number.isFinite(amt)) {
+      // 2) бэкапы из payload (на старых версиях)
+      amt = Number(pick(p, ['amount','value','sum','delta'], null));
+    }
+    if (!Number.isFinite(amt)) {
+      // 3) окончательный запасной — наша посчитанная дельта
+      amt = Number(r.amt || 0);
+    }
+
+    // комментарий: сначала ev.comment (новый бэк), дальше — из meta/payload
+    const cmt = String(
+      pick(ev, ['comment'],
+        pick(p, ['comment','note','reason','description'], '')
+      ) || ''
+    );
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="muted">${fmt(when)}</td>
+      <td>${who || '—'}</td>
+      <td>${uid} / ${hum}</td>
+      <td><span class="pill-ok">+${Number.isFinite(amt)?amt:0}</span></td>
+      <td>${cmt ? cmt.replace(/[<>]/g, s => s === '<' ? '&lt;' : '&gt;') : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
 
   async function loadHistory(){
     const { r, data } = await fetchHistory();
