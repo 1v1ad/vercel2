@@ -110,6 +110,31 @@
       </div>
     </div>
 
+    <!-- ▼▼▼ НОВАЯ ПАНЕЛЬ: Диапазон ▼▼▼ -->
+<div class="panel">
+  <div class="panel-header">
+    <h4>Аналитика по диапазону</h4>
+    <div class="actions" style="gap:6px;align-items:center;">
+      <label class="muted">c</label>
+      <input id="range-from" type="date" />
+      <label class="muted">по</label>
+      <input id="range-to" type="date" />
+      <button class="badge" data-preset="7">7д</button>
+      <button class="badge" data-preset="30">30д</button>
+      <button class="badge" data-preset="90">90д</button>
+      <button class="badge" data-preset="365">Год</button>
+      <button class="badge" data-preset="all">Всё</button>
+      <button id="range-apply">Показать</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <svg id="chart-range" width="100%" height="260"></svg>
+    <div class="muted" id="range-note" style="margin-top:6px;"></div>
+  </div>
+</div>
+<!-- ▲▲▲ НОВАЯ ПАНЕЛЬ: Диапазон ▲▲▲ -->
+
+
     <div class="panel">
       <div class="panel-header">
         <h4>Аналитика посещений</h4>
