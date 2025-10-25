@@ -63,15 +63,16 @@
     .card-media picture, .card-media img{ display:block; width:100%; height:auto; object-fit:contain; }
     @media (max-width:480px){ .card::before{ --borderw:2px } .card-media{ margin:14px -16px -24px } }
   </style>
+
 <style>
-/* === mask patch: symmetric spacing + side fade for hero image === */
-  .card .card-media{ margin: 20px 0 20px !important; }
+/* === mask final: all-sides soft fade + symmetric spacing === */
+  .card .card-media{ margin:20px 0 20px !important; }
   .card .card-media img.fade-sides{
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 84%, rgba(0,0,0,0) 100%);
+    mask-image: radial-gradient(ellipse at center, black 84%, transparent 100%);
   }
-  @media (max-width: 480px){
-    .card .card-media{ margin: 16px 0 16px !important; }
+  @media (max-width:480px){
+    .card .card-media{ margin:16px 0 16px !important; }
   }
 </style>
 </head>
@@ -79,7 +80,7 @@
   <header><b><span class="gg">GG</span> ROOM</b></header>
 
   <main class="wrap">
-    <section class="card">
+    <section class="card" id="hero-mask">
   <h1>Авторизация</h1>
   <div class="auth">
         <!-- VK -->
@@ -93,10 +94,9 @@
   <p class="status" id="status"></p>
   <div class="badges"><div class="badge">Bitcoin</div><div class="badge">Ethereum</div><div class="badge">Solana</div></div>
   <div class="card-media">
-    <img class="fade-sides" src="assets/Bitcoin2.webp" alt="Bitcoin" loading="lazy" decoding="async" style="display:block;width:100%;height:auto;object-fit:contain" />
+    <img class="fade-sides" src="assets/Bitcoin2.webp?v=2025-10-25_20-30-59" alt="Bitcoin" loading="lazy" decoding="async" style="display:block;width:100%;height:auto;object-fit:contain" />
   </div>
 </section>
-
   </main>
 
   <script>
@@ -173,5 +173,27 @@
   </script>
 
   <!-- фон-склейка (без изменений) и подпитка /api/me — оставляй как у тебя -->
+
+
+<script>
+(function(){
+  function maskOnce(){
+    try {
+      const s = document.querySelector('section.card h1'); 
+      if (!s) return;
+      if (/Войдите.*выигрывать/.test((s.textContent||''))) {
+        s.textContent = 'Авторизация';
+        const badges = document.querySelector('.badges');
+        if (badges) badges.innerHTML = '<div class="badge">Bitcoin</div><div class="badge">Ethereum</div><div class="badge">Solana</div>';
+        const img = document.querySelector('.card-media img');
+        if (img) { img.src = 'assets/Bitcoin2.webp?v=mask-final'; img.classList.add('fade-sides'); }
+      }
+    } catch(e){}
+  }
+  document.addEventListener('DOMContentLoaded', maskOnce);
+  window.addEventListener('load', maskOnce);
+})();
+</script>
+
 </body>
 </html>
