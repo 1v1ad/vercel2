@@ -82,9 +82,9 @@
       <img id="user-avatar" src="" alt="Аватар" />
       <div id="user-name">Гость</div>
       <!-- [mask-2025-10-25] BEGIN original currency-pill -->
-<span id="user-balance" class="pill">₽ <span class="balance-amount" data-balance>
+<span id="user-balance" class="pill"> ₽ <span class="balance-amount" data-balance>
 <!-- [mask-2025-10-25] END original currency-pill -->
-<span id="user-balance" class="pill">₿ <span class="balance-amount" data-balance>0</span></span>
+<span id="user-balance" class="pill"> ₿ <span class="balance-amount" data-balance>0</span></span>
 
       <!-- единственные живые кнопки линковки -->
       <button id="link-tg" class="btn" style="display:none">Связать Telegram</button>
@@ -93,13 +93,16 @@
   </header>
 
   <div class="wrap">
-    <div class="card">
-      <!-- [mask-2025-10-25] BEGIN original welcome -->
-<p>Добро пожаловать в лобби. Тут будут комнаты, турниры и прочая красота.</p>
-<!-- [mask-2025-10-25] END original welcome -->
-<p>Добро пожаловать в лобби.</p>
+    <!-- [mask-2025-10-25] BEGIN original lobby-card -->
+<div class="card">
+      <p>Добро пожаловать в лобби. Тут будут комнаты, турниры и прочая красота.</p>
       <p id="provider-note" style="color:var(--muted)"></p>
     </div>
+<!-- [mask-2025-10-25] END original lobby-card -->
+<div class="card">
+  <p>Добро пожаловать в лобби.</p>
+  <p id="provider-note" style="color:var(--muted)"></p>
+</div>
   </div>
 
   <!-- Telegram Login (асинхронно) -->
