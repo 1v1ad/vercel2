@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GGRoom — Ручная расклейка (unmerge)</title>
+  <link rel="icon" href="/assets/favicon.svg">
+  <style>
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:#0b0f14;color:#e7e7e7;margin:0;padding:24px}
+    h1{font-size:20px;margin:0 0 12px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    input,button,select,textarea{background:#121821;color:#e7e7e7;border:1px solid #233042;border-radius:10px;padding:10px 12px;font-size:14px}
+    button{cursor:pointer}
+    table{border-collapse:collapse;width:100%;margin-top:12px}
+    th,td{border:1px solid #233042;padding:8px;text-align:left}
+    .card{background:#0f141c;border:1px solid #233042;border-radius:14px;padding:16px;margin:12px 0}
+    .muted{color:#9bb0c3;font-size:12px}
+    .ok{color:#8aff9b}
+    .bad{color:#ff8a8a}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+    .acc{font-family:monospace}
+  </style>
+  <script src="/admin/admin-auth-headers.js"></script>
+</head>
+<body>
+  <h1>Ручная расклейка HUM-кластера</h1>
+
+  <div class="card">
+    <div class="row">
+      <label>API: <input id="api" placeholder="https://api.example.com" style="min-width:320px"></label>
+      <label>Пароль: <input id="pwd" placeholder="ADMIN_PWD" type="password"></label>
+      <label>HUM ID: <input id="hum" placeholder="например 1"></label>
+      <button id="load">Загрузить кластер</button>
+    </div>
+    <div class="muted">Подсказка: API и пароль сохраняются в localStorage (как и в других админ-страницах).</div>
+  </div>
+
+  <div id="cluster" class="card" style="display:none">
+    <h3>Кластер <span id="humTitle"></span></h3>
+    <div id="users"></div>
+    <div class="row">
+      <input id="reason" placeholder="Причина (опционально)" style="flex:1">
+      <button id="unmerge">Расклеить отмеченные</button>
+    </div>
+    <div id="unmergeResult" class="muted"></div>
+  </div>
+
+  <div class="card">
+    <h3>Предложения для склейки</h3>
+    <div class="row">
+      <label>Лимит: <input id="limit" value="20" style="width:80px"></label>
+      <button id="loadSug">Загрузить</button>
+    </div>
+    <div id="sug"></div>
+  </div>
+
+  <script src="/admin/split.js"></script>
+</body>
+</html>

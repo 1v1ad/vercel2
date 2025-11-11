@@ -1,0 +1,11 @@
+GGRoom FRONTEND PATCH — 20251111-1737
+Files:
+- index.html — добавлен <script defer src="/gg-linker.js"> для фоновой склейки
+- lobby.html — добавлен <script defer src="/gg-linker.js">
+- gg-linker.js — робастная версия: пишет стабильный device_id в localStorage и вызывает /api/link/bind
+- admin/split.html — страница ручной расклейки HUM-кластера
+- admin/split.js — логика расклейки и просмотра предложений
+
+Как задеплоить:
+1) Скопируйте файлы поверх вашего фронтенда, сохранив те же пути.
+2) /admin/split.html станет доступной как статическая страница админ-инструмента.
