@@ -44,6 +44,8 @@
     if (!API) return;
 
     const qs = new URLSearchParams({ tz:'Europe/Moscow' });
+    const chk = document.getElementById('range-analytics');
+    if (chk && chk.checked) qs.set('analytics','1');
     if (fromEl.value) qs.set('from', fromEl.value);
     if (toEl.value)   qs.set('to',   toEl.value);
 
@@ -57,7 +59,7 @@
 
     const xs = j.days.map(d => d.date || d.day);
     const sTotal  = j.days.map(d => Number(d.auth_total  || 0));   // СИНИЙ
-    const sUnique = j.days.map(d => Number(d.auth_unique || 0));   // ЗЕЛЁНЫЙ
+    const sUnique = j.days.map(d => Number((d.auth_unique_analytics ?? d.auth_unique) || 0));   // ЗЕЛЁНЫЙ (учёт аналитики если есть)
     drawLine(xs, sTotal, sUnique);
     noteEl.textContent = `Период: ${j.from} – ${j.to} • дней: ${j.days.length}`;
   }

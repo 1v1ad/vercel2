@@ -121,3 +121,25 @@
   }
   load();
 })();
+
+;(function(){
+  try {
+    document.addEventListener('DOMContentLoaded', function(){
+      const API = (localStorage.getItem('ADMIN_API') || window.API || '').replace(/\/+$/,'');
+      const headers = window.adminHeaders ? window.adminHeaders() : {};
+      const tz='Europe/Moscow';
+      const to = new Date(); const from = new Date(Date.now()-6*864e5);
+      const toS = new Date(to.getTime()-to.getTimezoneOffset()*60000).toISOString().slice(0,10);
+      const fromS = new Date(from.getTime()-from.getTimezoneOffset()*60000).toISOString().slice(0,10);
+      const qs = new URLSearchParams({ tz, from: fromS, to: toS, analytics:'1' });
+      fetch(API + '/api/admin/range?' + qs.toString(), { headers, cache:'no-store' })
+        .then(r=>r.json()).then(j=>{
+          if (j && j.ok && Array.isArray(j.days) && j.days.length){
+            const last = j.days[j.days.length-1];
+            const el = document.getElementById('summary-unique-analytics');
+            if (el) el.textContent = 'с учетом аналитики: ' + String(Number(last.auth_unique_analytics ?? last.auth_unique || 0));
+          }
+        });
+    });
+  } catch(_){}
+})();
