@@ -92,12 +92,10 @@
       <div class="card">
         <h3>Уникальные (7д)</h3>
         <div id="summary-unique" class="num">—</div>
-        <div class="muted" id="summary-unique-analytics">с учетом аналитики: —</div>
       </div>
       <div class="card">
         <h3>Склейка: предложения</h3>
         <div class="actions">
-          <a href="/admin/split.html" target="_blank" class="btn">Ручная расклейка</a> 
           <button id="merge-suggest-run">Склеить все</button>
           <span class="muted">Укажи API и пароль сверху</span>
         </div>
@@ -126,8 +124,8 @@
       <button class="badge" data-preset="90">90д</button>
       <button class="badge" data-preset="365">Год</button>
       <button class="badge" data-preset="all">Всё</button>
-      <label style="margin-left:8px"><input type="checkbox" id="range-analytics"> учесть аналитику</label>
-          <button id="range-apply">Показать</button>
+      <label class="muted" style="display:flex;align-items:center;gap:6px;">        <input id="range-include-hum" type="checkbox" checked /> учесть аналитику      </label>
+      <button id="range-apply">Показать</button>
     </div>
   </div>
   <div class="panel-body">
@@ -141,7 +139,7 @@
     <div class="panel">
       <div class="panel-header">
         <h4>Аналитика посещений</h4>
-        <div class="badge">7 дней</div>
+        <div class="actions" style="gap:8px;align-items:center;"><div class="badge">7 дней</div><label class="muted" style="display:flex;align-items:center;gap:6px;"><input id="daily-include-hum" type="checkbox" checked /> учесть аналитику</label></div>
       </div>
       <div class="panel-body">
         <svg id="chart" width="100%" height="300"></svg>
@@ -210,13 +208,7 @@
   </div>
 
   <!-- ВАЖНО: ШИМ ДОЛЖЕН ИДТИ ПЕРВЫМ, чтобы подставлять X-Admin-Password -->
-<script>
-  // единый заголовок для всех запросов админки (идёт ПЕРВЫМ)
-  window.adminHeaders = function () {
-    return { 'X-Admin-Password': (localStorage.getItem('ADMIN_PWD') || '') };
-  };
-</script>
-
+  <script src="admin-auth-headers.js?v=20251008y"></script>
 
   <!-- flags.js подключаем до app.js, чтобы была доступна decorateFlags -->
   <script src="flags.js?v=20251008y"></script>
@@ -225,8 +217,8 @@
   <script src="app.js?v=20251008y"></script>
   <script src="merge-suggest.js?v=20251008y"></script>
   <script src="topup.js?v=20251008y"></script>
-  <script src="chart.js?v=20251113"></script>
-
+  <script src="chart.js?v=20251008y"></script>
+  <script src="chart-range.js?v=20251012b"></script>
 
   <!-- Glue-код страницы: хранение API/пароля, действия, запросы -->
   <script>
@@ -420,13 +412,7 @@ function toMSK(iso){
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject); else inject();
 })();
 </script>
-
-
-<script src="/admin/admin-topup-patch.js?v=3" defer></script>
-<script src="/admin/chart-range.js?v=r9" defer></script>
-<script src="/admin/open-topup-link.js?v=3" defer></script>
-
-
-
+  <script src="/admin/admin-topup-patch.js"></script>
+  <script src="/admin/open-topup-link.js"></script>
 </body>
 </html>

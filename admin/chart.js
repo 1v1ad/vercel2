@@ -1,48 +1,126 @@
-// admin/chart.js — безопасный график посещений за 7 дней
+// admin/chart.js — V3.8 (grouped bars, safe labels, outer spacing)
 (function(){
-  var svg = document.getElementById('chart');
-  if (!svg) return;
+  const svg = document.getElementById('chart'); if (!svg) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const api = () => (localStorage.getItem('ADMIN_API') || window.API || '').replace(/\/+$/,'');
+  const headers = () => (window.adminHeaders ? window.adminHeaders() : {});
 
-  function api(){ return (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,''); }
-  function pwd(){ return (localStorage.getItem('ADMIN_PWD') || ''); }
-  function addDays(iso,k){ var d=new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+k); return d.toISOString().slice(0,10); }
-  function today(){ return new Date().toISOString().slice(0,10); }
+  const labelDM = s => (s && s.length>=10 ? `${s.slice(8,10)}.${s.slice(5,7)}` : (s||''));
 
-  function fetchJSON(url, init){ return fetch(url, init).then(r=>{ if(!r.ok) throw new Error('http_'+r.status); return r.json(); }); }
+  function draw(days){
+    const W = svg.clientWidth || 900, H = svg.clientHeight || 300;
+    const padL = 46, padB = 28, padT = 22;
+    const headroom = 1.12;
 
-  function draw(xDates, y1){
+    // --- ключ к «раздвижке» между днями:
+    const innerGap = 8;     // между синим и зелёным внутри дня
+    const outerGap = 12;    // отступ слева/справа внутри каждого «дня» (даёт визуальный зазор между днями)
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     while (svg.firstChild) svg.removeChild(svg.firstChild);
-    var W=Math.max(320, svg.clientWidth||820), H=Math.max(160, 240);
-    svg.setAttribute('viewBox','0 0 '+W+' '+H);
-    var pad={l:42,r:12,t:12,b:26}, X0=pad.l, X1=W-pad.r, Y0=H-pad.b, Y1=pad.t;
-    var n=xDates.length, maxY=Math.max(1, Math.max.apply(null, y1.length?y1:[0]));
-    function scaleX(i){ return (n<=1?X0:X0+i*(X1-X0)/(n-1)); }
-    function scaleY(v){ return Y0 - (v*(Y0-Y1)/maxY); }
-    // оси
-    for(var g=0; g<=4; g++){ var val=Math.round(maxY*g/4), y=scaleY(val); line(X0,y,X1,y,'#1b2737'); text(X0-6,y+4,String(val),'end'); }
-    var ticks=Math.min(6, Math.max(2,n||2));
-    for(var i=0;i<ticks;i++){ var idx=n?Math.round(i*(n-1)/(ticks-1)):0; text(scaleX(idx),H-6,(xDates[idx]||''), (i===0?'start':(i===ticks-1?'end':'middle'))); }
-    // линия
-    var d=''; for(var j=0;j<y1.length;j++){ var x=scaleX(j), y=scaleY(y1[j]||0); d+=(j?' L ':'M ')+x+' '+y; }
-    var p=document.createElementNS('http://www.w3.org/2000/svg','path'); p.setAttribute('d',d); p.setAttribute('stroke','#8ea2ff'); p.setAttribute('stroke-width','2'); p.setAttribute('fill','none'); svg.appendChild(p);
 
-    function line(x1,y1,x2,y2,c){ var l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke',c); l.setAttribute('stroke-width','1'); svg.appendChild(l); }
-    function text(x,y,txt,a){ var t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',x); t.setAttribute('y',y); t.setAttribute('fill','#8fa4c6'); t.setAttribute('font-size','11'); if(a) t.setAttribute('text-anchor',a); t.appendChild(document.createTextNode(txt)); svg.appendChild(t); }
+    const totals  = days.map(d => Number(d.auth_total ?? d.count ?? 0));
+    const uniques = days.map(d => Number(d.auth_unique ?? d.unique ?? 0));
+    const maxBase = Math.max(1, ...totals, ...uniques);
+    const max = Math.ceil(maxBase * headroom);
+
+    const plotH = H - padB - padT;
+    const groupW = Math.max(28, (W - padL - 16) / Math.max(1, days.length)); // ширина «дня» как контейнера
+
+    // ширина каждой колонки с учётом внутреннего (innerGap) и внешнего (outerGap) зазоров
+    const barW = Math.max(10, (groupW - innerGap - outerGap*2) / 2);
+
+    // оси/сетка
+    const axis = document.createElementNS(NS,'line');
+    axis.setAttribute('x1', padL); axis.setAttribute('y1', padT);
+    axis.setAttribute('x2', padL); axis.setAttribute('y2', H-padB);
+    axis.setAttribute('stroke','#274260'); svg.appendChild(axis);
+
+    for(let i=0;i<=4;i++){
+      const y = padT + plotH * i/4;
+      const ln = document.createElementNS(NS,'line');
+      ln.setAttribute('x1', padL); ln.setAttribute('y1', y);
+      ln.setAttribute('x2', W-8);  ln.setAttribute('y2', y);
+      ln.setAttribute('stroke', i===4 ? '#274260' : '#173046');
+      ln.setAttribute('stroke-dasharray', i===4 ? '0' : '3 5');
+      svg.appendChild(ln);
+
+      const t = document.createElementNS(NS,'text');
+      t.setAttribute('x', 8); t.setAttribute('y', y+4);
+      t.setAttribute('fill','#88a7d6'); t.setAttribute('font-size','11');
+      t.textContent = Math.round(max * (1 - i/4));
+      svg.appendChild(t);
+    }
+
+    days.forEach((d,i)=>{
+      // левая граница «контейнера дня»
+      const gx = padL + 10 + i*groupW;
+      const baseY = H - padB;
+
+      const vt = Number(d.auth_total ?? d.count ?? 0);
+      const vu = Number(d.auth_unique ?? d.unique ?? 0);
+      const ht = plotH * (vt / max);
+      const hu = plotH * (vu / max);
+
+      // внутри контейнера дня отступаем outerGap слева
+      const xT = gx + outerGap;                 // total (синий)
+      const xU = xT + barW + innerGap;          // unique (зелёный)
+
+      const rt = document.createElementNS(NS,'rect');
+      rt.setAttribute('x', xT); rt.setAttribute('y', baseY - ht);
+      rt.setAttribute('width', barW); rt.setAttribute('height', ht);
+      rt.setAttribute('fill', '#4ea0ff'); svg.appendChild(rt);
+
+      const lt = document.createElementNS(NS,'text');
+      lt.setAttribute('x', xT + barW/2);
+      lt.setAttribute('y', Math.max(12, baseY - ht - 4));
+      lt.setAttribute('fill', '#cfe3ff'); lt.setAttribute('font-size','11');
+      lt.setAttribute('text-anchor','middle'); lt.textContent = vt; svg.appendChild(lt);
+
+      const ru = document.createElementNS(NS,'rect');
+      ru.setAttribute('x', xU); ru.setAttribute('y', baseY - hu);
+      ru.setAttribute('width', barW); ru.setAttribute('height', hu);
+      ru.setAttribute('fill', '#39d98a'); svg.appendChild(ru);
+
+      const lu = document.createElementNS(NS,'text');
+      lu.setAttribute('x', xU + barW/2);
+      lu.setAttribute('y', Math.max(12, baseY - hu - 4));
+      lu.setAttribute('fill', '#d6ffe8'); lu.setAttribute('font-size','11');
+      lu.setAttribute('text-anchor','middle'); lu.textContent = vu; svg.appendChild(lu);
+
+      // центр подписи — по центру реального контента: 2 бара + innerGap, со сдвигом outerGap
+      const tx = document.createElementNS(NS,'text');
+      tx.setAttribute('x', gx + outerGap + (barW*2 + innerGap)/2);
+      tx.setAttribute('y', H - 8);
+      tx.setAttribute('fill','#9fb4d9'); tx.setAttribute('font-size','11');
+      tx.setAttribute('text-anchor','middle'); tx.textContent = labelDM(d.date||'');
+      svg.appendChild(tx);
+    });
+
+    const legend = document.createElementNS(NS,'g');
+    [['#4ea0ff','Авторизации'],['#39d98a','Уникальные HUM']].forEach((it,idx)=>{
+      const x = padL + 10 + idx*150, y = 16;
+      const r = document.createElementNS(NS,'rect');
+      r.setAttribute('x',x); r.setAttribute('y',y-10);
+      r.setAttribute('width',14); r.setAttribute('height',14);
+      r.setAttribute('rx',3); r.setAttribute('fill',it[0]); legend.appendChild(r);
+      const t = document.createElementNS(NS,'text');
+      t.setAttribute('x',x+20); t.setAttribute('y',y+1);
+      t.setAttribute('fill','#9fb4d9'); t.setAttribute('font-size','12');
+      t.textContent = it[1]; legend.appendChild(t);
+    });
+    svg.appendChild(legend);
   }
 
-  function run(){
-    var base=api(); if(!base) return;
-    var to=today(), from=addDays(to,-6);
-    var qs=new URLSearchParams({ tz:'Europe/Moscow', from:from, to:to });
-    fetchJSON(base+'/api/admin/range?'+qs.toString(), { headers:{'X-Admin-Password':pwd()}, cache:'no-store' })
-      .then(function(j){
-        var xs=(j.days||[]).map(function(d){ return d.date||d.day; });
-        var total=(j.days||[]).map(function(d){ return Number(d.auth_total||0); });
-        draw(xs, total);
-      })
-      .catch(function(e){ console.error('chart error', e); });
+  async function load(){
+    const root = api(); if (!root) return;
+    const hasHum = document.getElementById('daily-include-hum');
+    const inc = hasHum ? `&include_hum=${hasHum.checked ? 1 : 0}` : '';
+    const r = await fetch(root + `/api/admin/daily?days=7&tz=Europe/Moscow${inc}` + ``, { headers: headers(), cache:'no-store' });
+    const j = await r.json().catch(()=>({}));
+    const days = Array.isArray(j.days) ? j.days : (Array.isArray(j.daily) ? j.daily : []);
+    draw(days);
   }
-
-  if (document.readyState==='complete' || document.readyState==='interactive') setTimeout(run,50);
-  else document.addEventListener('DOMContentLoaded', function(){ setTimeout(run,50); });
+  load();
+  try { document.getElementById('daily-include-hum')?.addEventListener('change', load); } catch(_){}
 })();
