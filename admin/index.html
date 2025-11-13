@@ -414,6 +414,16 @@ function toMSK(iso){
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject); else inject();
 })();
 </script>
+<script>
+  // fallback: если файл admin-auth-headers.js не загрузится,
+  // у нас всё равно будет заголовок X-Admin-Password
+  if (!window.adminHeaders) {
+    window.adminHeaders = () => ({
+      'X-Admin-Password': (localStorage.getItem('ADMIN_PWD') || '')
+    });
+  }
+</script>
+
 <script src="/admin/admin-auth-headers.js?v=3" defer></script>
 <script src="/admin/admin-topup-patch.js?v=3" defer></script>
 <script src="/admin/chart-range.js?v=r8" defer></script>
