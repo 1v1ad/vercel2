@@ -92,4 +92,57 @@
     // если на странице есть таблица — подтянем данные сразу
     if (document.getElementById('users_tbody')) refreshUsers();
   });
+
+  // ----------------
+  // EVENTS TABLE
+  // ----------------
+  async function refreshEvents(){
+    try{
+      const API = getApi();
+      if (!API) { alert('Укажи API и пароль серверу'); return; }
+
+      const params = new URLSearchParams();
+      const term = (document.getElementById('events-type')?.value || '').trim();
+      const user = (document.getElementById('events-user')?.value || '').trim();
+      if (term) params.set('term', term);
+      if (user) params.set('user_id', user);
+
+      const url = API + '/api/admin/events' + (params.toString() ? ('?' + params.toString()) : '');
+      const r = await fetch(url, {
+        headers: (window.adminHeaders ? window.adminHeaders() : {}),
+        cache: 'no-store'
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!data || !data.ok) throw new Error(data && data.error || 'bad_response');
+
+      const events = Array.isArray(data.events) ? data.events : (Array.isArray(data.rows) ? data.rows : []);
+      const tbody = document.getElementById('events-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = events.map(e => `
+        <tr>
+          <td>${e.id ?? ''}</td>
+          <td>${e.hum_id ?? ''}</td>
+          <td>${e.user_id ?? ''}</td>
+          <td>${e.event_type ?? ''}</td>
+          <td>${e.type ?? ''}</td>
+          <td>${e.ip ?? ''}</td>
+          <td>${e.ua ? String(e.ua).slice(0,64) : ''}</td>
+          <td>${(e.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
+        </tr>
+      `).join('');
+
+    } catch(e){
+      console.error('events load error', e);
+      alert('Ошибка загрузки событий: ' + (e && e.message ? e.message : e));
+    }
+  }
+  window.refreshEvents = refreshEvents;
+
+  // bind events panel
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('events-refresh');
+    if (btn) btn.addEventListener('click', refreshEvents);
+    if (document.getElementById('events-tbody')) refreshEvents();
+  });
+
 })();
