@@ -46,6 +46,27 @@
   </div>
 
   <div class="card">
+    <h3>История расклеек</h3>
+    <div class="row">
+      <button id="reloadHistory">Обновить историю</button>
+      <span class="muted">Показываем последние 100 событий типа <code>admin_unmerge_manual</code>.</span>
+    </div>
+    <table id="hist">
+      <thead>
+        <tr>
+          <th>Время</th>
+          <th>HUM</th>
+          <th>User IDs</th>
+          <th>Причина</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="muted" colspan="4">Загрузка…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
     <h3>Предложения для склейки</h3>
     <div class="row">
       <label>Лимит: <input id="limit" value="20" style="width:80px"></label>

@@ -118,4 +118,67 @@
   // auto init from localStorage
   $('#api').value = localStorage.getItem('ADMIN_API') || '';
   $('#pwd').value = localStorage.getItem('ADMIN_PWD') || '';
+
+  async function fetchHistory(){
+    const base = getApi();
+    const pwd  = getPwd();
+    const resp = await fetch(base + '/api/admin/events?type=admin_unmerge_manual&take=100&skip=0', {
+      headers: { 'X-Admin-Password': pwd }
+    });
+    let data = {}; try{ data = await resp.json(); }catch(_){}
+    if (!resp.ok || data.ok===false) throw new Error(data.error || ('HTTP '+resp.status));
+    const list = data.events || data.rows || data.list || [];
+    return Array.isArray(list) ? list : [];
+  }
+
+  function renderHistory(list){
+    const tbl = document.getElementById('hist');
+    if (!tbl) return;
+    const tbody = tbl.querySelector('tbody');
+    tbody.innerHTML = '';
+    if (!list.length){
+      tbody.innerHTML = '<tr><td class="muted" colspan="4">Нет расклеек…</td></tr>';
+      return;
+    }
+    const rows = list.slice().sort((a,b)=>{
+      const ta = new Date(a.created_at || a.ts || 0).getTime();
+      const tb = new Date(b.created_at || b.ts || 0).getTime();
+      return tb - ta;
+    });
+    for (const ev of rows){
+      const p = ev.payload || {};
+      const hum = ev.hum_id ?? p.hum_id ?? '';
+      const ids = p.user_ids || p.requested_ids || [];
+      const reason = p.reason || p.note || '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="muted">${new Date(ev.created_at || ev.ts || Date.now()).toLocaleString()}</td>
+        <td>${hum || '—'}</td>
+        <td>${Array.isArray(ids) && ids.length ? ids.join(', ') : '—'}</td>
+        <td>${reason ? String(reason).replace(/[<>]/g, s => s==='<'?'&lt;':'&gt;') : '—'}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  async function loadHistory(){
+    try{
+      const list = await fetchHistory();
+      renderHistory(list);
+    }catch(e){
+      const tbl = document.getElementById('hist');
+      if (!tbl) return;
+      const tbody = tbl.querySelector('tbody');
+      tbody.innerHTML = '<tr><td class="muted" colspan="4">Ошибка: '+String(e && e.message || e)+'</td></tr>';
+    }
+  }
+
+  const btnHist = document.getElementById('reloadHistory');
+  if (btnHist) btnHist.addEventListener('click', ()=>{ loadHistory(); });
+  // автозагрузка при открытии страницы
+  if (document.getElementById('hist')) {
+    loadHistory();
+  }
+
+
 })();
