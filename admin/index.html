@@ -94,12 +94,11 @@
         <div id="summary-unique" class="num">—</div>
       </div>
       <div class="card">
-        <h3>Расклейка аккаунтов</h3>
+        <h3>Склейка: предложения</h3>
         <div class="actions">
-          <input id="split-hum-id" type="text" placeholder="HUM ID" style="width:120px" />
-          <button id="split-open">Ручная расклейка</button>
+          <button id="merge-suggest-run">Склеить все</button>
+          <span class="muted">Укажи API и пароль сверху</span>
         </div>
-        <div class="muted">Откроет отдельную страницу /admin/split.html с HUM-кластером и историей расклеек.</div>
       </div>
       <div class="card">
         <h3>Пополнение</h3>
@@ -167,6 +166,7 @@
               <th>Страна</th>
               <th>Создан</th>
               <th>Провайдеры</th>
+              <th>Аватар</th>
             </tr>
           </thead>
           <tbody id="users-tbody">
@@ -415,18 +415,5 @@ function toMSK(iso){
 </script>
   <script src="/admin/admin-topup-patch.js"></script>
   <script src="/admin/open-topup-link.js"></script>
-
-  <script>
-  (function(){
-    function goSplit(){
-      var hum = document.getElementById('split-hum-id')?.value || '';
-      var url = '/admin/split.html' + (hum ? ('?hum='+encodeURIComponent(hum)) : '');
-      window.open(url, '_blank');
-    }
-    var btn = document.getElementById('split-open');
-    if (btn) btn.addEventListener('click', goSplit);
-  })();
-  </script>
-
 </body>
 </html>

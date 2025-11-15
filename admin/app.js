@@ -72,6 +72,11 @@
           <td data-cc="${((u.country_code || '') + '').toUpperCase()}"></td>
           <td>${(u.created_at || '').toString().slice(0,19).replace('T',' ')}</td>
           <td>${Array.isArray(u.providers) ? u.providers.join(', ') : ''}</td>
+          <td class="avatar-cell">${
+            u.avatar
+              ? `<img src="${u.avatar}" alt="" class="avatar-img">`
+              : ''
+          }</td>
         </tr>
       `).join('');
 

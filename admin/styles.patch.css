@@ -1,1 +1,20 @@
 .flag{vertical-align:-2px;border-radius:2px}
+/* Аватарки в таблице Пользователи */
+td.avatar-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+td.avatar-cell .avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #23324a;
+  display: inline-block;
+}
+@media (max-width: 600px) {
+  td.avatar-cell .avatar-img {
+    width: 24px;
+    height: 24px;
+  }
+}
