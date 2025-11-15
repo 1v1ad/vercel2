@@ -33,7 +33,7 @@
     }
   }
 
-  const FLAG_EMOJI_SUPPORTED = !IS_WINDOWS && !isFlagEmojiUnsupportedByWidth();
+  const FLAG_EMOJI_SUPPORTED = !isFlagEmojiUnsupportedByWidth();
 
   function ccToFlag(cc) {
     if (!cc) return '';
