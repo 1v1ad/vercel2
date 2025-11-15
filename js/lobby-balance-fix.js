@@ -31,6 +31,17 @@
     });
   }
 
+  // country_code -> emoji flag
+  function countryFlagEmoji(code){
+    if (!code) return '';
+    code = String(code).toUpperCase();
+    if (code.length !== 2) return '';
+    const A = code.codePointAt(0) - 65 + 0x1F1E6;
+    const B = code.codePointAt(1) - 65 + 0x1F1E6;
+    if (A < 0x1F1E6 || B < 0x1F1E6) return '';
+    return String.fromCodePoint(A, B);
+  }
+
   // ----- действия линковки -----
   function startLinkVK(){
     const ret = encodeURIComponent(location.href);
@@ -125,14 +136,30 @@
     }catch(_){}
     return null;
   }
+
   function applyUser(u){
-    const nameEl = byId('user-name');
+    const nameWrap = byId('user-name');
+    const nameEl = byId('user-name-text') || nameWrap;
+    const flagEl = byId('user-flag');
     const avatarEl = byId('user-avatar');
     const balanceWrap = byId('user-balance');
     const balSpan = balanceWrap ? balanceWrap.querySelector('[data-balance]') : null;
     const note = document.getElementById('provider-note');
 
-    if (nameEl) nameEl.textContent = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
+    const fullName = [u.first_name, u.last_name].filter(Boolean).join(' ') || 'Гость';
+    if (nameEl) nameEl.textContent = fullName;
+
+    if (flagEl){
+      const flag = countryFlagEmoji(u.country_code);
+      if (flag){
+        flagEl.textContent = flag;
+        flagEl.style.display = 'inline-block';
+      } else {
+        flagEl.textContent = '';
+        flagEl.style.display = 'none';
+      }
+    }
+
     if (avatarEl && u.avatar) avatarEl.src = u.avatar;
     const n = Number(u.balance || 0);
     if (balSpan) balSpan.textContent = String(n);
@@ -142,65 +169,66 @@
 
   // ----- init -----
   // отдаём приоритет профилю провайдера входа
- document.addEventListener('DOMContentLoaded', async function(){
-  const p = new URLSearchParams(location.search);
-  const fromProvider = (p.get('provider')||'').toLowerCase(); // 'tg' | 'vk' | ''
-  const pid = p.get('id') || '';
+  document.addEventListener('DOMContentLoaded', async function(){
+    const p = new URLSearchParams(location.search);
+    const fromProvider = (p.get('provider')||'').toLowerCase(); // 'tg' | 'vk' | ''
+    const pid = p.get('id') || '';
 
-  const [up, me] = await Promise.all([
-    (fromProvider === 'tg' && pid) ? fetchByProvider('tg', pid) : Promise.resolve(null),
-    fetchMe()
-  ]);
+    const [up, me] = await Promise.all([
+      (fromProvider === 'tg' && pid) ? fetchByProvider('tg', pid) : Promise.resolve(null),
+      fetchMe()
+    ]);
 
-  let u = null;
-  let merged = !!(me && me.linked && me.linked.vk && me.linked.tg);
+    let u = null;
+    let merged = !!(me && me.linked && me.linked.vk && me.linked.tg);
 
-  // helper: выбираем профиль, от которого берём first_name/last_name/avatar
-  const pickProfile = (preferUp) => {
-    const A = preferUp ? (up || {}) : (me || {});
-    const B = preferUp ? (me || {}) : (up || {});
-    return {
-      first_name: A.first_name || B.first_name || '',
-      last_name:  A.last_name  || B.last_name  || '',
-      avatar:     A.avatar     || B.avatar     || ''
+    // helper: выбираем профиль, от которого берём first_name/last_name/avatar/страна
+    const pickProfile = (preferUp) => {
+      const A = preferUp ? (up || {}) : (me || {});
+      const B = preferUp ? (me || {}) : (up || {});
+      return {
+        first_name:   A.first_name   || B.first_name   || '',
+        last_name:    A.last_name    || B.last_name    || '',
+        avatar:       A.avatar       || B.avatar       || '',
+        country_code: A.country_code || B.country_code || ''
+      };
     };
-  };
 
-  if (up && me && up.id === me.id) {
-    // один и тот же HUM-юзер; баланс берём из me (HUM), а профиль — от провайдера входа
-    const preferUp = (fromProvider === 'tg'); // если пришли из TG — берём up-профиль
-    const prof = pickProfile(preferUp);
-    u = {
-      provider: fromProvider || ((me && me.vk_id && !String(me.vk_id).startsWith('tg:')) ? 'vk' : 'tg'),
-      id: me.id,
-      ...prof,
-      balance: Number(me.balance || 0)
-    };
-  } else if (up) {
-    // ещё не склеено (или нет me) — показываем TG-профиль; баланс отдаст by-provider (HUM уже после склейки)
-    u = Object.assign({ provider:'tg' }, up);
-  } else if (me) {
-    const isVK = me.vk_id && !String(me.vk_id).startsWith('tg:');
-    const prof = pickProfile(false);
-    u = {
-      provider: isVK ? 'vk' : 'tg',
-      id: me.id || null,
-      ...prof,
-      balance: Number(me.balance||0),
-    };
-  } else {
-    u = { provider: fromProvider||'vk', first_name:'Гость', last_name:'', avatar:'', balance:0 };
-  }
+    if (up && me && up.id === me.id) {
+      // один и тот же HUM-юзер; баланс берём из me (HUM), а профиль — от провайдера входа
+      const preferUp = (fromProvider === 'tg'); // если пришли из TG — берём up-профиль
+      const prof = pickProfile(preferUp);
+      u = {
+        provider: fromProvider || ((me && me.vk_id && !String(me.vk_id).startsWith('tg:')) ? 'vk' : 'tg'),
+        id: me.id,
+        ...prof,
+        balance: Number(me.balance || 0)
+      };
+    } else if (up) {
+      // ещё не склеено (или нет me) — показываем TG-профиль; баланс отдаст by-provider (HUM уже после склейки)
+      u = Object.assign({ provider:'tg' }, up);
+    } else if (me) {
+      const isVK = me.vk_id && !String(me.vk_id).startsWith('tg:');
+      const prof = pickProfile(false);
+      u = {
+        provider: isVK ? 'vk' : 'tg',
+        id: me.id || null,
+        ...prof,
+        balance: Number(me.balance||0),
+      };
+    } else {
+      u = { provider: fromProvider||'vk', first_name:'Гость', last_name:'', avatar:'', balance:0, country_code:'' };
+    }
 
-  try{ localStorage.setItem('gg_user', JSON.stringify(u)); }catch(_){}
-  applyUser(u);
+    try{ localStorage.setItem('gg_user', JSON.stringify(u)); }catch(_){}
+    applyUser(u);
 
-  const note = document.getElementById('provider-note');
-  if (note) {
-    if (merged) note.textContent = 'Источник данных: общий кошелёк (VK↔TG)';
-    else        note.textContent = 'Источник данных: ' + u.provider.toUpperCase();
-  }
+    const note = document.getElementById('provider-note');
+    if (note) {
+      if (merged) note.textContent = 'Источник данных: общий кошелёк (VK↔TG)';
+      else        note.textContent = 'Источник данных: ' + u.provider.toUpperCase();
+    }
 
-  placeHeaderLinkButton(u.provider, merged);
-});
+    placeHeaderLinkButton(u.provider, merged);
+  });
 })();
