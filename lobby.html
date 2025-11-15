@@ -44,8 +44,24 @@
 
     .hdr-user{ grid-area:user; display:flex; align-items:center; gap:10px; min-height:44px; }
     .hdr-user img{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222; }
-    .hdr-user #user-name{ font-weight:700; }
-    .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#121621; border:1px solid var(--border); color:#e8eaf0; font-weight:700 }
+
+    .hdr-user-name{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-weight:700;
+    }
+    .hdr-user-name .flag{
+      font-size:18px;
+      line-height:1;
+    }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      background:#121621; border:1px solid var(--border);
+      color:#e8eaf0; font-weight:700
+    }
 
     @media (max-width:480px){
       .hdr{ gap:10px; padding:12px }
@@ -80,7 +96,10 @@
 
     <div class="hdr-user">
       <img id="user-avatar" src="" alt="Аватар" />
-      <div id="user-name">Гость</div>
+      <div id="user-name" class="hdr-user-name">
+        <span id="user-flag" class="flag" aria-hidden="true"></span>
+        <span id="user-name-text">Гость</span>
+      </div>
       <span id="user-balance" class="pill">₿ <span class="balance-amount" data-balance>0</span></span>
 
       <!-- единственные живые кнопки линковки -->
@@ -91,9 +110,9 @@
 
   <div class="wrap">
     <div class="card">
-  <p>Добро пожаловать в лобби.</p>
-  <p id="provider-note" style="color:var(--muted)"></p>
-</div>
+      <p>Добро пожаловать в лобби.</p>
+      <p id="provider-note" style="color:var(--muted)"></p>
+    </div>
   </div>
 
   <!-- Telegram Login (асинхронно) -->
