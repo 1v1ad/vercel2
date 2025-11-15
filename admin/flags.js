@@ -33,7 +33,16 @@
     }
   }
 
-  const FLAG_EMOJI_SUPPORTED = !isFlagEmojiUnsupportedByWidth();
+  const FLAG_EMOJI_SUPPORTED = !IS_WINDOWS && !isFlagEmojiUnsupportedByWidth();
+
+
+  function ccToFlagImg(cc) {
+    if (!cc) return '';
+    const s = String(cc).trim().toLowerCase();
+    if (s.length !== 2) return '';
+    const url = `https://flagcdn.com/24x18/${s}.png`;
+    return `<img src="${url}" alt="${cc}" loading="lazy" class="flag-img">`;
+  }
 
   function ccToFlag(cc) {
     if (!cc) return '';
@@ -48,13 +57,16 @@
       const cc = (el.getAttribute('data-cc') || '').trim().toUpperCase();
       if (!cc) { el.textContent = ''; return; }
 
-      if (FLAG_EMOJI_SUPPORTED) {
+      const imgHtml = ccToFlagImg(cc);
+      if (imgHtml) {
+        el.innerHTML = imgHtml + ` <span class="cc" style="text-transform:none">${cc}</span>`;
+      } else if (FLAG_EMOJI_SUPPORTED) {
         const emoji = ccToFlag(cc);
         el.innerHTML =
           `<span class="flag-emoji" style="text-transform:none;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif">${emoji || ''}</span>` +
           ` <span class="cc" style="text-transform:none">${cc}</span>`;
       } else {
-        // Без эмодзи — только код страны. Никаких «de»
+        // fallback: только код страны
         el.innerHTML = `<span class="cc" style="text-transform:none">${cc}</span>`;
       }
     });
