@@ -21,11 +21,8 @@ td.avatar-cell img.avatar-img {
     height: 32px;
   }
 }
-/* Вертикальное выравнивание ячеек в таблицах админки */
-table tbody td {
-  vertical-align: middle;
-}
-/* Вертикальное центрирование баланса в таблице "Пользователи" */
-.panel-body table tbody td.right {
+
+/* Вертикальное центрирование ячеек в таблице "Пользователи" */
+#users_tbody td {
   vertical-align: middle;
 }
