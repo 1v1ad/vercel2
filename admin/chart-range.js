@@ -1,337 +1,310 @@
 // admin/chart-range.js — линейный график по произвольному диапазону дат
-// Синим — всего авторизаций, зелёным — уникальные HUM.
+// Синий — всего авторизаций, зелёный — уникальные HUM.
+// Есть hover: вертикальная линия, точки и тултип.
 
-(function () {
+(function(){
   const SVG = document.getElementById('chart-range');
   if (!SVG) return;
 
   const fromEl = document.getElementById('range-from');
-  const toEl = document.getElementById('range-to');
+  const toEl   = document.getElementById('range-to');
   const noteEl = document.getElementById('range-note');
-  const includeHumEl = document.getElementById('range-include-hum');
   const applyBtn = document.getElementById('range-apply');
+  const includeHumEl = document.getElementById('range-include-hum');
 
-  let lastPreset = null; // 'all' | number | null
+  const TZ = 'Europe/Moscow';
+  const NS = 'http://www.w3.org/2000/svg';
 
   // ===== helpers =====
-
-  function apiBase() {
-    return (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/, '');
+  function apiBase(){
+    return (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
   }
-
-  function headers() {
+  function headers(){
     return window.adminHeaders ? window.adminHeaders() : {};
   }
 
-  function today(tz) {
+  function todayIso(){
     const d = new Date();
-    if (!tz) return d.toISOString().slice(0, 10);
-    try {
-      const s = d.toLocaleString('en-CA', {
-        timeZone: tz,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
-      return s.slice(0, 10);
-    } catch (e) {
-      return d.toISOString().slice(0, 10);
-    }
+    const fmt = new Intl.DateTimeFormat('sv-SE',{
+      timeZone: TZ,
+      year:'numeric', month:'2-digit', day:'2-digit'
+    });
+    return fmt.format(d); // YYYY-MM-DD
   }
 
-  function addDays(iso, delta) {
+  function addDays(iso, delta){
     const d = new Date(iso + 'T00:00:00Z');
     d.setUTCDate(d.getUTCDate() + delta);
-    return d.toISOString().slice(0, 10);
+    return d.toISOString().slice(0,10);
   }
 
-  function clearSvg() {
+  const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
+  const fmtInt = n => (Number(n)||0).toLocaleString('ru-RU');
+
+  // ===== SVG helpers =====
+  function clearSvg(){
     while (SVG.firstChild) SVG.removeChild(SVG.firstChild);
   }
-
-  function svgSize() {
-    // Берём размеры из viewBox, если он есть, иначе — из клиентской области
-    const vb = SVG.viewBox && SVG.viewBox.baseVal;
-    const W = (vb && vb.width) || SVG.clientWidth || 600;
-    const H = (vb && vb.height) || SVG.clientHeight || 240;
-    SVG.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    return { W, H };
+  function elt(tag, attrs, text){
+    const e = document.createElementNS(NS, tag);
+    if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.appendChild(document.createTextNode(text));
+    return e;
   }
 
-  function sEl(tag, attrs, text) {
-    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-    if (attrs) {
-      for (const k in attrs) el.setAttribute(k, attrs[k]);
-    }
-    if (text != null) el.textContent = text;
-    return el;
-  }
-
-  // ===== основной запрос + отрисовка =====
-
-  async function run() {
+  // ===== fetch & draw =====
+  async function run(){
     const API = apiBase();
     if (!API) return;
 
-    const qs = new URLSearchParams({ tz: 'Europe/Moscow' });
-    if (fromEl && fromEl.value) qs.set('from', fromEl.value);
-    if (toEl && toEl.value) qs.set('to', toEl.value);
-    if (includeHumEl)
-      qs.set('include_hum', includeHumEl.checked ? '1' : '0');
-    if (lastPreset === 'all') qs.set('preset', 'all');
+    const qs = new URLSearchParams({ tz: TZ });
+    if (fromEl.value) qs.set('from', fromEl.value);
+    if (toEl.value)   qs.set('to',   toEl.value);
+    if (includeHumEl) qs.set('include_hum', includeHumEl.checked ? '1' : '0');
 
-    let data;
-    try {
-      const res = await fetch(
-        API + '/api/admin/range?' + qs.toString(),
-        { headers: headers(), cache: 'no-store' },
-      );
-      data = await res.json();
-    } catch (e) {
-      data = null;
+    let j;
+    try{
+      const r = await fetch(API + '/api/admin/range?' + qs.toString(), {
+        headers: headers(),
+        cache: 'no-store'
+      });
+      j = await r.json();
+    }catch(e){
+      console.error(e);
+      clearSvg();
+      if (noteEl) noteEl.textContent = 'Ошибка загрузки';
+      return;
     }
 
-    if (!data || !data.ok || !Array.isArray(data.days)) {
-      draw([], [], []);
+    if (!j || !j.ok || !Array.isArray(j.days)) {
+      // раньше тут был вызов несуществующей draw() — из-за этого график мог "умирать"
+      drawLine([], [], []);
       if (noteEl) noteEl.textContent = 'Нет данных';
       return;
     }
 
-    const days = data.days;
-    const labels = days.map((d) => d.date);
-    const totals = days.map((d) => Number(d.total) || 0);
-    const uniques = days.map((d) => Number(d.unique) || 0);
+    const xs = j.days.map(d => d.date || d.day);
+    const sTotal  = j.days.map(d => Number(d.auth_total  ?? d.total  ?? 0)); // Синий
+    const sUnique = j.days.map(d => Number(d.auth_unique ?? d.unique ?? 0)); // Зелёный
 
-    draw(labels, totals, uniques);
+    // ВАЖНО: обновляем поля дат тем, что вернул бэкенд
+    // Это как раз чинит поведение кнопки "Все" — теперь календарь тоже заполняется.
+    if (j.from) fromEl.value = String(j.from).slice(0,10);
+    if (j.to)   toEl.value   = String(j.to).slice(0,10);
 
+    drawLine(xs, sTotal, sUnique);
     if (noteEl) {
-      if (days.length) {
-        const first = days[0].date;
-        const last = days[days.length - 1].date;
-        noteEl.textContent = `Показано ${days.length} дней: ${first} — ${last}`;
-
-        // Для пресета "Все" заполняем поля дат из ответа сервера
-        if (lastPreset === 'all') {
-          if (fromEl) fromEl.value = first;
-          if (toEl) toEl.value = last;
-        }
-      } else {
-        noteEl.textContent = 'Нет данных';
-      }
+      noteEl.textContent = `Период: ${j.from} – ${j.to} • дней: ${j.days.length}`;
     }
   }
 
-  function draw(labels, total, unique) {
+  function drawLine(xDates, yTotal, yUnique){
     clearSvg();
-    const n = labels.length;
-    const { W, H } = svgSize();
-    const padL = 40;
-    const padR = 12;
-    const padT = 10;
-    const padB = 26;
 
-    // Даже при отсутствии данных оставим оси
-    SVG.appendChild(
-      sEl('rect', { x: 0, y: 0, width: W, height: H, fill: 'transparent' }),
-    );
-    SVG.appendChild(
-      sEl('line', {
-        x1: padL,
-        y1: padT,
-        x2: padL,
-        y2: H - padB,
-        stroke: '#23324a',
-        'stroke-width': 1,
-      }),
-    );
-    SVG.appendChild(
-      sEl('line', {
-        x1: padL,
-        y1: H - padB,
-        x2: W - padR,
-        y2: H - padB,
-        stroke: '#23324a',
-        'stroke-width': 1,
-      }),
-    );
+    const n = xDates.length;
+    const box = SVG.getBoundingClientRect();
+    const W = Math.max(320, box.width | 0);
+    const H = Math.max(180, (SVG.getAttribute('height')|0) || 260);
+    SVG.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
-    if (!n) return;
+    const padL = 52, padR = 16, padT = 18, padB = 28;
+    const X0 = padL, X1 = W - padR;
+    const Y0 = H - padB, Y1 = padT;
 
-    const maxY = Math.max(
-      1,
-      Math.max(...total),
-      Math.max(...unique),
-    );
-    const plotW = W - padL - padR;
-    const plotH = H - padT - padB;
+    const allValsRaw = [...yTotal, ...yUnique].map(v => Number(v) || 0);
+    const allVals = allValsRaw.filter(v => v > 0);
+    let maxY = allVals.length ? Math.max(...allVals) : 1;
 
-    const scaleX = (i) =>
-      padL + (n <= 1 ? plotW / 2 : (i * plotW) / (n - 1));
-    const scaleY = (v) =>
-      padT + (maxY === 0 ? plotH : plotH - (v / maxY) * plotH);
+    // маленький запас, чтобы график не прилипал к верху
+    maxY = Math.max(1, Math.ceil(maxY * 1.1));
 
-    // горизонтальная сетка + подписи по Y
-    const gridSteps = 4;
-    for (let i = 1; i <= gridSteps; i++) {
-      const v = (maxY * i) / gridSteps;
-      const y = scaleY(v);
-      SVG.appendChild(
-        sEl('line', {
-          x1: padL,
-          y1: y,
-          x2: W - padR,
-          y2: y,
-          stroke: '#1b2738',
-          'stroke-width': 1,
-          'stroke-dasharray': '3 3',
-        }),
-      );
-      SVG.appendChild(
-        sEl(
-          'text',
-          {
-            x: padL - 4,
-            y: y + 4,
-            'text-anchor': 'end',
-            fill: '#8fa4c6',
-            'font-size': '10',
-          },
-          String(Math.round(v)),
-        ),
-      );
+    const scaleX = i => (n <= 1 ? X0 : X0 + (i * (X1 - X0) / (n - 1)));
+    const scaleY = v => Y0 - (v * (Y0 - Y1) / maxY);
+
+    // сетка Y
+    for (let g = 0; g <= 4; g++){
+      const val = Math.round(maxY * g / 4);
+      const y = scaleY(val);
+      const line = elt('line', { x1:X0, y1:y, x2:X1, y2:y, stroke:'#1b2737', 'stroke-width':1 });
+      const text = elt('text', { x:X0-6, y:y+4, fill:'#8fa4c6', 'font-size':11, 'text-anchor':'end' }, String(val));
+      SVG.appendChild(line);
+      SVG.appendChild(text);
     }
 
-    // подписи по X
-    const ticks = Math.min(6, Math.max(2, n));
-    for (let i = 0; i < ticks; i++) {
-      const idx = Math.round((i * (n - 1)) / (ticks - 1));
+    // подписи X (не более 6)
+    const ticks = Math.min(6, Math.max(2, n || 0));
+    for (let i = 0; i < ticks && n > 0; i++){
+      const idx = Math.round(i * (n - 1) / (ticks - 1));
       const x = scaleX(idx);
-      SVG.appendChild(
-        sEl(
-          'text',
-          {
-            x,
-            y: H - 6,
-            fill: '#8fa4c6',
-            'font-size': '10',
-            'text-anchor':
-              i === 0 ? 'start' : i === ticks - 1 ? 'end' : 'middle',
-          },
-          labels[idx] || '',
-        ),
-      );
+      const label = xDates[idx] || '';
+      const anchor = (i === 0) ? 'start' : (i === ticks - 1 ? 'end' : 'middle');
+      const text = elt('text', {
+        x, y: H - 6,
+        fill:'#8fa4c6', 'font-size':11, 'text-anchor': anchor
+      }, label);
+      SVG.appendChild(text);
     }
 
-    function pathFor(arr) {
+    function pathFor(arr){
+      if (!n) return `M${X0} ${Y0}`;
       let d = '';
-      for (let i = 0; i < n; i++) {
+      for (let i = 0; i < n; i++){
         const x = scaleX(i);
         const y = scaleY(arr[i] || 0);
-        d += (i ? 'L' : 'M') + x + ' ' + y + ' ';
+        d += (i ? 'L' : 'M') + x + ' ' + y;
       }
       return d;
     }
 
-    // линии
-    SVG.appendChild(
-      sEl('path', {
-        d: pathFor(total),
-        fill: 'none',
-        stroke: '#4b7bec',
-        'stroke-width': 2,
-      }),
-    );
-    SVG.appendChild(
-      sEl('path', {
-        d: pathFor(unique),
-        fill: 'none',
-        stroke: '#20bf6b',
-        'stroke-width': 2,
-      }),
-    );
+    const blue  = '#0a84ff';
+    const green = '#4ed1a9';
 
-    // точки
-    function drawDots(arr, color) {
-      for (let i = 0; i < n; i++) {
-        const x = scaleX(i);
-        const y = scaleY(arr[i] || 0);
-        SVG.appendChild(
-          sEl('circle', {
-            cx: x,
-            cy: y,
-            r: 3,
-            fill: color,
-            stroke: '#0b1020',
-            'stroke-width': 1,
-          }),
-        );
+    const pTotal  = elt('path', { d: pathFor(yTotal),  fill:'none', stroke:blue,  'stroke-width':2.2 });
+    const pUnique = elt('path', { d: pathFor(yUnique), fill:'none', stroke:green, 'stroke-width':2.2 });
+    SVG.appendChild(pTotal);
+    SVG.appendChild(pUnique);
+
+    // легенда
+    const legend = elt('g');
+    const lx = X0 + 6;
+    const ly = Y1 + 10;
+    legend.appendChild(elt('rect',{x:lx,y:ly,width:10,height:10,fill:blue,rx:2}));
+    legend.appendChild(elt('text',{x:lx+16,y:ly+9,fill:'#a5c4f1','font-size':12},'Всего авторизаций'));
+    legend.appendChild(elt('rect',{x:lx+190,y:ly,width:10,height:10,fill:green,rx:2}));
+    legend.appendChild(elt('text',{x:lx+206,y:ly+9,fill:'#a5c4f1','font-size':12},'Уникальных HUM'));
+    SVG.appendChild(legend);
+
+    if (!n) return;
+
+    // ===== hover / tooltip =====
+    const hover = elt('g', { style:'pointer-events:none' });
+    const vline = elt('line', { x1:X0, y1:Y1, x2:X0, y2:Y0, stroke:'#8fa4c6', 'stroke-width':1, 'stroke-opacity':'0.5' });
+    const dotT  = elt('circle', { r:4, fill:blue,  stroke:'#0b1a2b', 'stroke-width':1 });
+    const dotU  = elt('circle', { r:4, fill:green, stroke:'#0b1a2b', 'stroke-width':1 });
+
+    hover.appendChild(vline);
+    hover.appendChild(dotT);
+    hover.appendChild(dotU);
+
+    // тултип
+    const tip = elt('g');
+    const tipBg = elt('rect',{x:0,y:0,rx:6,ry:6,fill:'#0b1a2b',stroke:'#213047','stroke-width':1,opacity:'0.95'});
+    const tipL1 = elt('text',{x:10,y:16,fill:'#a5c4f1','font-size':12});
+    const tipL2 = elt('text',{x:10,y:34,fill:'#a5c4f1','font-size':12});
+    const tipL3 = elt('text',{x:10,y:52,fill:'#a5c4f1','font-size':12});
+    tip.appendChild(tipBg);
+    tip.appendChild(tipL1);
+    tip.appendChild(tipL2);
+    tip.appendChild(tipL3);
+    hover.appendChild(tip);
+
+    SVG.appendChild(hover);
+
+    function setTip(index){
+      const label = xDates[index] || '';
+      const tVal  = Number(yTotal[index]  || 0);
+      const uVal  = Number(yUnique[index] || 0);
+      const x = scaleX(index);
+      const yT = scaleY(tVal);
+      const yU = scaleY(uVal);
+
+      vline.setAttribute('x1', x);
+      vline.setAttribute('x2', x);
+      dotT.setAttribute('cx', x); dotT.setAttribute('cy', yT);
+      dotU.setAttribute('cx', x); dotU.setAttribute('cy', yU);
+
+      tipL1.textContent = label;
+      tipL2.textContent = `Всего: ${fmtInt(tVal)}`;
+      tipL3.textContent = `Уник.: ${fmtInt(uVal)}`;
+
+      const maxLen = Math.max(tipL1.textContent.length, tipL2.textContent.length, tipL3.textContent.length);
+      const tipW = clamp(20 + maxLen * 7.2, 120, 260);
+      const tipH = 62;
+      tipBg.setAttribute('width', tipW);
+      tipBg.setAttribute('height', tipH);
+
+      const center = (X0 + X1) / 2;
+      const isRight = x > center;
+      const baseX = isRight ? (x - 8 - tipW) : (x + 8);
+      const baseY = Math.min(yT, yU) - 10 - tipH;
+
+      const finalX = clamp(baseX, X0, X1 - tipW);
+      const finalY = clamp(baseY, Y1, Y0 - tipH);
+      tip.setAttribute('transform', `translate(${finalX},${finalY})`);
+    }
+
+    function resetTip(){
+      vline.setAttribute('x1', X0);
+      vline.setAttribute('x2', X0);
+      dotT.setAttribute('cx', -9999);
+      dotT.setAttribute('cy', -9999);
+      dotU.setAttribute('cx', -9999);
+      dotU.setAttribute('cy', -9999);
+      tip.setAttribute('transform', 'translate(-9999,-9999)');
+    }
+    resetTip();
+
+    const overlay = elt('rect',{
+      x:X0,y:Y1,width:(X1-X0),height:(Y0-Y1),
+      fill:'transparent', style:'cursor:crosshair'
+    });
+    SVG.appendChild(overlay);
+
+    function handlePos(clientX){
+      const rect = SVG.getBoundingClientRect();
+      const x = clamp(clientX - rect.left, X0, X1);
+      const t = (X1 === X0) ? 0 : (x - X0) * (n - 1) / (X1 - X0);
+      const idx = clamp(Math.round(t), 0, n - 1);
+      setTip(idx);
+    }
+    function onMove(e){
+      if (e.touches && e.touches.length){
+        handlePos(e.touches[0].clientX);
+      } else {
+        handlePos(e.clientX);
       }
     }
-    drawDots(total, '#4b7bec');
-    drawDots(unique, '#20bf6b');
+
+    overlay.addEventListener('mousemove', onMove, { passive:true });
+    overlay.addEventListener('touchmove', onMove, { passive:true });
+    overlay.addEventListener('mouseenter', onMove, { passive:true });
+    overlay.addEventListener('mouseleave', resetTip, { passive:true });
   }
 
-  // ===== обработчики кнопок и инпутов =====
-
-  document.querySelectorAll('[data-preset]').forEach((btn) => {
+  // ===== presets & wiring =====
+  document.querySelectorAll('[data-preset]').forEach(btn => {
     btn.addEventListener('click', () => {
       const p = btn.getAttribute('data-preset');
       if (p === 'all') {
-        lastPreset = 'all';
-        if (fromEl) fromEl.value = '';
-        if (toEl) toEl.value = '';
+        // "Все" — очищаем даты, просим бэкенд сам отдать полный диапазон
+        fromEl.value = '';
+        toEl.value   = '';
         run();
       } else {
-        const days = Number(p) || 0;
-        lastPreset = days || null;
-        const tz = 'Europe/Moscow';
-        const t = today(tz);
-        if (fromEl) fromEl.value = addDays(t, -days);
-        if (toEl) toEl.value = t;
+        const days = Number(p) || 7;
+        const t = todayIso();
+        fromEl.value = addDays(t, -days);
+        toEl.value   = t;
         run();
       }
     });
   });
 
-  if (applyBtn) {
-    applyBtn.addEventListener('click', () => {
-      lastPreset = null;
-      run();
-    });
-  }
+  applyBtn?.addEventListener('click', run);
+  includeHumEl?.addEventListener('change', run);
 
-  if (includeHumEl) {
-    includeHumEl.addEventListener('change', () => {
-      lastPreset = null;
-      run();
-    });
-  }
+  fromEl?.addEventListener('change', () => {
+    if (toEl.value && fromEl.value > toEl.value) toEl.value = fromEl.value;
+  });
+  toEl?.addEventListener('change', () => {
+    if (fromEl.value && toEl.value < fromEl.value) fromEl.value = toEl.value;
+  });
 
-  if (fromEl) {
-    fromEl.addEventListener('change', () => {
-      if (toEl && toEl.value && fromEl.value > toEl.value) {
-        toEl.value = fromEl.value;
-      }
-      lastPreset = null;
-    });
-  }
-
-  if (toEl) {
-    toEl.addEventListener('change', () => {
-      if (fromEl && fromEl.value && toEl.value < fromEl.value) {
-        fromEl.value = toEl.value;
-      }
-      lastPreset = null;
-    });
-  }
-
-  // старт: 30 дней от «сегодня»
-  (function init() {
-    const tz = 'Europe/Moscow';
-    const t = today(tz);
-    if (fromEl) fromEl.value = addDays(t, -30);
-    if (toEl) toEl.value = t;
-    lastPreset = 30;
+  // старт — последние 30 дней
+  (function init(){
+    const t = todayIso();
+    fromEl.value = addDays(t, -30);
+    toEl.value   = t;
     run();
   })();
 })();
