@@ -15,6 +15,7 @@ td.avatar-cell img.avatar-img {
   margin: 6px auto;
   border: 1px solid #23324a;
 }
+
 @media (max-width: 600px) {
   td.avatar-cell img.avatar-img {
     width: 32px;
@@ -22,7 +23,7 @@ td.avatar-cell img.avatar-img {
   }
 }
 
-/* Вертикальное центрирование ячеек в таблице "Пользователи" */
+/* Вертикальное центрирование всех ячеек в таблице "Пользователи" */
 #users_tbody td {
-  vertical-align: middle;
+  vertical-align: middle !important;
 }
