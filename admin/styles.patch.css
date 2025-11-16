@@ -25,3 +25,7 @@ td.avatar-cell img.avatar-img {
 table tbody td {
   vertical-align: middle;
 }
+/* Вертикальное центрирование баланса в таблице "Пользователи" */
+.panel-body table tbody td.right {
+  vertical-align: middle;
+}
