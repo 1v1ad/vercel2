@@ -12,6 +12,8 @@
   const includeHumEl = document.getElementById('range-include-hum');
   const applyBtn = document.getElementById('range-apply');
 
+  let lastPreset = null; // 'all' | number | null
+
   // ===== helpers =====
   function apiBase(){
     return (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
@@ -21,25 +23,32 @@
   }
   function today(tz){
     const d = new Date();
-    const fmt = new Intl.DateTimeFormat('sv-SE',{ timeZone: tz||'Europe/Moscow', year:'numeric',month:'2-digit',day:'2-digit' });
-    return fmt.format(d); // YYYY-MM-DD
+    if (!tz) return d.toISOString().slice(0,10);
+    try{
+      const s = d.toLocaleString('en-CA',{ timeZone:tz, year:'numeric', month:'2-digit', day:'2-digit' });
+      return s.slice(0,10);
+    }catch(_){
+      return d.toISOString().slice(0,10);
+    }
   }
   function addDays(iso, delta){
-    const d = new Date(iso + 'T00:00:00Z');
-    d.setUTCDate(d.getUTCDate() + delta);
+    const d = new Date(iso+'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate()+delta);
     return d.toISOString().slice(0,10);
   }
-  function setPreset(days){
-    const tz='Europe/Moscow';
-    const t = today(tz);
-    fromEl.value = addDays(t, -Number(days));
-    toEl.value   = t;
-    run();
-  }
-  const clamp = (v, a, b)=> Math.max(a, Math.min(b, v));
-  const fmtInt = (n)=> (Number(n)||0).toLocaleString('ru-RU');
 
-  // ===== fetch & draw =====
+  function clearSvg(){
+    while (SVG.firstChild) SVG.removeChild(SVG.firstChild);
+  }
+
+  function elt(tag, attrs, text){
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    if (attrs) for (const k in attrs) el.setAttribute(k, attrs[k]);
+    if (text!=null) el.textContent = text;
+    return el;
+  }
+
+  // ===== запрос и отрисовка =====
   async function run(){
     const API = apiBase();
     if (!API) return;
@@ -48,6 +57,7 @@
     if (fromEl.value) qs.set('from', fromEl.value);
     if (toEl.value)   qs.set('to',   toEl.value);
     if (includeHumEl) qs.set('include_hum', includeHumEl.checked ? '1' : '0');
+    if (lastPreset === 'all') qs.set('preset', 'all');
 
     const r = await fetch(API + '/api/admin/range?' + qs.toString(), { headers: headers(), cache:'no-store' });
     const j = await r.json().catch(()=>({}));
@@ -57,39 +67,66 @@
       return;
     }
 
-    const xs = j.days.map(d => d.date || d.day);
-    const sTotal  = j.days.map(d => Number(d.auth_total  || 0));   // СИНИЙ
-    const sUnique = j.days.map(d => Number(d.auth_unique || 0));   // ЗЕЛЁНЫЙ
-    drawLine(xs, sTotal, sUnique);
-    noteEl.textContent = `Период: ${j.from} – ${j.to} • дней: ${j.days.length}`;
+    const days = j.days;
+    const xDates = days.map(d=>d.date);
+    const total = days.map(d=>Number(d.total)||0);
+    const unique = days.map(d=>Number(d.unique)||0);
+
+    draw(total, unique, xDates);
+
+    if (days.length) {
+      const first = days[0].date;
+      const last  = days[days.length-1].date;
+      noteEl.textContent = `Показано ${days.length} дней: ${first} — ${last}`;
+    } else {
+      noteEl.textContent = 'Нет данных';
+    }
   }
 
-  function drawLine(xDates, yTotal, yUnique){
-    // очистка SVG
-    while (SVG.firstChild) SVG.removeChild(SVG.firstChild);
+  function draw(total, unique, xDates){
+    clearSvg();
+    const W = Number(SVG.getAttribute('width') || 600);
+    const H = Number(SVG.getAttribute('height')|| 240);
+    const padLeft   = 40;
+    const padRight  = 12;
+    const padTop    = 10;
+    const padBottom = 26;
 
-    const box = SVG.getBoundingClientRect();
-    const W = Math.max(320, box.width|0);
-    const H = Math.max(180, (SVG.getAttribute('height')|0) || 260);
-    SVG.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const n = total.length;
+    if (!n) {
+      noteEl.textContent = 'Нет данных';
+      return;
+    }
 
-    const pad = { l:42, r:12, t:12, b:26 };
-    const X0 = pad.l, X1 = W - pad.r;
-    const Y0 = H - pad.b, Y1 = pad.t;
-    const n  = xDates.length;
+    const maxY = Math.max(
+      1,
+      Math.max(...total),
+      Math.max(...unique)
+    );
 
-    // границы и шкалы
-    const maxY = Math.max(1, Math.max(...yTotal, ...yUnique));
-    const scaleX = (i)=> (n<=1 ? X0 : X0 + (i*(X1-X0)/(n-1)));
-    const scaleY = (v)=> (Y0 - (v * (Y0-Y1) / maxY));
+    const plotW = W - padLeft - padRight;
+    const plotH = H - padTop - padBottom;
 
-    // сетка Y (4 линии)
-    for (let g=0; g<=4; g++){
-      const val = Math.round(maxY * g / 4);
-      const y = scaleY(val);
-      const line = elt('line', {x1:X0, y1:y, x2:X1, y2:y, stroke:'#1b2737','stroke-width':1});
-      const lbl  = elt('text', {x:X0-6, y:y+4, fill:'#8fa4c6','font-size':11,'text-anchor':'end'}, String(val));
-      SVG.appendChild(line); SVG.appendChild(lbl);
+    const scaleX = (i)=> padLeft + (n<=1? plotW/2 : (i*(plotW/(n-1))));
+    const scaleY = (v)=> padTop + (maxY===0 ? plotH : plotH - (v/maxY)*plotH);
+
+    // фон и оси
+    SVG.appendChild(elt('rect',{x:0,y:0,width:W,height:H,fill:'transparent'}));
+    SVG.appendChild(elt('line',{x1:padLeft,y1:padTop,x2:padLeft,y2:H-padBottom,stroke:'#23324a','stroke-width':1}));
+    SVG.appendChild(elt('line',{x1:padLeft,y1:H-padBottom,x2:W-padRight,y2:H-padBottom,stroke:'#23324a','stroke-width':1}));
+
+    // горизонтальные линии
+    const gridSteps = 4;
+    for (let i=1;i<=gridSteps;i++){
+      const v = (maxY/gridSteps)*i;
+      const y = scaleY(v);
+      SVG.appendChild(elt('line',{
+        x1:padLeft, y1:y, x2:W-padRight, y2:y,
+        stroke:'#1b2738', 'stroke-width':1, 'stroke-dasharray':'3 3'
+      }));
+      SVG.appendChild(elt('text',{
+        x:padLeft-4, y:y+4, 'text-anchor':'end', fill:'#8fa4c6','font-size':'10'
+      }, String(Math.round(v))));
     }
 
     // ось X: 6 меток
@@ -97,7 +134,13 @@
     for (let i=0;i<ticks;i++){
       const idx = Math.round(i*(n-1)/(ticks-1));
       const x = scaleX(idx);
-      const lbl = elt('text',{x, y:H-6, fill:'#8fa4c6','font-size':11,'text-anchor': i==0?'start':(i==ticks-1?'end':'middle')}, xDates[idx]||'');
+      const lbl = elt('text',{
+        x,
+        y:H-6,
+        fill:'#8fa4c6',
+        'font-size':'10',
+        'text-anchor': (i===0 ? 'start' : (i===ticks-1 ? 'end' : 'middle'))
+      }, xDates[idx] || '');
       SVG.appendChild(lbl);
     }
 
@@ -105,134 +148,102 @@
     function pathFor(arr){
       let d = '';
       for (let i=0;i<n;i++){
-        const x = scaleX(i), y = scaleY(arr[i]||0);
-        d += (i?'L':'M') + x + ' ' + y;
+        const x = scaleX(i);
+        const y = scaleY(arr[i]||0);
+        d += (i===0 ? 'M' : 'L') + x + ' ' + y + ' ';
       }
       return d;
     }
 
-    // Линии: TOTAL — синий, UNIQUE — зелёный
-    const colorBlue  = '#0a84ff';
-    const colorGreen = '#4ed1a9';
+    // линии
+    const totalPath  = elt('path',{ d:pathFor(total),  fill:'none', stroke:'#4b7bec','stroke-width':2 });
+    const uniquePath = elt('path',{ d:pathFor(unique), fill:'none', stroke:'#20bf6b','stroke-width':2 });
+    SVG.appendChild(totalPath);
+    SVG.appendChild(uniquePath);
 
-    const pTotal  = elt('path',{ d: pathFor(yTotal),  fill:'none', stroke: colorBlue,  'stroke-width':2.5 });
-    const pUnique = elt('path',{ d: pathFor(yUnique), fill:'none', stroke: colorGreen, 'stroke-width':2.5 });
-    SVG.appendChild(pTotal);
-    SVG.appendChild(pUnique);
-
-    // легенда
-    const kx = X0 + 6, ky = Y1 + 10;
-    SVG.appendChild(elt('rect',{x:kx, y:ky, width:10, height:10, fill: colorBlue,  rx:2}));
-    SVG.appendChild(elt('text',{x:kx+16, y:ky+9, fill:'#a5c4f1','font-size':12}, 'Всего авторизаций'));
-    SVG.appendChild(elt('rect',{x:kx+180, y:ky, width:10, height:10, fill: colorGreen, rx:2}));
-    SVG.appendChild(elt('text',{x:kx+196, y:ky+9, fill:'#a5c4f1','font-size':12}, 'Уникальных'));
-
-    // --- Hover: линия, точки и тултип ---
-    if (n >= 1) {
-      const hover = elt('g', {style:'pointer-events:none'});
-      const vline = elt('line', {x1:X0, y1:Y1, x2:X0, y2:Y0, stroke:'#8fa4c6','stroke-opacity':'0.5','stroke-width':1});
-      const dotTotal  = elt('circle', {r:4, fill: colorBlue,  stroke:'#0b1a2b','stroke-width':1});
-      const dotUnique = elt('circle', {r:4, fill: colorGreen, stroke:'#0b1a2b','stroke-width':1});
-      const tip = tooltipGroup();
-      hover.appendChild(vline); hover.appendChild(dotTotal); hover.appendChild(dotUnique); hover.appendChild(tip.g);
-      SVG.appendChild(hover);
-
-      // прозрачный оверлей для событий мыши/тача
-      const overlay = elt('rect', {x:X0, y:Y1, width:(X1-X0), height:(Y0-Y1), fill:'transparent', style:'cursor:crosshair'});
-      SVG.appendChild(overlay);
-
-      function onPos(clientX){
-        const rect = SVG.getBoundingClientRect();
-        const x = clamp(clientX - rect.left, X0, X1);
-        const t = (X1===X0) ? 0 : (x - X0) * (n-1) / (X1 - X0);
-        const i = clamp(Math.round(t), 0, n-1);
-
-        const xi = scaleX(i);
-        const yTi = scaleY(yTotal[i]||0);
-        const yUi = scaleY(yUnique[i]||0);
-
-        vline.setAttribute('x1', xi);
-        vline.setAttribute('x2', xi);
-
-        dotTotal.setAttribute('cx', xi);
-        dotTotal.setAttribute('cy', yTi);
-        dotUnique.setAttribute('cx', xi);
-        dotUnique.setAttribute('cy', yUi);
-
-        const leftSide = (xi > (X0 + X1)/2) ? (xi - 8 - tip.W) : (xi + 8);
-        const tipX = clamp(leftSide, X0, X1 - tip.W);
-        const tipY = clamp(Math.min(yTi, yUi) - 10 - tip.H, Y1, Y0 - tip.H);
-
-        tip.set([
-          { color:'#a5c4f1', label: xDates[i] },
-          { color: colorBlue,  label: 'Всего: ' + fmtInt(yTotal[i]||0) },
-          { color: colorGreen, label: 'Уник.: ' + fmtInt(yUnique[i]||0) }
-        ], tipX, tipY);
+    // точки
+    function drawDots(arr, color){
+      for (let i=0;i<n;i++){
+        const x = scaleX(i);
+        const y = scaleY(arr[i]||0);
+        SVG.appendChild(elt('circle',{cx:x,cy:y,r:3,fill:color,stroke:'#0b1020','stroke-width':1}));
       }
+    }
+    drawDots(total,'#4b7bec');
+    drawDots(unique,'#20bf6b');
 
-      function handleMove(e){
-        if (e.touches && e.touches.length) onPos(e.touches[0].clientX);
-        else onPos(e.clientX);
-      }
-      overlay.addEventListener('mousemove', handleMove, {passive:true});
-      overlay.addEventListener('touchmove', handleMove, {passive:true});
-      overlay.addEventListener('mouseenter', (e)=> handleMove(e), {passive:true});
-      overlay.addEventListener('mouseleave', ()=>{
-        // спрячем hover, пока мышь вне зоны
-        vline.setAttribute('x1', X0);
-        vline.setAttribute('x2', X0);
-        dotTotal.setAttribute('cx', -9999);
-        dotTotal.setAttribute('cy', -9999);
-        dotUnique.setAttribute('cx', -9999);
-        dotUnique.setAttribute('cy', -9999);
-        tip.set([], -9999, -9999);
-      });
+    // hover: вертикальная линия + тултип
+    const hoverLine = elt('line',{
+      x1:0,y1:padTop,x2:0,y2:H-padBottom,
+      stroke:'#ffffff22','stroke-width':1,visibility:'hidden'
+    });
+    SVG.appendChild(hoverLine);
+
+    const tooltipBg = elt('rect',{
+      x:0,y:0,width:140,height:44,rx:6,ry:6,
+      fill:'#02040a',stroke:'#23324a','stroke-width':1,visibility:'hidden'
+    });
+    const tooltipDate = elt('text',{x:0,y:0,fill:'#e8ecf7','font-size':'11',visibility:'hidden'});
+    const tooltipTotal = elt('text',{x:0,y:0,fill:'#4b7bec','font-size':'11',visibility:'hidden'});
+    const tooltipUnique = elt('text',{x:0,y:0,fill:'#20bf6b','font-size':'11',visibility:'hidden'});
+
+    SVG.appendChild(tooltipBg);
+    SVG.appendChild(tooltipDate);
+    SVG.appendChild(tooltipTotal);
+    SVG.appendChild(tooltipUnique);
+
+    function showTooltip(i, clientX){
+      if (i<0 || i>=n) return;
+      const x = scaleX(i);
+      hoverLine.setAttribute('x1', x);
+      hoverLine.setAttribute('x2', x);
+      hoverLine.setAttribute('visibility','visible');
+
+      const date = xDates[i] || '';
+      const t = total[i] || 0;
+      const u = unique[i] || 0;
+
+      tooltipDate.textContent = date;
+      tooltipTotal.textContent = 'Всего: ' + t;
+      tooltipUnique.textContent = 'Уникальных: ' + u;
+
+      const pad = 8;
+      const ttWidth = 150;
+      let ttX = x + 10;
+      if (ttX + ttWidth > W) ttX = x - ttWidth - 10;
+      const ttY = padTop + 10;
+
+      tooltipBg.setAttribute('x', ttX);
+      tooltipBg.setAttribute('y', ttY);
+      tooltipDate.setAttribute('x', ttX + pad);
+      tooltipDate.setAttribute('y', ttY + 14);
+      tooltipTotal.setAttribute('x', ttX + pad);
+      tooltipTotal.setAttribute('y', ttY + 28);
+      tooltipUnique.setAttribute('x', ttX + pad);
+      tooltipUnique.setAttribute('y', ttY + 42);
+
+      tooltipBg.setAttribute('visibility','visible');
+      tooltipDate.setAttribute('visibility','visible');
+      tooltipTotal.setAttribute('visibility','visible');
+      tooltipUnique.setAttribute('visibility','visible');
     }
 
-    // --- helpers ---
-    function elt(tag, attrs, text){
-      const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
-      if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
-      if (text!=null) e.appendChild(document.createTextNode(text));
-      return e;
+    function hideTooltip(){
+      hoverLine.setAttribute('visibility','hidden');
+      tooltipBg.setAttribute('visibility','hidden');
+      tooltipDate.setAttribute('visibility','hidden');
+      tooltipTotal.setAttribute('visibility','hidden');
+      tooltipUnique.setAttribute('visibility','hidden');
     }
-    function tooltipGroup(){
-      const g = elt('g');
-      const bg = elt('rect', {x:0,y:0,rx:6,ry:6,fill:'#0b1a2b',stroke:'#213047','stroke-width':1,opacity:'0.95'});
-      const line1 = elt('text',{x:10,y:16,fill:'#a5c4f1','font-size':12});
-      const line2 = elt('text',{x:10,y:34,fill:'#a5c4f1','font-size':12});
-      const line3 = elt('text',{x:10,y:52,fill:'#a5c4f1','font-size':12});
-      const dot2 = elt('rect',{x:10,y:24,width:8,height:8,rx:2,ry:2,fill:'#0a84ff'});   // blue
-      const dot3 = elt('rect',{x:10,y:42,width:8,height:8,rx:2,ry:2,fill:'#4ed1a9'});  // green
-      g.appendChild(bg); g.appendChild(line1);
-      g.appendChild(dot2); g.appendChild(line2);
-      g.appendChild(dot3); g.appendChild(line3);
 
-      const obj = {
-        g, W: 160, H: 62,
-        set(items, x, y){
-          // items: [{color?, label}, ...] — первая строка дата
-          const l1 = items[0]?.label || '';
-          const l2 = items[1]?.label || '';
-          const l3 = items[2]?.label || '';
-          line1.textContent = l1;
-          line2.textContent = l2;
-          line3.textContent = l3;
-          if (items[1]?.color) dot2.setAttribute('fill', items[1].color);
-          if (items[2]?.color) dot3.setAttribute('fill', items[2].color);
-
-          // простая ширина по макс длине
-          const maxLen = Math.max(l1.length, l2.length, l3.length);
-          this.W = clamp(20 + maxLen*7.2, 120, 220);
-          bg.setAttribute('width', this.W);
-          bg.setAttribute('height', this.H);
-          g.setAttribute('transform', `translate(${x},${y})`);
-        }
-      };
-      // скрыть по умолчанию — уводим влево
-      obj.set([], -9999, -9999);
-      return obj;
-    }
+    SVG.addEventListener('mousemove', (ev)=>{
+      const rect = SVG.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      const rel = (x - padLeft) / (W - padLeft - padRight);
+      const idx = Math.round(rel * (n-1));
+      showTooltip(idx, ev.clientX);
+    });
+    SVG.addEventListener('mouseleave', hideTooltip);
   }
 
   // пресеты
@@ -240,17 +251,33 @@
     btn.addEventListener('click', ()=>{
       const p = btn.getAttribute('data-preset');
       if (p === 'all') {
-        fromEl.value = ''; toEl.value = '';
+        lastPreset = 'all';
+        fromEl.value = '';
+        toEl.value   = '';
         run();
       } else {
-        setPreset(Number(p));
+        const days = Number(p) || 0;
+        lastPreset = days || null;
+        setPreset(days);
       }
     });
   });
   applyBtn?.addEventListener('click', run);
   includeHumEl?.addEventListener('change', run);
-  fromEl?.addEventListener('change', ()=>{ if (toEl.value && fromEl.value>toEl.value) toEl.value=fromEl.value; });
-  toEl?.addEventListener('change',   ()=>{ if (fromEl.value && toEl.value<fromEl.value) fromEl.value=toEl.value; });
+  fromEl?.addEventListener('change', ()=>{
+    if (toEl.value && fromEl.value>toEl.value) toEl.value=fromEl.value;
+  });
+  toEl?.addEventListener('change',   ()=>{
+    if (fromEl.value && toEl.value<fromEl.value) fromEl.value=toEl.value;
+  });
+
+  function setPreset(days){
+    const tz='Europe/Moscow';
+    const t = today(tz);
+    fromEl.value = addDays(t, -days);
+    toEl.value   = t;
+    run();
+  }
 
   // старт: 30 дней
   (function init(){
