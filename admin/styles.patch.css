@@ -27,3 +27,12 @@ td.avatar-cell img.avatar-img {
 .panel-body table tbody td {
   vertical-align: middle;
 }
+
+/* Фикс для колонки "Баланс" в таблице Пользователи:
+   не даём .panel .right превращать ячейки в flex-контейнеры */
+.panel-body table th.right,
+.panel-body table td.right {
+  display: table-cell;
+  text-align: right;
+  vertical-align: middle;
+}
