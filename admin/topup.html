@@ -75,7 +75,13 @@
   // ---------- utils
   const $ = (s)=>document.querySelector(s);
   const log = (s)=>{ $('#log').textContent = String(s||''); };
-  const fmt = (ts)=>{ try{ return new Date(ts).toLocaleString(); }catch{ return ts||''; } };
+  const fmt = (ts)=> {
+  const s = ts == null ? '' : String(ts);
+  if (!s) return '';
+  // сервер уже вернул московское время — просто приводим к виду "YYYY-MM-DD HH:MM:SS"
+  return s.slice(0,19).replace('T',' ');
+};
+
   const pick = (obj, arr, d)=>{ for (const k of arr) if (obj && obj[k]!=null && obj[k]!=='' ) return obj[k]; return d; };
 
   // ---------- storage
