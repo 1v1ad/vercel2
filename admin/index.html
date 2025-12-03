@@ -228,16 +228,11 @@
   <script>
 /* ===== helpers ===== */
 function toMSK(iso){
-  if(!iso) return '';
+  if (!iso) return '';
   try{
-    const s = String(iso);
-    const d = new Date(s.endsWith('Z') ? s : (s + 'Z')); // treat as UTC
-    const p = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: 'Europe/Moscow', hour12: false,
-      year:'numeric', month:'2-digit', day:'2-digit',
-      hour:'2-digit', minute:'2-digit', second:'2-digit'
-    }).formatToParts(d).reduce((o,part)=> (o[part.type]=part.value,o),{});
-    return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
+    // Сервер уже отдал время в нужной зоне (MSK),
+    // здесь только аккуратно режем до "YYYY-MM-DD HH:MM:SS".
+    return String(iso).slice(0,19).replace('T',' ');
   }catch(e){
     return String(iso).slice(0,19).replace('T',' ');
   }
