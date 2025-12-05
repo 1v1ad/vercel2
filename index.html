@@ -64,8 +64,8 @@
     @media (max-width:480px){ .card::before{ --borderw:2px } .card-media{ margin:14px -16px -24px } }
   </style>
 
-<style>
-/* === mask final: all-sides soft fade + symmetric spacing === */
+  <style>
+  /* === mask final: all-sides soft fade + symmetric spacing === */
   .card .card-media{ margin:20px 0 20px !important; }
   .card .card-media img.fade-sides{
     -webkit-mask-image: radial-gradient(ellipse at center, black 84%, rgba(0,0,0,0) 100%);
@@ -74,15 +74,15 @@
   @media (max-width:480px){
     .card .card-media{ margin:16px 0 16px !important; }
   }
-</style>
+  </style>
 </head>
 <body>
   <header><b><span class="gg">GG</span> ROOM</b></header>
 
   <main class="wrap">
     <section class="card" id="hero-mask">
-  <h1>Авторизация</h1>
-  <div class="auth">
+      <h1>Авторизация</h1>
+      <div class="auth">
         <!-- VK -->
         <button class="btn vk" id="vk-login">
           <span class="vk-icon"><img src="assets/vk-logo.svg" alt="VK"></span>
@@ -91,21 +91,71 @@
 
         <!-- Telegram -->
         <div id="tg-auth" class="tg-auth"></div>
-  <p class="status" id="status"></p>
-  <div class="badges"><div class="badge">Bitcoin</div><div class="badge">Ethereum</div><div class="badge">Solana</div></div>
-  <div class="card-media">
-    <img class="fade-sides" src="assets/Bitcoin2.webp?v=2025-10-25_20-30-59" alt="Bitcoin" loading="lazy" decoding="async" style="display:block;width:100%;height:auto;object-fit:contain" />
-  </div>
-</section>
+
+        <p class="status" id="status"></p>
+        <div class="badges">
+          <div class="badge">Bitcoin</div>
+          <div class="badge">Ethereum</div>
+          <div class="badge">Solana</div>
+        </div>
+        <div class="card-media">
+          <img class="fade-sides" src="assets/Bitcoin2.webp?v=2025-10-25_20-30-59" alt="Bitcoin" loading="lazy" decoding="async" style="display:block;width:100%;height:auto;object-fit:contain" />
+        </div>
+      </div>
+    </section>
   </main>
 
   <script>
     const API = 'https://vercel2pr.onrender.com';
     const TG_BOT_ID = 8236271394;
+    // чтобы gg-linker.js тоже знал базовый API
+    window.GG_API_BASE = API;
 
-    document.getElementById('vk-login').onclick = () => {
-      window.location.href = API + '/api/auth/vk/start';
-    };
+    // единый генератор / гарант устройства
+    function ensureDeviceId(){
+      try{
+        let id = localStorage.getItem('device_id');
+        if(!id){
+          const a = new Uint8Array(16);
+          (crypto.getRandomValues || crypto.randomFillSync).call(crypto, a);
+          id = Array.from(a).map(x => x.toString(16).padStart(2,'0')).join('');
+          localStorage.setItem('device_id', id);
+        }
+        document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';
+        return id;
+      } catch(e){
+        const id = (Date.now().toString(16) + Math.random().toString(16).slice(2)).slice(0,32);
+        try{ localStorage.setItem('device_id', id); } catch{}
+        document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';
+        return id;
+      }
+    }
+
+    function getBrowserDeviceId() {
+      const m = document.cookie.match(/(?:^|;\s*)device_id=([^;]+)/);
+      if (m) return decodeURIComponent(m[1]);
+      // если cookie нет — создаём
+      return ensureDeviceId();
+    }
+
+    function startVkLogin(mode = 'login') {
+      const url = new URL(API + '/api/auth/vk/start');
+      url.searchParams.set('mode', mode);
+      url.searchParams.set('redirect', window.location.href);
+
+      const deviceId = getBrowserDeviceId();
+      if (deviceId) {
+        url.searchParams.set('device_id', deviceId);
+      }
+
+      window.location.href = url.toString();
+    }
+
+    // вешаем обработчик на кнопку VK
+    const vkBtn = document.getElementById('vk-login');
+    if (vkBtn) {
+      vkBtn.addEventListener('click', () => startVkLogin('login'));
+    }
 
     async function warmAndMountTg() {
       try { await fetch(API + '/health', { cache: 'no-store' }); } catch {}
@@ -119,24 +169,6 @@
         s.setAttribute('data-userpic', 'false');
         s.setAttribute('data-request-access', 'write');
 
-        function ensureDeviceId(){
-          try{
-            let id = localStorage.getItem('device_id');
-            if(!id){
-              const a = new Uint8Array(16);
-              (crypto.getRandomValues||crypto.randomFillSync).call(crypto,a);
-              id = Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join('');
-              localStorage.setItem('device_id', id);
-            }
-            document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';
-            return id;
-          }catch(e){
-            const id=(Date.now().toString(16)+Math.random().toString(16).slice(2)).slice(0,32);
-            try{localStorage.setItem('device_id', id);}catch{}
-            document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';
-            return id;
-          }
-        }
         const did = ensureDeviceId();
         s.setAttribute('data-auth-url', API + '/api/auth/tg/callback?device_id=' + encodeURIComponent(did));
 
@@ -144,23 +176,29 @@
         if (mount) mount.appendChild(s);
         setTimeout(() => {
           const hasIframe = !!mount?.querySelector('iframe');
-          if (!hasIframe) document.getElementById('tg-fallback').style.display = 'flex';
+          if (!hasIframe) {
+            const fb = document.getElementById('tg-fallback');
+            if (fb) fb.style.display = 'flex';
+          }
         }, 1200);
       }, 200);
     }
     warmAndMountTg();
 
-    document.getElementById('tg-fallback').addEventListener('click', (e) => {
-      e.preventDefault();
-      const origin = window.location.origin;
-      const url = 'https://oauth.telegram.org/auth'
-        + '?bot_id=' + TG_BOT_ID
-        + '&origin=' + encodeURIComponent(origin)
-        + '&embed=1'
-        + '&request_access=write'
-        + '&return_to=' + encodeURIComponent(origin + '/');
-      window.open(url, '_blank', 'noopener');
-    });
+    const tgFallback = document.getElementById('tg-fallback');
+    if (tgFallback) {
+      tgFallback.addEventListener('click', (e) => {
+        e.preventDefault();
+        const origin = window.location.origin;
+        const url = 'https://oauth.telegram.org/auth'
+          + '?bot_id=' + TG_BOT_ID
+          + '&origin=' + encodeURIComponent(origin)
+          + '&embed=1'
+          + '&request_access=write'
+          + '&return_to=' + encodeURIComponent(origin + '/');
+        window.open(url, '_blank', 'noopener');
+      });
+    }
 
     (function handleLoggedRedirect(){
       const params = new URLSearchParams(location.search);
@@ -172,60 +210,27 @@
     })();
   </script>
 
-  <!-- фон-склейка (без изменений) и подпитка /api/me — оставляй как у тебя -->
-
-
-<script>
-(function(){
-  function maskOnce(){
-    try {
-      const s = document.querySelector('section.card h1'); 
-      if (!s) return;
-      if (/Войдите.*выигрывать/.test((s.textContent||''))) {
-        s.textContent = 'Авторизация';
-        const badges = document.querySelector('.badges');
-        if (badges) badges.innerHTML = '<div class="badge">Bitcoin</div><div class="badge">Ethereum</div><div class="badge">Solana</div>';
-        const img = document.querySelector('.card-media img');
-        if (img) { img.src = 'assets/Bitcoin2.webp?v=mask-final'; img.classList.add('fade-sides'); }
+  <!-- фон-склейка (без изменений) -->
+  <script>
+    (function(){
+      function maskOnce(){
+        try {
+          const s = document.querySelector('section.card h1');
+          if (!s) return;
+          if (/Войдите.*выигрывать/.test((s.textContent || ''))) {
+            s.textContent = 'Авторизация';
+            const badges = document.querySelector('.badges');
+            if (badges) badges.innerHTML = '<div class="badge">Bitcoin</div><div class="badge">Ethereum</div><div class="badge">Solana</div>';
+            const img = document.querySelector('.card-media img');
+            if (img) { img.src = 'assets/Bitcoin2.webp?v=mask-final'; img.classList.add('fade-sides'); }
+          }
+        } catch(e){}
       }
-    } catch(e){}
-  }
-  document.addEventListener('DOMContentLoaded', maskOnce);
-  window.addEventListener('load', maskOnce);
-})();
-</script>
-
+      document.addEventListener('DOMContentLoaded', maskOnce);
+      window.addEventListener('load', maskOnce);
+    })();
+  </script>
 
   <script defer src="/gg-linker.js"></script>
-
-<script>
-  function getBrowserDeviceId() {
-    const m = document.cookie.match(/(?:^|;\s*)device_id=([^;]+)/);
-    return m ? decodeURIComponent(m[1]) : null;
-  }
-
-  function startVkLogin(mode = 'login') {
-    const apiBase = window.GG_API_BASE; // как у тебя уже настроено
-
-    const url = new URL(apiBase + '/api/auth/vk/start');
-    url.searchParams.set('mode', mode);
-    url.searchParams.set('redirect', window.location.href);
-
-    const deviceId = getBrowserDeviceId();
-    if (deviceId) {
-      url.searchParams.set('device_id', deviceId);
-    }
-
-    window.location.href = url.toString();
-  }
-
-  // вешаем на кнопку VK-логина на странице авторизации
-  const vkBtn = document.getElementById('vk-login-btn');
-  if (vkBtn) {
-    vkBtn.addEventListener('click', () => startVkLogin('login'));
-  }
-</script>
-
-  
 </body>
 </html>
