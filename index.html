@@ -197,5 +197,35 @@
 
 
   <script defer src="/gg-linker.js"></script>
+
+<script>
+  function getBrowserDeviceId() {
+    const m = document.cookie.match(/(?:^|;\s*)device_id=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
+  function startVkLogin(mode = 'login') {
+    const apiBase = window.GG_API_BASE; // как у тебя уже настроено
+
+    const url = new URL(apiBase + '/api/auth/vk/start');
+    url.searchParams.set('mode', mode);
+    url.searchParams.set('redirect', window.location.href);
+
+    const deviceId = getBrowserDeviceId();
+    if (deviceId) {
+      url.searchParams.set('device_id', deviceId);
+    }
+
+    window.location.href = url.toString();
+  }
+
+  // вешаем на кнопку VK-логина на странице авторизации
+  const vkBtn = document.getElementById('vk-login-btn');
+  if (vkBtn) {
+    vkBtn.addEventListener('click', () => startVkLogin('login'));
+  }
+</script>
+
+  
 </body>
 </html>
