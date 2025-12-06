@@ -1,55 +1,124 @@
 // admin/admin-auth-headers.js
-// Safe shim: auto-add X-Admin-Password to ALL /api/admin requests (absolute or relative).
-// Does not touch your existing app logic.
+// Safe shim: auto-add X-Admin-Password to ALL /api/admin requests (absolute or relative)
+// + глобальный переключатель HUM-склейки для всей админки.
 
-(function(){
-  function getApi(){
+(function () {
+  function getApi() {
     const raw = (window.API || localStorage.getItem('ADMIN_API') || '').toString().trim();
-    if (raw) return raw.replace(/\/+$/,''); // drop trailing /
+    if (raw) return raw.replace(/\/+$/, ''); // убираем хвостовые /
     return location.origin;
   }
-  function getPwd(){
+
+  function getPwd() {
     return (localStorage.getItem('ADMIN_PWD') || '').toString();
   }
 
-  // Expose helper for manual use if needed
-  window.adminHeaders = function adminHeaders(){
+  // Экспортируем хелпер, чтобы его могли использовать другие скрипты
+  window.adminHeaders = function adminHeaders() {
     return { 'X-Admin-Password': getPwd() };
   };
 
-  const _fetch = window.fetch;
-  window.fetch = function patchedFetch(input, init){
-    init = init || {};
-    let urlStr = '';
-    try { urlStr = (typeof input === 'string') ? input : input.url; } catch(_){ urlStr = ''; }
+  // --- Перехватываем fetch для /api/admin* ---
+  const _fetch = (window.fetch || fetch).bind(window);
 
-    // Decide if request targets admin API (absolute or relative)
+  window.fetch = function patchedFetch(input, init) {
+    init = init || {};
+
     try {
+      let urlStr = '';
+      if (typeof input === 'string') {
+        urlStr = input;
+      } else if (input && typeof input.url === 'string') {
+        urlStr = input.url;
+      } else if (input && input.url != null) {
+        urlStr = String(input.url);
+      }
+
       const api = getApi();
       const relPrefix = '/api/admin';
       let isAdmin = false;
 
       if (urlStr) {
-        try {
-          const u = new URL(urlStr, location.href);
-          // matches {API}/api/admin* or same-origin /api/admin*
-          if ((api && u.href.startsWith(api + relPrefix)) ||
-              (u.origin === location.origin && u.pathname.startsWith(relPrefix))) {
-            isAdmin = true;
-          }
-        } catch(_) {}
+        const u = new URL(urlStr, location.href);
+        // {API}/api/admin* или /api/admin* на том же origin
+        if (
+          (api && u.href.startsWith(api + relPrefix)) ||
+          (u.origin === location.origin && u.pathname.startsWith(relPrefix))
+        ) {
+          isAdmin = true;
+        }
       }
 
       if (isAdmin) {
-        let headers = init.headers || {};
-        const h = new Headers(headers);
+        const h = new Headers(init.headers || {});
         if (!h.has('X-Admin-Password')) h.set('X-Admin-Password', getPwd());
         const obj = {};
-        h.forEach((v,k)=>{ obj[k]=v; });
+        h.forEach((v, k) => {
+          obj[k] = v;
+        });
         init.headers = obj;
       }
-    } catch(_){}
+    } catch (_) {}
 
     return _fetch(input, init);
   };
+
+  // --- Глобальный флаг HUM-склейки ---
+
+  const HUM_KEY = 'ADMIN_INCLUDE_HUM';
+
+  function readHum() {
+    try {
+      const v = (localStorage.getItem(HUM_KEY) || '1').toString().toLowerCase();
+      if (v === '0' || v === 'false' || v === 'no') return false;
+      return true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function writeHum(val) {
+    try {
+      localStorage.setItem(HUM_KEY, val ? '1' : '0');
+    } catch (_) {}
+  }
+
+  // Публичные функции, чтобы все скрипты админки читали один и тот же флаг
+  window.getAdminHumFlag = function () {
+    return readHum();
+  };
+
+  window.setAdminHumFlag = function (v) {
+    const val = !!v;
+    writeHum(val);
+    try {
+      window.dispatchEvent(new CustomEvent('adminHumToggle', { detail: { value: val } }));
+    } catch (_) {}
+  };
+
+  // Синхронизация с чекбоксом в тулбаре (если есть)
+  document.addEventListener('DOMContentLoaded', function () {
+    const cb = document.getElementById('hum-toggle');
+    const note = document.getElementById('hum-toggle-note');
+    if (!cb) return;
+
+    const current = readHum();
+    cb.checked = current;
+
+    if (note) {
+      note.textContent = current
+        ? 'Показываем с учётом HUM-склейки'
+        : 'Показываем по отдельным user_id';
+    }
+
+    cb.addEventListener('change', function () {
+      const val = !!cb.checked;
+      if (note) {
+        note.textContent = val
+          ? 'Показываем с учётом HUM-склейки'
+          : 'Показываем по отдельным user_id';
+      }
+      window.setAdminHumFlag(val);
+    });
+  });
 })();
