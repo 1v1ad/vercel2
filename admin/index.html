@@ -61,6 +61,38 @@
   /* скрываем самый длинный столбец (UA) на телефоне */
   table thead th:nth-child(7), table tbody td:nth-child(7) { display: none; }
 }
+
+      .hum-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .hum-toggle input {
+    margin: 0;
+  }
+
+  .hum-note {
+    margin-left: 8px;
+    font-size: 12px;
+    opacity: 0.85;
+  }
+
+  @media (max-width: 720px) {
+    .hum-toggle {
+      display: flex;
+      margin: 6px 0 0 0;
+    }
+    .hum-note {
+      display: block;
+      margin-left: 0;
+      margin-top: 4px;
+    }
+  }
+
   </style>
 </head>
 <body>
