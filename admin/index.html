@@ -65,13 +65,20 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="toolbar">
+ <div class="toolbar">
       <input id="admin-api" type="text" placeholder="https://vercel2pr.onrender.com" />
       <input id="admin-pwd" type="password" placeholder="Пароль администратора" />
       <button id="admin-save">Сохранить</button>
       <button id="admin-check">Проверка</button>
       <span class="muted">API и пароль сохраняются в localStorage</span>
+
+      <label class="hum-toggle">
+        <input type="checkbox" id="hum-toggle" />
+        <span>HUM-склейка</span>
+      </label>
+      <span id="hum-toggle-note" class="muted hum-note"></span>
     </div>
+
 
     <div class="grid">
       <div class="card">
