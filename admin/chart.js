@@ -24,111 +24,118 @@
     const maxBase = Math.max(1, ...totals, ...uniques);
     const max = Math.ceil(maxBase * headroom);
 
-    const plotH = H - padB - padT;
-    const groupW = Math.max(28, (W - padL - 16) / Math.max(1, days.length)); // ширина «дня» как контейнера
+    const n = Math.max(1, days.length);
+    const chartWidth = W - padL - 16;
+    const groupWidth = chartWidth / n;
+    const barWidth = (groupWidth - 2 * outerGap - innerGap) / 2;
 
-    // ширина каждой колонки с учётом внутреннего (innerGap) и внешнего (outerGap) зазоров
-    const barW = Math.max(10, (groupW - innerGap - outerGap*2) / 2);
+    const y = v => (H - padB) - (v * (H - padB - padT) / max);
 
-    // оси/сетка
-    const axis = document.createElementNS(NS,'line');
-    axis.setAttribute('x1', padL); axis.setAttribute('y1', padT);
-    axis.setAttribute('x2', padL); axis.setAttribute('y2', H-padB);
-    axis.setAttribute('stroke','#274260'); svg.appendChild(axis);
+    // horizontal lines + labels
+    for (let i = 0; i <= 4; i++){
+      const val = Math.round(max * i / 4);
+      const yy = y(val);
+      const line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', padL);
+      line.setAttribute('x2', W - 8);
+      line.setAttribute('y1', yy);
+      line.setAttribute('y2', yy);
+      line.setAttribute('stroke', '#1b2737');
+      line.setAttribute('stroke-width', '1');
+      svg.appendChild(line);
 
-    for(let i=0;i<=4;i++){
-      const y = padT + plotH * i/4;
-      const ln = document.createElementNS(NS,'line');
-      ln.setAttribute('x1', padL); ln.setAttribute('y1', y);
-      ln.setAttribute('x2', W-8);  ln.setAttribute('y2', y);
-      ln.setAttribute('stroke', i===4 ? '#274260' : '#173046');
-      ln.setAttribute('stroke-dasharray', i===4 ? '0' : '3 5');
-      svg.appendChild(ln);
-
-      const t = document.createElementNS(NS,'text');
-      t.setAttribute('x', 8); t.setAttribute('y', y+4);
-      t.setAttribute('fill','#88a7d6'); t.setAttribute('font-size','11');
-      t.textContent = Math.round(max * (1 - i/4));
-      svg.appendChild(t);
+      const label = document.createElementNS(NS, 'text');
+      label.textContent = val;
+      label.setAttribute('x', padL - 6);
+      label.setAttribute('y', yy + 4);
+      label.setAttribute('fill', '#8fa4c6');
+      label.setAttribute('font-size', '11');
+      label.setAttribute('text-anchor', 'end');
+      svg.appendChild(label);
     }
 
-    days.forEach((d,i)=>{
-      // левая граница «контейнера дня»
-      const gx = padL + 10 + i*groupW;
-      const baseY = H - padB;
+    days.forEach((d, idx) => {
+      const x0 = padL + idx * groupWidth + outerGap;
+      const totalH  = totals[idx];
+      const uniqueH = uniques[idx];
 
-      const vt = Number(d.auth_total ?? d.count ?? 0);
-      const vu = Number(d.auth_unique ?? d.unique ?? 0);
-      const ht = plotH * (vt / max);
-      const hu = plotH * (vu / max);
+      const b1 = document.createElementNS(NS, 'rect');
+      b1.setAttribute('x', x0);
+      b1.setAttribute('y', y(totalH));
+      b1.setAttribute('width', barWidth);
+      b1.setAttribute('height', Math.max(0, (H - padB) - y(totalH)));
+      b1.setAttribute('fill', '#0a84ff');
+      svg.appendChild(b1);
 
-      // внутри контейнера дня отступаем outerGap слева
-      const xT = gx + outerGap;                 // total (синий)
-      const xU = xT + barW + innerGap;          // unique (зелёный)
+      const b2 = document.createElementNS(NS, 'rect');
+      b2.setAttribute('x', x0 + barWidth + innerGap);
+      b2.setAttribute('y', y(uniqueH));
+      b2.setAttribute('width', barWidth);
+      b2.setAttribute('height', Math.max(0, (H - padB) - y(uniqueH)));
+      b2.setAttribute('fill', '#4ed1a9');
+      svg.appendChild(b2);
 
-      const rt = document.createElementNS(NS,'rect');
-      rt.setAttribute('x', xT); rt.setAttribute('y', baseY - ht);
-      rt.setAttribute('width', barW); rt.setAttribute('height', ht);
-      rt.setAttribute('fill', '#4ea0ff'); svg.appendChild(rt);
-
-      const lt = document.createElementNS(NS,'text');
-      lt.setAttribute('x', xT + barW/2);
-      lt.setAttribute('y', Math.max(12, baseY - ht - 4));
-      lt.setAttribute('fill', '#cfe3ff'); lt.setAttribute('font-size','11');
-      lt.setAttribute('text-anchor','middle'); lt.textContent = vt; svg.appendChild(lt);
-
-      const ru = document.createElementNS(NS,'rect');
-      ru.setAttribute('x', xU); ru.setAttribute('y', baseY - hu);
-      ru.setAttribute('width', barW); ru.setAttribute('height', hu);
-      ru.setAttribute('fill', '#39d98a'); svg.appendChild(ru);
-
-      const lu = document.createElementNS(NS,'text');
-      lu.setAttribute('x', xU + barW/2);
-      lu.setAttribute('y', Math.max(12, baseY - hu - 4));
-      lu.setAttribute('fill', '#d6ffe8'); lu.setAttribute('font-size','11');
-      lu.setAttribute('text-anchor','middle'); lu.textContent = vu; svg.appendChild(lu);
-
-      // центр подписи — по центру реального контента: 2 бара + innerGap, со сдвигом outerGap
-      const tx = document.createElementNS(NS,'text');
-      tx.setAttribute('x', gx + outerGap + (barW*2 + innerGap)/2);
-      tx.setAttribute('y', H - 8);
-      tx.setAttribute('fill','#9fb4d9'); tx.setAttribute('font-size','11');
-      tx.setAttribute('text-anchor','middle'); tx.textContent = labelDM(d.date||'');
-      svg.appendChild(tx);
+      const label = document.createElementNS(NS, 'text');
+      label.textContent = labelDM(d.day || d.date || '');
+      label.setAttribute('x', x0 + barWidth + innerGap / 2);
+      label.setAttribute('y', H - 8);
+      label.setAttribute('fill', '#8fa4c6');
+      label.setAttribute('font-size', '11');
+      label.setAttribute('text-anchor', 'middle');
+      svg.appendChild(label);
     });
 
-    const legend = document.createElementNS(NS,'g');
-    [['#4ea0ff','Авторизации'],['#39d98a','Уникальные HUM']].forEach((it,idx)=>{
-      const x = padL + 10 + idx*150, y = 16;
-      const r = document.createElementNS(NS,'rect');
-      r.setAttribute('x',x); r.setAttribute('y',y-10);
-      r.setAttribute('width',14); r.setAttribute('height',14);
-      r.setAttribute('rx',3); r.setAttribute('fill',it[0]); legend.appendChild(r);
-      const t = document.createElementNS(NS,'text');
-      t.setAttribute('x',x+20); t.setAttribute('y',y+1);
-      t.setAttribute('fill','#9fb4d9'); t.setAttribute('font-size','12');
-      t.textContent = it[1]; legend.appendChild(t);
-    });
-    svg.appendChild(legend);
+    // легенда
+    const legendY = padT;
+    const legendX = padL;
+    const r1 = document.createElementNS(NS, 'rect');
+    r1.setAttribute('x', legendX);
+    r1.setAttribute('y', legendY);
+    r1.setAttribute('width', 10);
+    r1.setAttribute('height', 10);
+    r1.setAttribute('fill', '#0a84ff');
+    svg.appendChild(r1);
+
+    const t1 = document.createElementNS(NS, 'text');
+    t1.textContent = 'Авторизации';
+    t1.setAttribute('x', legendX + 16);
+    t1.setAttribute('y', legendY + 9);
+    t1.setAttribute('fill', '#a5c4f1');
+    t1.setAttribute('font-size', '12');
+    svg.appendChild(t1);
+
+    const r2 = document.createElementNS(NS, 'rect');
+    r2.setAttribute('x', legendX + 140);
+    r2.setAttribute('y', legendY);
+    r2.setAttribute('width', 10);
+    r2.setAttribute('height', 10);
+    r2.setAttribute('fill', '#4ed1a9');
+    svg.appendChild(r2);
+
+    const t2 = document.createElementNS(NS, 'text');
+    t2.textContent = 'Уникальные HUM';
+    t2.setAttribute('x', legendX + 156);
+    t2.setAttribute('y', legendY + 9);
+    t2.setAttribute('fill', '#a5c4f1');
+    t2.setAttribute('font-size', '12');
+    svg.appendChild(t2);
   }
 
-   async function load() {
+  async function load(){
     const root = api(); if (!root) return;
     const humFlag = window.getAdminHumFlag ? (window.getAdminHumFlag() ? 1 : 0) : 1;
-    const r = await fetch(
-      root + `/api/admin/daily?days=7&tz=Europe/Moscow&include_hum=${humFlag}`,
-      { headers: headers(), cache: 'no-store' }
-    );
-    const j = await r.json().catch(() => ({}));
+    const r = await fetch(root + `/api/admin/daily?days=7&tz=Europe/Moscow&include_hum=${humFlag}`, {
+      headers: headers(),
+      cache: 'no-store'
+    });
+    const j = await r.json().catch(()=>({}));
     const days = Array.isArray(j.days) ? j.days : (Array.isArray(j.daily) ? j.daily : []);
     draw(days);
   }
 
   load();
 
-  // при смене глобального переключателя — перерисовать график
   try {
     window.addEventListener('adminHumToggle', load);
   } catch (_) {}
-
 })();
