@@ -304,23 +304,35 @@ function toMSK(iso){
   // Helpers для перерисовки карточек summary
   function setText(id, v){ const el = document.getElementById(id); if (el) el.textContent = v; }
 
- async function refreshSummary(){
-  const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
-  if (!API) return;
-  // Явно просим МСК + глобальный флаг HUM
-  const humFlag = window.getAdminHumFlag ? (window.getAdminHumFlag() ? 1 : 0) : 1;
-  const r = await fetch(
-    API + '/api/admin/summary?tz=Europe/Moscow&include_hum=' + humFlag,
-    { headers: window.adminHeaders ? window.adminHeaders() : {}, cache:'no-store' }
-  );
-  const j = await r.json().catch(()=>({}));
-  if (!j || !j.ok) return;
-  setText('summary-users',  j.users ?? '—');
-  setText('summary-events', j.events ?? '—');
-  setText('summary-auth',   j.auth7_total ?? '—');
-  setText('summary-unique', j.unique7 ?? '—');
-}
+  async function refreshSummary(){
+    const API = (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
+    if (!API) return;
 
+    const humFlag = window.getAdminHumFlag ? (window.getAdminHumFlag() ? 1 : 0) : 1;
+    const url = API + '/api/admin/summary?tz=Europe/Moscow&include_hum=' + humFlag;
+
+    try{
+      const r = await fetch(url, {
+        headers: window.adminHeaders ? window.adminHeaders() : {},
+        cache:'no-store'
+      });
+      const j = await r.json().catch(()=>({}));
+      if (!j || !j.ok) return;
+      setText('summary-users',  j.users ?? '—');
+      setText('summary-events', j.events ?? '—');
+      setText('summary-auth',   j.auth7_total ?? '—');
+      setText('summary-unique', j.unique7 ?? '—');
+    }catch(e){
+      console.error('summary error', e);
+    }
+  }
+
+  // при переключении HUM-свитчера перезагружаем summary
+  try {
+    window.addEventListener('adminHumToggle', refreshSummary);
+  } catch (_) {}
+
+  // ===== Users =====
 
   // ===== Users =====
   async function refreshUsers(){
