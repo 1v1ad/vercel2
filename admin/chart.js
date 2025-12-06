@@ -112,15 +112,23 @@
     svg.appendChild(legend);
   }
 
-  async function load(){
+   async function load() {
     const root = api(); if (!root) return;
-    const hasHum = document.getElementById('daily-include-hum');
-    const inc = hasHum ? `&include_hum=${hasHum.checked ? 1 : 0}` : '';
-    const r = await fetch(root + `/api/admin/daily?days=7&tz=Europe/Moscow${inc}` + ``, { headers: headers(), cache:'no-store' });
-    const j = await r.json().catch(()=>({}));
+    const humFlag = window.getAdminHumFlag ? (window.getAdminHumFlag() ? 1 : 0) : 1;
+    const r = await fetch(
+      root + `/api/admin/daily?days=7&tz=Europe/Moscow&include_hum=${humFlag}`,
+      { headers: headers(), cache: 'no-store' }
+    );
+    const j = await r.json().catch(() => ({}));
     const days = Array.isArray(j.days) ? j.days : (Array.isArray(j.daily) ? j.daily : []);
     draw(days);
   }
+
   load();
-  try { document.getElementById('daily-include-hum')?.addEventListener('change', load); } catch(_){}
+
+  // при смене глобального переключателя — перерисовать график
+  try {
+    window.addEventListener('adminHumToggle', load);
+  } catch (_) {}
+
 })();
