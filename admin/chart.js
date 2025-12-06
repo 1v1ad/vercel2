@@ -1,40 +1,51 @@
-// admin/chart.js — V3.8 (grouped bars, safe labels, outer spacing)
+// admin/chart.js — V3.9 (grouped bars + value labels + HUM-toggle)
 (function(){
   const svg = document.getElementById('chart'); if (!svg) return;
-  const NS = 'http://www.w3.org/2000/svg';
+  const NS  = 'http://www.w3.org/2000/svg';
+
   const api = () => (localStorage.getItem('ADMIN_API') || window.API || '').replace(/\/+$/,'');
   const headers = () => (window.adminHeaders ? window.adminHeaders() : {});
 
-  const labelDM = s => (s && s.length>=10 ? `${s.slice(8,10)}.${s.slice(5,7)}` : (s||''));
+  const labelDM = s =>
+    (s && s.length >= 10)
+      ? `${s.slice(8,10)}.${s.slice(5,7)}`
+      : (s || '');
 
   function draw(days){
-    const W = svg.clientWidth || 900, H = svg.clientHeight || 300;
-    const padL = 46, padB = 28, padT = 22;
+    const W = svg.clientWidth  || 900;
+    const H = svg.clientHeight || 300;
+
+    const padL = 46;
+    const padB = 28;
+    const padT = 22;
     const headroom = 1.12;
 
-    // --- ключ к «раздвижке» между днями:
-    const innerGap = 8;     // между синим и зелёным внутри дня
-    const outerGap = 12;    // отступ слева/справа внутри каждого «дня» (даёт визуальный зазор между днями)
+    const innerGap = 8;   // расстояние между синим и зелёным внутри одного дня
+    const outerGap = 12;  // отступы от краёв «дневной группы»
 
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-    const totals  = days.map(d => Number(d.auth_total ?? d.count ?? 0));
+    const totals  = days.map(d => Number(d.auth_total  ?? d.count  ?? 0));
     const uniques = days.map(d => Number(d.auth_unique ?? d.unique ?? 0));
+
     const maxBase = Math.max(1, ...totals, ...uniques);
-    const max = Math.ceil(maxBase * headroom);
+    const max     = Math.ceil(maxBase * headroom);
 
-    const n = Math.max(1, days.length);
-    const chartWidth = W - padL - 16;
-    const groupWidth = chartWidth / n;
-    const barWidth = (groupWidth - 2 * outerGap - innerGap) / 2;
+    const n            = Math.max(1, days.length);
+    const chartWidth   = W - padL - 16;
+    const groupWidth   = chartWidth / n;
+    const barWidth     = (groupWidth - 2 * outerGap - innerGap) / 2;
+    const chartBottomY = H - padB;
 
-    const y = v => (H - padB) - (v * (H - padB - padT) / max);
+    const y = v =>
+      chartBottomY - (v * (chartBottomY - padT) / max);
 
-    // horizontal lines + labels
-    for (let i = 0; i <= 4; i++){
+    // --- сетка и подписи по Y ---
+    for (let i = 0; i <= 4; i++) {
       const val = Math.round(max * i / 4);
-      const yy = y(val);
+      const yy  = y(val);
+
       const line = document.createElementNS(NS, 'line');
       line.setAttribute('x1', padL);
       line.setAttribute('x2', W - 8);
@@ -54,27 +65,60 @@
       svg.appendChild(label);
     }
 
+    const blue  = '#0a84ff';
+    const green = '#4ed1a9';
+
+    // --- сами столбцы + цифры ---
     days.forEach((d, idx) => {
-      const x0 = padL + idx * groupWidth + outerGap;
-      const totalH  = totals[idx];
-      const uniqueH = uniques[idx];
+      const x0        = padL + idx * groupWidth + outerGap;
+      const totalVal  = totals[idx];
+      const uniqueVal = uniques[idx];
 
-      const b1 = document.createElementNS(NS, 'rect');
-      b1.setAttribute('x', x0);
-      b1.setAttribute('y', y(totalH));
-      b1.setAttribute('width', barWidth);
-      b1.setAttribute('height', Math.max(0, (H - padB) - y(totalH)));
-      b1.setAttribute('fill', '#0a84ff');
-      svg.appendChild(b1);
+      const yTotal  = y(totalVal);
+      const yUnique = y(uniqueVal);
 
-      const b2 = document.createElementNS(NS, 'rect');
-      b2.setAttribute('x', x0 + barWidth + innerGap);
-      b2.setAttribute('y', y(uniqueH));
-      b2.setAttribute('width', barWidth);
-      b2.setAttribute('height', Math.max(0, (H - padB) - y(uniqueH)));
-      b2.setAttribute('fill', '#4ed1a9');
-      svg.appendChild(b2);
+      const bar1 = document.createElementNS(NS, 'rect');
+      bar1.setAttribute('x', x0);
+      bar1.setAttribute('y', yTotal);
+      bar1.setAttribute('width', barWidth);
+      bar1.setAttribute('height', Math.max(0, chartBottomY - yTotal));
+      bar1.setAttribute('fill', blue);
+      svg.appendChild(bar1);
 
+      const bar2 = document.createElementNS(NS, 'rect');
+      bar2.setAttribute('x', x0 + barWidth + innerGap);
+      bar2.setAttribute('y', yUnique);
+      bar2.setAttribute('width', barWidth);
+      bar2.setAttribute('height', Math.max(0, chartBottomY - yUnique));
+      bar2.setAttribute('fill', green);
+      svg.appendChild(bar2);
+
+      // подписи над столбцами (если значение > 0)
+      const labelYMin = padT + 12; // чтобы не уплывали за верх
+
+      if (totalVal > 0) {
+        const t = document.createElementNS(NS, 'text');
+        t.textContent = String(totalVal);
+        t.setAttribute('x', x0 + barWidth / 2);
+        t.setAttribute('y', Math.max(yTotal - 4, labelYMin));
+        t.setAttribute('fill', '#e2ecff');
+        t.setAttribute('font-size', '11');
+        t.setAttribute('text-anchor', 'middle');
+        svg.appendChild(t);
+      }
+
+      if (uniqueVal > 0) {
+        const t2 = document.createElementNS(NS, 'text');
+        t2.textContent = String(uniqueVal);
+        t2.setAttribute('x', x0 + barWidth + innerGap + barWidth / 2);
+        t2.setAttribute('y', Math.max(yUnique - 4, labelYMin));
+        t2.setAttribute('fill', '#e2fff4');
+        t2.setAttribute('font-size', '11');
+        t2.setAttribute('text-anchor', 'middle');
+        svg.appendChild(t2);
+      }
+
+      // подпись даты под группой
       const label = document.createElementNS(NS, 'text');
       label.textContent = labelDM(d.day || d.date || '');
       label.setAttribute('x', x0 + barWidth + innerGap / 2);
@@ -85,15 +129,16 @@
       svg.appendChild(label);
     });
 
-    // легенда
+    // --- легенда ---
     const legendY = padT;
     const legendX = padL;
+
     const r1 = document.createElementNS(NS, 'rect');
     r1.setAttribute('x', legendX);
     r1.setAttribute('y', legendY);
     r1.setAttribute('width', 10);
     r1.setAttribute('height', 10);
-    r1.setAttribute('fill', '#0a84ff');
+    r1.setAttribute('fill', blue);
     svg.appendChild(r1);
 
     const t1 = document.createElementNS(NS, 'text');
@@ -109,7 +154,7 @@
     r2.setAttribute('y', legendY);
     r2.setAttribute('width', 10);
     r2.setAttribute('height', 10);
-    r2.setAttribute('fill', '#4ed1a9');
+    r2.setAttribute('fill', green);
     svg.appendChild(r2);
 
     const t2 = document.createElementNS(NS, 'text');
@@ -124,10 +169,12 @@
   async function load(){
     const root = api(); if (!root) return;
     const humFlag = window.getAdminHumFlag ? (window.getAdminHumFlag() ? 1 : 0) : 1;
-    const r = await fetch(root + `/api/admin/daily?days=7&tz=Europe/Moscow&include_hum=${humFlag}`, {
-      headers: headers(),
-      cache: 'no-store'
-    });
+
+    const r = await fetch(
+      root + `/api/admin/daily?days=7&tz=Europe/Moscow&include_hum=${humFlag}`,
+      { headers: headers(), cache:'no-store' }
+    );
+
     const j = await r.json().catch(()=>({}));
     const days = Array.isArray(j.days) ? j.days : (Array.isArray(j.daily) ? j.daily : []);
     draw(days);
