@@ -57,10 +57,13 @@
     const API = apiBase();
     if (!API) return;
 
-    const qs = new URLSearchParams({ tz: TZ });
+      const qs = new URLSearchParams({ tz: TZ });
     if (fromEl.value) qs.set('from', fromEl.value);
     if (toEl.value)   qs.set('to',   toEl.value);
-    if (includeHumEl) qs.set('include_hum', includeHumEl.checked ? '1' : '0');
+
+    const humFlag = window.getAdminHumFlag ? (window.getAdminHumFlag() ? '1' : '0') : '1';
+    qs.set('include_hum', humFlag);
+
 
     let j;
     try{
