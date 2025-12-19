@@ -235,6 +235,29 @@
       </div>
     </div>
 
+
+    <div class="grid">
+      <div class="card">
+        <h3>Занесено всего</h3>
+        <div id="fin-deposited" class="num">—</div>
+        <div class="muted" id="fin-note"></div>
+      </div>
+
+      <div class="card">
+        <h3>На балансах (обязательство)</h3>
+        <div id="fin-liabilities" class="num">—</div>
+        <div class="muted">Сумма всех user.balance (без учёта вывода)</div>
+      </div>
+
+      <div class="card">
+        <h3>Дуэли: оборот / рейк</h3>
+        <div class="num" id="fin-turnover">—</div>
+        <div class="muted">
+          <span id="fin-duels">—</span> игр • рейк <span id="fin-rake">—</span> (<span id="fin-rake-pct">—</span>%)
+        </div>
+      </div>
+    </div>
+
     <!-- ▼▼▼ НОВАЯ ПАНЕЛЬ: Диапазон ▼▼▼ -->
 <div class="panel">
   <div class="panel-header">
@@ -343,6 +366,7 @@
   <script src="/admin/events.js?v=20251114_1239"></script>
   <script src="merge-suggest.js?v=20251008y"></script>
   <script src="topup.js?v=20251008y"></script>
+  <script src="finance.js?v=20251219a"></script>
   <script src="chart.js?v=20251008y"></script>
   <script src="chart-range.js?v=20251012b"></script>
 

@@ -1,1 +1,3 @@
 Add manual split link, analytics toggle, and summary line; no other files changed.
+
+2025-12-19: Admin: add finance cards + finance.js loader (GET /api/admin/finance).
