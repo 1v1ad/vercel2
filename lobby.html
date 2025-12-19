@@ -75,6 +75,52 @@
     .wrap{ max-width:980px; margin:0 auto; padding:20px 16px }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px }
 
+    /* --- duels (1v1) --- */
+    .grid{ display:grid; grid-template-columns:1fr; gap:14px; }
+    .card h2{ margin:0 0 10px; font-size:18px; }
+    .muted{ color:var(--muted); }
+
+    .duels-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .duels-head .right{ display:flex; align-items:center; gap:8px; }
+
+    .btn.primary{ background:linear-gradient(180deg,#1b2234,#121621); border-color:rgba(244,216,138,.35); color:var(--gold); }
+    .btn.primary:hover{ filter:brightness(1.05); }
+    .btn.danger{ border-color:rgba(255,59,59,.35); color:#ffb3b3; }
+
+    .duels-create{ border-top:1px dashed var(--border); margin-top:12px; padding-top:12px; }
+    .stakes{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 10px; }
+    .stake-chip{ padding:7px 10px; border-radius:999px; border:1px solid var(--border); background:#121621; color:#e8eaf0; cursor:pointer; font-weight:700; }
+    .stake-chip:hover{ filter:brightness(1.06); }
+
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .row input{
+      width:160px; max-width:100%; padding:10px 12px;
+      border-radius:12px; border:1px solid var(--border);
+      background:#0b0f18; color:var(--text);
+      outline:none;
+    }
+    .row input:focus{ border-color:rgba(244,216,138,.45); }
+    .hint{ margin-top:8px; font-size:13px; color:var(--muted); }
+
+    .duels-list{ display:grid; grid-template-columns:1fr; gap:10px; margin-top:12px; }
+    .duel-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; border-radius:14px; border:1px solid var(--border); background:#0c1018; }
+    .duel-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+    .duel-left img{ width:38px; height:38px; border-radius:12px; object-fit:cover; background:#222; }
+    .duel-title{ font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .duel-sub{ font-size:12px; color:var(--muted); }
+    .duel-actions{ display:flex; align-items:center; gap:8px; }
+
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:#0f1219; border:1px solid var(--border); border-radius:14px;
+      padding:12px 14px; max-width:min(560px, calc(100vw - 24px));
+      box-shadow:0 12px 30px rgba(0,0,0,.4);
+      z-index:9999; display:none;
+    }
+    .toast.show{ display:block; }
+    .toast .t{ font-weight:800; margin-bottom:4px; }
+    .toast .b{ color:var(--muted); font-size:13px; }
+
     /* бренд-вид кнопок рядом с балансом */
     .hdr-user .btn.vk { background:#2787F5; border-color:#2787F5; color:#fff; }
     .hdr-user .btn.tg { background:#229ED9; border-color:#229ED9; color:#fff; }
@@ -109,10 +155,50 @@
   </header>
 
   <div class="wrap">
-    <div class="card">
-      <p>Добро пожаловать в лобби.</p>
-      <p id="provider-note" style="color:var(--muted)"></p>
+    <div class="grid">
+      <div class="card">
+        <p style="margin:0">Добро пожаловать в лобби.</p>
+        <p id="provider-note" style="margin:8px 0 0; color:var(--muted)"></p>
+      </div>
+
+      <div class="card" id="duels-card">
+        <div class="duels-head">
+          <h2 style="margin:0">Дуэли 1v1</h2>
+          <div class="right">
+            <button class="btn" id="duels-refresh" type="button">Обновить</button>
+          </div>
+        </div>
+
+        <div class="duels-create">
+          <div class="muted" style="font-size:13px">
+            Создай комнату со ставкой — второй игрок заходит, и система честно кидает монету (coinflip).
+          </div>
+
+          <div class="stakes" aria-label="Быстрые ставки">
+            <button class="stake-chip" data-stake="100" type="button">₽100</button>
+            <button class="stake-chip" data-stake="250" type="button">₽250</button>
+            <button class="stake-chip" data-stake="500" type="button">₽500</button>
+            <button class="stake-chip" data-stake="1000" type="button">₽1 000</button>
+            <button class="stake-chip" data-stake="2500" type="button">₽2 500</button>
+          </div>
+
+          <div class="row">
+            <input id="stake-input" inputmode="numeric" type="number" min="10" max="1000000" step="10" value="100" />
+            <button class="btn primary" id="duels-create" type="button">Создать комнату</button>
+          </div>
+          <div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
+        </div>
+
+        <div class="duels-list" id="duels-list">
+          <div class="muted">Загружаю комнаты…</div>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <div class="t" id="toast-title"></div>
+    <div class="b" id="toast-body"></div>
   </div>
 
   <!-- Telegram Login (асинхронно) -->
@@ -120,6 +206,9 @@
 
   <!-- Весь JS — в одном файле. Он тянет HUM-баланс, делает proof-link и меняет кнопку на «… связан». -->
   <script src="/js/lobby-balance-fix.js"></script>
+
+  <!-- Дуэли 1v1: список, создание, join/cancel -->
+  <script src="/js/duels-lobby.js"></script>
 
   <script defer src="/gg-linker.js"></script>
 </body>
