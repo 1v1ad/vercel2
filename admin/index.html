@@ -25,6 +25,7 @@
     .card { background:#111923; border:1px solid #1f2a36; border-radius:12px; padding:16px; min-height:92px; }
     .card h3 { margin:0 0 8px 0; font-weight:600; color:#9fb4d9; font-size:14px; letter-spacing:.02em; }
     .num { font-size:28px; font-weight:700; }
+    .num-rake { color:#ff5c5c; }
     .panel { background:#0e141d; border:1px solid #1c2735; border-radius:12px; margin:16px 0; overflow:hidden; }
     .panel-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #1c2735; background:#0b111a; }
     .panel-header h4 { margin:0; font-size:15px; color:#9fb4d9; }
@@ -251,9 +252,9 @@
 
       <div class="card">
         <h3>Дуэли: оборот / рейк</h3>
-        <div class="num" id="fin-turnover">—</div>
+        <div class="num"><span id="fin-turnover">—</span> / <span id="fin-rake" class="num-rake">—</span></div>
         <div class="muted">
-          <span id="fin-duels">—</span> игр • рейк <span id="fin-rake">—</span> (<span id="fin-rake-pct">—</span>%)
+          <span id="fin-duels">—</span> игр • рейк <span id="fin-rake-pct">—</span>%
         </div>
       </div>
     </div>

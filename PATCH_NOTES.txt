@@ -1,3 +1,9 @@
-Add manual split link, analytics toggle, and summary line; no other files changed.
+PATCH: vercel2 — UI tweak для карточки "Дуэли: оборот / рейк"
 
-2025-12-19: Admin: add finance cards + finance.js loader (GET /api/admin/finance).
+Что сделано:
+- В карточке "Дуэли" в главной строке теперь показывается "Оборот / Рейк"
+- Рейк подсвечен красным
+- Во второй строке осталось: "<кол-во игр> игр • рейк <процент>%"
+
+Файлы:
+- admin/index.html
