@@ -128,48 +128,7 @@
 
     /* на всякий случай вырубаем старый блок линковок, если где-то остался */
     #link-actions{ display:none !important; }
-  
-
-/* History + modal + coin overlay */
-.section-title{ font-weight:700; margin:10px 0 8px; }
-.duel-item.clickable{ cursor:pointer; }
-.duel-actions{ display:flex; gap:8px; align-items:center; }
-.badge{ font-size:12px; padding:4px 8px; border-radius:999px; background:#1b2231; color:#cdd6e7; }
-.badge.win{ background:rgba(46, 204, 113, .18); color:#7dffb2; }
-.badge.lose{ background:rgba(231, 76, 60, .16); color:#ff8a80; }
-.badge.cancel{ background:rgba(149, 165, 166, .18); color:#cfd6d7; }
-
-.modal{ position:fixed; inset:0; display:none; z-index:50; }
-.modal.show{ display:block; }
-.modal-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.55); }
-.modal-card{
-  position:relative;
-  width:min(720px, calc(100% - 24px));
-  margin:60px auto 0;
-  background:var(--card);
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;
-  box-shadow:0 20px 60px rgba(0,0,0,.45);
-  overflow:hidden;
-}
-.modal-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 14px; border-bottom:1px solid rgba(255,255,255,.06); }
-.modal-body{ padding:14px; color:var(--text); }
-.kv{ display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.08); }
-.kv:last-child{ border-bottom:none; }
-.kv .k{ color:var(--muted); }
-
-.coin-overlay{ position:fixed; inset:0; display:none; z-index:60; background:rgba(0,0,0,.65); }
-.coin-overlay.show{ display:flex; align-items:center; justify-content:center; }
-.coin-wrap{ display:flex; flex-direction:column; align-items:center; }
-.coin{
-  width:86px; height:86px; border-radius:50%;
-  background:radial-gradient(circle at 30% 30%, #fff1a8, #f2c94c 55%, #b5892e);
-  border:2px solid rgba(255,255,255,.22);
-  box-shadow:0 10px 28px rgba(0,0,0,.5);
-  animation: coinSpin 0.8s linear infinite;
-}
-@keyframes coinSpin{ 0%{ transform:rotateY(0deg); } 100%{ transform:rotateY(360deg); } }
-</style>
+  </style>
 </head>
 <body>
   <header class="hdr">
@@ -233,39 +192,21 @@
         <div class="duels-list" id="duels-list">
           <div class="muted">Загружаю комнаты…</div>
 
+        <div class="duels-head" style="margin-top:16px">
+          <h3 style="margin:0; font-size:18px">История</h3>
+          <div class="right">
+            <div class="muted" style="font-size:12px">последние игры</div>
+          </div>
+        </div>
 
-<div class="section-title" style="margin-top:14px; display:flex; justify-content:space-between; align-items:center;">
-  <span>История</span>
-  <span class="muted" style="font-size:12px">последние игры</span>
-</div>
-<div class="duels-list" id="history-list">
-  <div class="muted">Загружаю историю…</div>
-</div>        </div>
+        <div class="duels-list" id="duels-history-list">
+          <div class="muted">Загружаю историю…</div>
+        </div>
+
+        </div>
       </div>
     </div>
   </div>
-
-
-
-<!-- Модалка деталей дуэли -->
-<div class="modal" id="duel-modal" aria-hidden="true">
-  <div class="modal-backdrop" data-close="1"></div>
-  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="duel-modal-title">
-    <div class="modal-head">
-      <div id="duel-modal-title" style="font-weight:700">Дуэль</div>
-      <button class="btn" id="duel-modal-close" type="button">✕</button>
-    </div>
-    <div class="modal-body" id="modal-body"></div>
-  </div>
-</div>
-
-<!-- Оверлей "монетка" (3–4 сек) -->
-<div class="coin-overlay" id="coin-overlay" aria-hidden="true">
-  <div class="coin-wrap">
-    <div class="coin"></div>
-    <div class="muted" style="margin-top:10px; text-align:center">Монета решает судьбу…</div>
-  </div>
-</div>
 
   <div class="toast" id="toast">
     <div class="t" id="toast-title"></div>
