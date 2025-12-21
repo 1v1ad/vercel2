@@ -59,6 +59,7 @@
   }
 
   let myUserId = null;
+  let lastMyOpenSet = new Set(); // id комнат, созданных мной, которые сейчас видны в open-списке
 
   async function initMe(){
     try{
@@ -86,16 +87,15 @@
 
     for (const it of items){
       const row = document.createElement('div');
-      row.className = 'duel-item';
+      row.className = 'duel-item clickable';
+      row.setAttribute('data-id', String(it.id||''));
+      row.addEventListener('click', function(ev){
+        if (ev && ev.target && ev.target.closest && ev.target.closest('button')) return;
+        openDuelModal(it.id);
+      });
 
       const left = document.createElement('div');
       left.className = 'duel-left';
-      left.style.cursor = 'pointer';
-      left.addEventListener('click', function(ev){
-        // клик по карточке — детали (кроме кнопок)
-        if (ev && ev.target && (ev.target.closest && ev.target.closest('button'))) return;
-        openDuelModal(it.id);
-      });
 
       const img = document.createElement('img');
       img.alt = 'Создатель';
@@ -133,7 +133,89 @@
         btn.disabled = true;
         try{
           if (isMine) await cancelDuel(it.id);
-          else await joinDuel(it.id);
+ 
+  function renderHistory(items){
+    const list = byId('history-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (!items || !items.length){
+      const d = document.createElement('div');
+      d.className = 'muted';
+      d.textContent = 'История пока пуста. Сыграй дуэль — и тут появится хроника побед и трагедий.';
+      list.appendChild(d);
+      return;
+    }
+
+    for (const it of items){
+      const row = document.createElement('div');
+      row.className = 'duel-item clickable';
+      row.setAttribute('data-id', String(it.id||''));
+      row.addEventListener('click', function(ev){
+        if (ev && ev.target && ev.target.closest && ev.target.closest('button')) return;
+        openDuelModal(it.id);
+      });
+
+      const left = document.createElement('div');
+      left.className = 'duel-left';
+
+      const isCreator = myUserId && Number(it.creator_user_id) === myUserId;
+      const otherFirst = isCreator ? it.opponent_first_name : it.creator_first_name;
+      const otherLast  = isCreator ? it.opponent_last_name  : it.creator_last_name;
+      const otherName  = [otherFirst, otherLast].filter(Boolean).join(' ') || (it.opponent_user_id ? 'Игрок' : '—');
+      const otherAvatar = (isCreator ? it.opponent_avatar : it.creator_avatar) || it.creator_avatar || '';
+
+      const img = document.createElement('img');
+      img.alt = 'Игрок';
+      img.src = otherAvatar || '';
+      left.appendChild(img);
+
+      const txt = document.createElement('div');
+      txt.style.minWidth = '0';
+
+      const title = document.createElement('div');
+      title.className = 'duel-title';
+      title.textContent = fmtRub(it.stake) + ' · vs ' + otherName;
+
+      const sub = document.createElement('div');
+      sub.className = 'duel-sub';
+      const t = timeShort(it.finished_at || it.updated_at || it.created_at);
+      const pot = it.result && (it.result.pot ?? it.result.pot_amount);
+      const fee = it.result && (it.result.fee ?? it.result.fee_amount);
+      const extra = (pot!=null && fee!=null) ? (' · ' + fmtRub(pot) + ' / ' + String(fee)) : '';
+      sub.textContent = 'Комната #' + it.id + (t ? (' · ' + t) : '') + extra;
+
+      txt.appendChild(title);
+      txt.appendChild(sub);
+      left.appendChild(txt);
+
+      const right = document.createElement('div');
+      right.style.display = 'flex';
+      right.style.alignItems = 'center';
+      right.style.gap = '10px';
+
+      const badge = document.createElement('div');
+      badge.className = 'badge';
+      if (String(it.status) !== 'finished'){
+        badge.classList.add('cancel');
+        badge.textContent = 'Отмена';
+      } else if (myUserId && Number(it.winner_user_id) === myUserId){
+        badge.classList.add('win');
+        badge.textContent = 'Победа';
+      } else {
+        badge.classList.add('lose');
+        badge.textContent = 'Поражение';
+      }
+
+      right.appendChild(badge);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      list.appendChild(row);
+    }
+  }
+
+         else await joinDuel(it.id);
         } finally {
           btn.disabled = false;
         }
@@ -147,183 +229,10 @@
     }
   }
 
-  
-function whoName(prefix, it){
-  const fn = (it && it[prefix + '_first_name']) ? String(it[prefix + '_first_name']) : '';
-  const ln = (it && it[prefix + '_last_name']) ? String(it[prefix + '_last_name']) : '';
-  return (fn + ' ' + ln).trim() || '—';
-}
-
-function showCoinOverlay(text){
-  const ov = byId('coin-overlay');
-  const tx = byId('coin-text');
-  if (!ov) return Promise.resolve();
-  if (tx) tx.textContent = safeText(text || 'Подбрасываем монетку…');
-  ov.classList.add('show');
-  return new Promise(resolve => {
-    setTimeout(() => { ov.classList.remove('show'); resolve(); }, 3200);
-  });
-}
-
-async function openDuelModal(id){
-  const modal = byId('duel-modal');
-  const title = byId('duel-modal-title');
-  const body = byId('duel-modal-body');
-  if (!modal || !body) return;
-
-  modal.classList.add('show');
-  modal.setAttribute('aria-hidden','false');
-  body.innerHTML = '<div class="muted">Загружаю…</div>';
-  if (title) title.textContent = 'Дуэль #' + id;
-
-  try{
-    const { r, j } = await apiJson('/api/duels/' + encodeURIComponent(id));
-    if (!r.ok || !j || !j.ok || !j.room){
-      body.innerHTML = '<div class="muted">Не удалось загрузить детали.</div>';
-      return;
-    }
-    const d = j.room;
-    const res = d.result || {};
-    const pot = Number(res.pot || (Number(d.stake||0)*2) || 0);
-    const fee = Number(res.fee || 0);
-    const payout = Number(res.payout || 0);
-
-    const creator = (d.creator_first_name || d.creator_last_name) ? (String(d.creator_first_name||'')+' '+String(d.creator_last_name||'')).trim() : ('#'+d.creator_user_id);
-    const opp = d.opponent_user_id ? ((String(d.opponent_first_name||'')+' '+String(d.opponent_last_name||'')).trim() || ('#'+d.opponent_user_id)) : '—';
-    const winner = d.winner_user_id ? ((String(d.winner_first_name||'')+' '+String(d.winner_last_name||'')).trim() || ('#'+d.winner_user_id)) : '—';
-
-    const status = String(d.status||'');
-    const method = safeText(res.method || 'coinflip');
-
-    body.innerHTML = `
-      <div class="kv">
-        <div class="k">Статус</div><div class="v">${safeText(status)}</div>
-        <div class="k">Режим</div><div class="v">${safeText(d.mode||'1v1')}</div>
-        <div class="k">Создатель</div><div class="v">${safeText(creator)}</div>
-        <div class="k">Соперник</div><div class="v">${safeText(opp)}</div>
-        <div class="k">Победитель</div><div class="v">${safeText(winner)}</div>
-        <div class="k">Ставка</div><div class="v">${fmtRub(d.stake)}</div>
-        <div class="k">Банк (pot)</div><div class="v">${fmtRub(pot)}</div>
-        <div class="k">Рейк (fee)</div><div class="v">${fmtRub(fee)}</div>
-        <div class="k">Выплата</div><div class="v">${fmtRub(payout)}</div>
-        <div class="k">Метод</div><div class="v">${safeText(method)}</div>
-        <div class="k">Создано</div><div class="v">${safeText(d.created_at||'')}</div>
-        <div class="k">Завершено</div><div class="v">${safeText(d.finished_at||'')}</div>
-      </div>
-    `;
-  } catch(e){
-    console.error(e);
-    body.innerHTML = '<div class="muted">Ошибка сети при загрузке деталей.</div>';
-  }
-}
-
-function closeDuelModal(){
-  const modal = byId('duel-modal');
-  if (!modal) return;
-  modal.classList.remove('show');
-  modal.setAttribute('aria-hidden','true');
-}
-
-function renderHistory(items){
-  const list = byId('duels-history-list');
-  if (!list) return;
-  list.innerHTML = '';
-
-  if (!items || !items.length){
-    const d = document.createElement('div');
-    d.className = 'muted';
-    d.textContent = 'История пока пустая. Самое время устроить первую драму.';
-    list.appendChild(d);
-    return;
-  }
-
-  for (const it of items){
-    const row = document.createElement('div');
-    row.className = 'duel-item';
-
-    const left = document.createElement('div');
-    left.className = 'duel-left';
-    left.style.cursor = 'pointer';
-
-    // оппонент относительно меня
-    const creatorId = Number(it.creator_user_id||0);
-    const oppId = Number(it.opponent_user_id||0);
-    const isCreator = myUserId && creatorId === myUserId;
-    const oppName = isCreator ? whoName('opponent', it) : whoName('creator', it);
-
-    const stake = Number(it.stake||0);
-
-    const title = document.createElement('div');
-    title.style.minWidth = '0';
-    title.innerHTML = `
-      <div class="duel-title">${fmtRub(stake)} · ${safeText(oppName)}</div>
-      <div class="duel-sub">#${it.id} · ${safeText(it.status)} · ${timeShort(it.finished_at || it.updated_at || it.created_at)}</div>
-    `;
-
-    left.addEventListener('click', () => openDuelModal(it.id));
-
-    const actions = document.createElement('div');
-    actions.className = 'duel-actions';
-
-    const pill = document.createElement('span');
-    pill.className = 'pill neutral';
-
-    const winner = Number(it.winner_user_id||0);
-    if (String(it.status) === 'finished' && myUserId){
-      const won = winner === myUserId;
-      pill.className = 'pill ' + (won ? 'win' : 'lose');
-      pill.textContent = won ? 'выигрыш' : 'проигрыш';
-    } else if (String(it.status) === 'cancelled'){
-      pill.className = 'pill neutral';
-      pill.textContent = 'отмена';
-    } else {
-      pill.textContent = '—';
-    }
-
-    actions.appendChild(pill);
-
-    row.appendChild(left);
-    row.appendChild(title);
-    row.appendChild(actions);
-
-    // сделать нормальную flex-структуру
-    row.innerHTML = '';
-    row.appendChild(left);
-    row.appendChild(actions);
-
-    // слева: аватар не обязателен для истории, но красиво показать
-    const img = document.createElement('img');
-    const av = isCreator ? (it.opponent_avatar || '') : (it.creator_avatar || '');
-    if (av) img.src = av;
-    img.alt = '';
-    left.appendChild(img);
-    left.appendChild(title);
-
-    list.appendChild(row);
-  }
-}
-
-async function loadHistory(){
-  const list = byId('duels-history-list');
-  if (list) list.innerHTML = '<div class="muted">Загружаю историю…</div>';
-
-  try{
-    const { r, j } = await apiJson('/api/duels/history?limit=10');
-    if (!r.ok || !j || !j.ok){
-      // если нет юзера — просто скрываем драму
-      renderHistory([]);
-      return;
-    }
-    renderHistory(j.items || []);
-  } catch(e){
-    console.error(e);
-    renderHistory([]);
-  }
-}
-
-async function loadOpenDuels(){
+  async function loadOpenDuels(opts){
+    const silent = !!(opts && opts.silent);
     const list = byId('duels-list');
-    if (list) list.innerHTML = '<div class="muted">Загружаю комнаты…</div>';
+    if (!silent && list) list.innerHTML = '<div class="muted">Загружаю комнаты…</div>';
 
     try{
       const { r, j } = await apiJson('/api/duels?status=open&order=queue&limit=10');
@@ -333,13 +242,177 @@ async function loadOpenDuels(){
         renderList([]);
         return;
       }
-      renderList(j.items || []);
+      const items = j.items || [];
+      renderList(items);
+      handleCreatorTransitions(items); // если моя комната исчезла из open — обновим историю один раз
     } catch(e){
       console.error(e);
       toast('Сеть шалит', 'Не удалось получить комнаты.');
       renderList([]);
     }
   }
+
+
+  async function loadHistoryDuels(opts){
+    const silent = !!(opts && opts.silent);
+    const list = byId('history-list');
+    if (!silent && list) list.innerHTML = '<div class="muted">Загружаю историю…</div>';
+
+    try{
+      const { r, j } = await apiJson('/api/duels/history?limit=10');
+      if (!r.ok || !j || !j.ok){
+        if (r.status === 401) {
+          // История требует авторизацию — если сессии нет, просто покажем мягко
+          renderHistory([]);
+          return;
+        }
+        renderHistory([]);
+        return;
+      }
+      renderHistory(j.items || []);
+    } catch(e){
+      console.error(e);
+      renderHistory([]);
+    }
+  }
+
+  async function handleCreatorTransitions(openItems){
+    // Нужна только создателю: он должен сразу увидеть, что его комнату сыграли.
+    if (!myUserId) return;
+    const now = new Set();
+    for (const it of (openItems || [])){
+      if (Number(it.creator_user_id || 0) === myUserId) now.add(Number(it.id));
+    }
+
+    // Если раньше моя комната была в open, а теперь исчезла — значит её заджойнили и она завершилась/отменилась.
+    if (lastMyOpenSet && lastMyOpenSet.size){
+      const gone = [];
+      for (const id of lastMyOpenSet){
+        if (!now.has(id)) gone.push(id);
+      }
+      if (gone.length){
+        try{ toast('Дуэль завершена', 'Комната ' + gone.map(x=>'#'+x).join(', ') + ' закрылась. Обновляю историю…'); }catch(_){ }
+        try{ await Promise.all([refreshBalance(), loadHistoryDuels({ silent:true })]); }catch(_){ }
+      }
+    }
+    lastMyOpenSet = now;
+  }
+
+  let refreshInFlight = false;
+  async function refreshAll(opts){
+    if (refreshInFlight) return;
+    refreshInFlight = true;
+    try{
+      // Историю не дёргаем в авто-обновлении: только при ручном refresh/важном событии.
+      const silent = !!(opts && opts.silent);
+      if (silent){
+        await loadOpenDuels(opts);
+      } else {
+        await Promise.all([
+          loadOpenDuels(opts),
+          loadHistoryDuels(opts)
+        ]);
+      }
+    } finally {
+      refreshInFlight = false;
+    }
+  }
+
+  function startAutoRefresh(){
+    if (startAutoRefresh._started) return;
+    startAutoRefresh._started = true;
+
+    const fastMs = 4500;   // когда у меня есть открытая комната (я создатель)
+    const slowMs = 12000;  // всем остальным — без лишнего спама
+
+    async function tick(){
+      try{
+        if (!document.hidden){
+          // Авто-обновление: только open-румы. История обновляется один раз, когда моя комната исчезает.
+          await loadOpenDuels({ silent:true });
+        }
+      }catch(_){ }
+
+      const isCreatorWatching = !!(myUserId && lastMyOpenSet && lastMyOpenSet.size > 0);
+      const nextMs = isCreatorWatching ? fastMs : slowMs;
+      startAutoRefresh._t = setTimeout(tick, nextMs);
+    }
+
+    startAutoRefresh._t = setTimeout(tick, 1500);
+  }
+
+  function el(id){ return document.getElementById(id); }
+
+  function showCoin(ms){
+    const o = el('coin-overlay');
+    if (!o) return new Promise(r => setTimeout(r, ms||0));
+    o.hidden = false;
+    return new Promise(resolve => {
+      setTimeout(() => { o.hidden = true; resolve(); }, ms || 0);
+    });
+  }
+
+  function openDuelModal(id){
+    const modal = el('duel-modal');
+    const body = el('duel-modal-body');
+    const title = el('duel-modal-title');
+    if (!modal || !body) return;
+
+    modal.hidden = false;
+    if (title) title.textContent = 'Комната #' + id;
+    body.innerHTML = '<div class="muted">Загружаю детали…</div>';
+
+    apiJson('/api/duels/' + encodeURIComponent(id))
+      .then(({r,j}) => {
+        if (!r.ok || !j || !j.ok || !j.item){
+          body.innerHTML = '<div class="muted">Не удалось загрузить детали.</div>';
+          return;
+        }
+        const it = j.item;
+        const cName = [it.creator_first_name, it.creator_last_name].filter(Boolean).join(' ') || ('user#' + it.creator_user_id);
+        const oName = it.opponent_user_id ? ([it.opponent_first_name, it.opponent_last_name].filter(Boolean).join(' ') || ('user#' + it.opponent_user_id)) : '—';
+        const wName = it.winner_user_id ? ([it.winner_first_name, it.winner_last_name].filter(Boolean).join(' ') || ('user#' + it.winner_user_id)) : '—';
+
+        const res = it.result || {};
+        const pot = (res.pot != null) ? res.pot : (Number(it.stake||0) * 2);
+        const fee = (res.fee != null) ? res.fee : Math.round((Number(pot)||0) * (Number(it.fee_bps||0)/10000));
+        const payout = (res.payout != null) ? res.payout : ((Number(pot)||0) - (Number(fee)||0));
+
+        const status = safeText(it.status || '');
+
+        if (title) title.textContent = 'Комната #' + it.id + (status ? (' · ' + status) : '');
+
+        function row(k,v){
+          return '<div class="kv"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';
+        }
+
+        const html = [
+          '<div class="kv-grid">',
+          row('Режим', safeText(it.mode||'1v1')),
+          row('Ставка', safeText(it.stake)),
+          row('Банк (pot)', safeText(pot)),
+          row('Комиссия (fee)', safeText(fee)),
+          row('Выплата (payout)', safeText(payout)),
+          row('Создатель', safeText(cName)),
+          row('Соперник', safeText(oName)),
+          row('Победитель', safeText(wName)),
+          row('Создано', safeText(it.created_at||'')),
+          row('Завершено', safeText(it.finished_at||'')),
+          '</div>'
+        ].join('');
+
+        body.innerHTML = html;
+      })
+      .catch(() => {
+        body.innerHTML = '<div class="muted">Не удалось загрузить детали.</div>';
+      });
+  }
+
+  function closeDuelModal(){
+    const modal = el('duel-modal');
+    if (modal) modal.hidden = true;
+  }
+
 
   function readStake(){
     const inp = byId('stake-input');
@@ -380,7 +453,7 @@ async function loadOpenDuels(){
       }
 
       toast('Комната создана', 'Комната #' + j.room.id + ' на ' + fmtRub(stake) + '. Ждём соперника.');
-      await Promise.all([loadOpenDuels(), loadHistory(), refreshBalance()]);
+      await Promise.all([refreshAll(), refreshBalance()]);
     } catch(e){
       console.error(e);
       toast('Сеть шалит', 'Не удалось создать комнату.');
@@ -407,7 +480,7 @@ async function loadOpenDuels(){
 
       const iWon = myUserId && winner === myUserId;
 
-      await showCoinOverlay(iWon ? 'Монетка на твоей стороне…' : 'Монетка решила иначе…');
+      await showCoin(3200);
 
       if (iWon){
         toast('GG! Победа', '+' + fmtRub(payout) + ' · комиссия ' + fmtRub(fee));
@@ -415,7 +488,7 @@ async function loadOpenDuels(){
         toast('Сегодня не твой coinflip', '-' + fmtRub(stake) + '. Это не «не повезло» — это статистика. Реванш?');
       }
 
-      await Promise.all([loadOpenDuels(), loadHistory(), refreshBalance()]);
+      await Promise.all([refreshAll(), refreshBalance()]);
     } catch(e){
       console.error(e);
       toast('Сеть шалит', 'Не удалось войти в комнату.');
@@ -431,7 +504,7 @@ async function loadOpenDuels(){
         return;
       }
       toast('Комната отменена', 'Холд вернулся на баланс.');
-      await Promise.all([loadOpenDuels(), loadHistory(), refreshBalance()]);
+      await Promise.all([refreshAll(), refreshBalance()]);
     } catch(e){
       console.error(e);
       toast('Сеть шалит', 'Не удалось отменить комнату.');
@@ -453,30 +526,17 @@ async function loadOpenDuels(){
     });
 
     if (createBtn) createBtn.addEventListener('click', createDuel);
-    if (refreshBtn) refreshBtn.addEventListener('click', loadOpenDuels);
+    if (refreshBtn) refreshBtn.addEventListener('click', refreshAll);
+
+    // модалка деталей дуэли
+    const modal = byId('duel-modal');
+    const modalClose = byId('duel-modal-close');
+    if (modalClose) modalClose.addEventListener('click', closeDuelModal);
+    if (modal) modal.addEventListener('click', function(e){ if (e && e.target === modal) closeDuelModal(); });
+    window.addEventListener('keydown', function(e){ if (e && e.key === 'Escape') closeDuelModal(); });
 
     await initMe();
-    await Promise.all([loadOpenDuels(), loadHistory()]);
-
-    // модалка: закрытие
-    const modal = byId('duel-modal');
-    const closeBtn = byId('duel-modal-close');
-    if (closeBtn) closeBtn.addEventListener('click', closeDuelModal);
-    if (modal) modal.addEventListener('click', function(e){
-      const t = e && e.target;
-      if (t && (t.getAttribute && t.getAttribute('data-close')==='1')) closeDuelModal();
-    });
-    document.addEventListener('keydown', function(e){
-      if (e && e.key === 'Escape') closeDuelModal();
-    });
-
-    // авто-обновление (мягко): раз в 4.5 сек, без параллельных запросов
-    let inflight = false;
-    setInterval(async function(){
-      if (document.hidden) return;
-      if (inflight) return;
-      inflight = true;
-      try{ await Promise.all([loadOpenDuels(), loadHistory()]); } finally { inflight = false; }
-    }, 4500);
+    await refreshAll();
+    startAutoRefresh();
   });
 })();
