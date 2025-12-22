@@ -128,7 +128,37 @@
 
     /* на всякий случай вырубаем старый блок линковок, если где-то остался */
     #link-actions{ display:none !important; }
-  </style>
+  
+
+.section-title{ margin-top:14px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.section-title .h3{ font-size:18px; font-weight:700; }
+.history-list{ display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px; }
+.history-item{ cursor:pointer; padding:10px 12px; border-radius:14px; border:1px solid var(--border); background:#0c1018; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.history-left{ display:flex; flex-direction:column; gap:2px; }
+.history-right{ text-align:right; display:flex; flex-direction:column; gap:2px; }
+.pill{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px; color:var(--muted); }
+.pill.win{ color:#4ed1a9; border-color:rgba(78,209,169,.35); }
+.pill.lose{ color:#ff6b6b; border-color:rgba(255,107,107,.35); }
+.pill.cancel{ color:#c7c7c7; border-color:rgba(199,199,199,.25); }
+
+/* modal */
+.modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:9999; padding:18px; }
+.modal{ width:min(720px, 100%); border-radius:18px; border:1px solid var(--border); background:#0b0f18; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.modal-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.06); }
+.modal-title{ font-weight:800; }
+.modal-close{ cursor:pointer; border:1px solid var(--border); background:#0c1018; color:var(--text); padding:6px 10px; border-radius:10px; }
+.modal-body{ padding:14px 16px; color:var(--text); }
+.kv{ display:grid; grid-template-columns: 160px 1fr; gap:8px 12px; font-size:14px; }
+.kv .k{ color:var(--muted); }
+.kv .v{ color:var(--text); overflow-wrap:anywhere; }
+
+/* coin overlay */
+.coin-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.70); display:none; align-items:center; justify-content:center; z-index:10000; }
+.coin-card{ width:min(520px, 92vw); border-radius:18px; border:1px solid var(--border); background:#0b0f18; padding:18px; text-align:center; }
+.coin{ width:90px; height:90px; margin:10px auto 12px; border-radius:50%; border:2px solid rgba(255,215,0,.55); background:radial-gradient(circle at 30% 30%, rgba(255,215,0,.95), rgba(255,215,0,.25)); animation: coinFlip 1.05s linear infinite; }
+.coin-text{ font-size:15px; color:var(--muted); }
+@keyframes coinFlip{ 0%{ transform:rotateY(0deg) rotateX(0deg); } 50%{ transform:rotateY(180deg) rotateX(14deg); } 100%{ transform:rotateY(360deg) rotateX(0deg); } }
+</style>
 </head>
 <body>
   <header class="hdr">
@@ -191,22 +221,41 @@
 
         <div class="duels-list" id="duels-list">
           <div class="muted">Загружаю комнаты…</div>
+        
 
-        <div class="duels-head" style="margin-top:16px">
-          <h3 style="margin:0; font-size:18px">История</h3>
-          <div class="right">
-            <div class="muted" style="font-size:12px">последние игры</div>
-          </div>
-        </div>
-
-        <div class="duels-list" id="duels-history-list">
-          <div class="muted">Загружаю историю…</div>
-        </div>
-
-        </div>
+<div class="section-title">
+  <div class="h3">История</div>
+  <div class="muted">последние игры</div>
+</div>
+<div class="history-list" id="history-list">
+  <div class="muted">Загружаю историю…</div>
+</div></div>
       </div>
     </div>
   </div>
+
+
+<!-- Детали дуэли -->
+<div class="modal-backdrop" id="duel-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="duel-modal-title">Дуэль</div>
+      <button class="modal-close" id="duel-modal-close">Закрыть</button>
+    </div>
+    <div class="modal-body">
+      <div class="kv" id="duel-modal-kv"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Монетка (3–4 секунды) -->
+<div class="coin-overlay" id="coin-overlay">
+  <div class="coin-card">
+    <div style="font-weight:800; font-size:18px;">Монетка решает судьбу…</div>
+    <div class="coin" aria-hidden="true"></div>
+    <div class="coin-text">Секунду. Мы честно кидаем coinflip.</div>
+  </div>
+</div>
 
   <div class="toast" id="toast">
     <div class="t" id="toast-title"></div>
@@ -220,7 +269,7 @@
   <script src="/js/lobby-balance-fix.js"></script>
 
   <!-- Дуэли 1v1: список, создание, join/cancel -->
-  <script src="/js/duels-lobby.js"></script>
+  <script src="/js/duels-lobby.js?v=5"></script>
 
   <script defer src="/gg-linker.js"></script>
 </body>
