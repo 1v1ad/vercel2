@@ -38,7 +38,28 @@
     return s ? s.replace('.', ',') : '—';
   }
 
-  function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String(x); } }
+  
+function ymdInTz(tz){
+  try{
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz || 'Europe/Moscow',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const get = (t)=> (parts.find(p=>p.type===t)?.value || '');
+    const y = get('year');
+    const m = get('month');
+    const d = get('day');
+    if (y && m && d) return `${y}-${m}-${d}`;
+  }catch(_){}
+  // fallback: local date
+  const dt = new Date();
+  const pad = (n)=> (n<10?'0'+n:''+n);
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+}
+
+function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String(x); } }
 
   function fireApiChanged(){
     try{ window.dispatchEvent(new Event('adminApiChanged')); }catch(_){}
@@ -679,25 +700,46 @@ _usersMiniCtx = {
       _eventsMiniData = sum.events_90d || sum.events90d || sum.events90 || null;
       drawEventsMini();
 
-      // finance
-      const dep = fin?.totals?.deposited ?? fin?.deposited ?? '0';
-      const wdr = fin?.totals?.withdrawn ?? fin?.withdrawn ?? '0';
-      const liab = fin?.totals?.liabilities ?? fin?.liabilities ?? '0';
 
-      const du = fin?.duels || {};
-      const turnover = du.turnover ?? fin?.totals?.turnover ?? fin?.turnover ?? '0';
-      const rake = du.rake ?? fin?.totals?.rake ?? fin?.rake ?? '0';
-      const games = du.games ?? fin?.totals?.games ?? fin?.games ?? 0;
-      const rakePct = du.rake_pct ?? fin?.totals?.rake_pct ?? fin?.rake_pct ?? null;
+// finance (all-time + today)
+const depAll = fin?.totals?.deposited ?? fin?.deposited ?? '0';
+const wdrAll = fin?.totals?.withdrawn ?? fin?.withdrawn ?? '0';
+const liab = fin?.totals?.liabilities ?? fin?.liabilities ?? '0';
 
-      $('#sum-deposited').textContent = fmtInt(dep);
-      $('#sum-deposited-sub').textContent = `выводы: ${fmtInt(wdr)}`;
+const duAll = fin?.duels || {};
+const turnoverAll = duAll.turnover ?? fin?.totals?.turnover ?? fin?.turnover ?? '0';
+const rakeAll = duAll.rake ?? fin?.totals?.rake ?? fin?.rake ?? '0';
 
-      $('#sum-liabilities').textContent = fmtInt(liab);
+// today is calculated in the SAME TZ as backend summary
+const tzName = sum?.tz || 'Europe/Moscow';
+const today = ymdInTz(tzName);
 
-      $('#sum-turnover').textContent = fmtInt(turnover);
-      $('#sum-rake').textContent = fmtInt(rake);
-      $('#sum-turnover-sub').textContent = `${fmtInt(games)} игр • рейк ${fmtPct(rakePct)}%`;
+let finToday = null;
+try{
+  finToday = await jget(`/api/admin/finance?from=${today}&to=${today}`);
+}catch(_){
+  finToday = null;
+}
+
+const depToday = finToday?.totals?.deposited ?? finToday?.deposited ?? '0';
+const wdrToday = finToday?.totals?.withdrawn ?? finToday?.withdrawn ?? '0';
+
+const duToday = finToday?.duels || {};
+const turnoverToday = duToday.turnover ?? '0';
+const rakeToday = duToday.rake ?? '0';
+
+// Summary cards
+$('#sum-deposited-all').textContent = fmtInt(depAll);
+$('#sum-deposited-today').textContent = fmtInt(depToday);
+$('#sum-withdrawn-all').textContent = fmtInt(wdrAll);
+$('#sum-withdrawn-today').textContent = fmtInt(wdrToday);
+
+$('#sum-liabilities').textContent = fmtInt(liab);
+
+$('#sum-turnover-all').textContent = fmtInt(turnoverAll);
+$('#sum-turnover-today').textContent = fmtInt(turnoverToday);
+$('#sum-rake-all').textContent = fmtInt(rakeAll);
+$('#sum-rake-today').textContent = fmtInt(rakeToday);
 
       // mini tables
       loadMiniEvents().catch(()=>{});
