@@ -758,34 +758,42 @@ _usersMiniCtx = {
       tbody.innerHTML = `<tr><td colspan="6" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
-
+  
   async function loadEvents(){
     const tbody = $('#tbl-events tbody');
-    tbody.innerHTML = `<tr><td colspan="6" class="muted">Загрузка…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
     try{
       const r = await jget('/api/admin/events?take=100');
       const items = r.items || r.events || r.rows || [];
       if (!items.length){
-        tbody.innerHTML = `<tr><td colspan="6" class="muted">Пусто</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="muted">Пусто</td></tr>`;
         return;
       }
+
       tbody.innerHTML = items.map(it=>{
+        const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
+        const ip = it.ip ?? '';
+        const uaFull = it.ua ?? '';
+        const uaShort = uaFull ? shorten(uaFull, 64) : '';
+        const et = (it.event_type || it.type || '—');
+
         return `<tr>
-          <td class="muted">${(it.created_at||'').toString().slice(0,19).replace('T',' ')}</td>
-          <td>${escapeHtml(it.event_type || it.type || '—')}</td>
-          <td>${it.user_id ?? ''}</td>
+          <td>${it.id ?? ''}</td>
           <td>${it.hum_id ?? ''}</td>
-          <td class="right">${fmtInt(it.amount ?? 0)}</td>
-          <td class="mono">${escapeHtml(shorten(safeJson(it.payload), 180))}</td>
+          <td>${it.user_id ?? ''}</td>
+          <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(et)}</span></td>
+          <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(ip)}</span></td>
+          <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
+          <td class="muted">${escapeHtml(createdFull)}</td>
         </tr>`;
       }).join('');
     }catch(e){
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="6" class="muted">Ошибка загрузки</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
 
-  async function loadDuels(){
+async function loadDuels(){
     const tbody = $('#tbl-duels tbody');
     tbody.innerHTML = `<tr><td colspan="9" class="muted">Загрузка…</td></tr>`;
     try{
@@ -817,10 +825,10 @@ _usersMiniCtx = {
       tbody.innerHTML = `<tr><td colspan="9" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
-
+  
   async function loadMiniEvents(){
     const tbody = $('#mini-events tbody');
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">Загрузка…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
     try{
       // backend отдаёт { events: [...] } и использует параметры take/skip
       const r = await jget('/api/admin/events?take=8');
@@ -836,23 +844,37 @@ _usersMiniCtx = {
             <td class="muted">—</td>
             <td class="muted">—</td>
             <td class="muted">—</td>
-            <td class="right muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
           </tr>`;
         }
+
+        const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
+        const createdMini = createdFull ? createdFull.slice(5,16) : '';
+        const ip = it.ip ?? '';
+        const uaFull = it.ua ?? '';
+        const uaShort = uaFull ? shorten(uaFull, 42) : '';
+        const et = (it.event_type || it.type || '—');
+
         return `<tr>
-          <td class="muted">${(it.created_at||'').toString().slice(11,19)}</td>
-          <td>${escapeHtml(it.event_type || it.type || '—')}</td>
+          <td>${it.id ?? ''}</td>
+          <td>${it.hum_id ?? ''}</td>
           <td>${it.user_id ?? ''}</td>
-          <td class="right">${fmtInt(it.amount ?? 0)}</td>
+          <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(shorten(et, 22))}</span></td>
+          <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(shorten(ip, 18))}</span></td>
+          <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
+          <td class="muted" title="${escapeHtml(createdFull)}">${escapeHtml(createdMini)}</td>
         </tr>`;
       }).join('');
     }catch(e){
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="4" class="muted">Ошибка</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка</td></tr>`;
     }
   }
 
-  async function loadMiniDuels(){
+async function loadMiniDuels(){
     const tbody = $('#mini-duels tbody');
     tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
     try{

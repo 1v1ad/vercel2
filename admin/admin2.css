@@ -335,6 +335,16 @@ body{
 .table .right{text-align:right}
 .table .mono{font-family:var(--mono); white-space:normal; max-width:520px}
 
+.table .ua, .table .ip, .table .etype{
+  display:inline-block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  vertical-align:bottom;
+}
+.table .ua{max-width:260px}
+.table .ip{max-width:140px}
+.table .etype{max-width:220px}
+
 .kv{
   display:grid;
   grid-template-columns: 70px 1fr;
