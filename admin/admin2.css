@@ -338,7 +338,7 @@ body{
 /* mini duels: avatars + compact rows */
 #mini-duels td{vertical-align:middle}
 .mini-user{display:inline-flex; align-items:center; gap:6px; max-width:120px}
-.mini-ava{width:18px; height:18px; border-radius:999px; object-fit:cover; border:1px solid var(--border); background:#0e1624}
+.mini-ava{width:22px; height:22px; border-radius:999px; object-fit:cover; border:1px solid var(--border); background:#0e1624}
 .mini-id{font-family:var(--mono); font-weight:900}
 .mini-vs{color:var(--muted); font-weight:900; text-transform:uppercase; letter-spacing:.04em}
 
