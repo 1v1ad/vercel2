@@ -57,6 +57,35 @@
     if (name === 'summary') fireApiChanged();
   }
 
+  // --- Summary: Users card (всего / новые today), reacts to HUM-toggle ---
+  let _usersCard = null;
+
+  function renderUsersCard(){
+    if (!_usersCard) return;
+    const valEl = $('#sum-users');
+    const subEl = $('#sum-users-sub');
+    if (!valEl || !subEl) return;
+
+    const hum = window.getAdminHumFlag ? !!window.getAdminHumFlag() : true;
+
+    if (_usersCard.mode === 'totals') {
+      const total = hum ? _usersCard.totalCluster : _usersCard.totalRaw;
+      const today = hum ? _usersCard.todayCluster : _usersCard.todayRaw;
+      valEl.textContent = `${fmtInt(total)} / ${fmtInt(today)}`;
+      subEl.textContent = 'всего / новые today';
+      return;
+    }
+
+    // legacy (уникальные по auth за диапазон)
+    const picked = hum ? _usersCard.totalCluster : _usersCard.totalRaw;
+    valEl.textContent = fmtInt(picked);
+    subEl.textContent = `raw: ${fmtInt(_usersCard.totalRaw)} / hum: ${fmtInt(_usersCard.totalCluster)}`;
+  }
+
+  try {
+    window.addEventListener('adminHumToggle', renderUsersCard);
+  } catch (_) {}
+
   function bindNav(){
     $$('.nav-item').forEach(a=>{
       a.addEventListener('click', (e)=>{
@@ -117,13 +146,27 @@
       ]);
 
       $('#stat-admin').textContent = 'OK';
-
       // summary totals
       const t = sum.totals || {};
-      const usersRaw = t.users_raw ?? 0;
-      const usersHum = t.users_hum ?? 0;
-      $('#sum-users').textContent = fmtInt(t.users_selected ?? usersHum ?? usersRaw);
-      $('#sum-users-sub').textContent = `raw: ${fmtInt(usersRaw)} / hum: ${fmtInt(usersHum)}`;
+      // users: всего зарегистрировано / новые сегодня (реагирует на HUM-переключатель)
+      const haveTotals = (t.users_total_raw != null) || (t.users_today_raw != null);
+
+      if (haveTotals) {
+        _usersCard = {
+          mode: 'totals',
+          totalRaw: t.users_total_raw ?? 0,
+          totalCluster: t.users_total_cluster ?? 0,
+          todayRaw: t.users_today_raw ?? 0,
+          todayCluster: t.users_today_cluster ?? 0,
+        };
+        renderUsersCard();
+      } else {
+        // fallback: старое поведение (уникальные по auth за диапазон)
+        const usersRaw = t.users_raw ?? 0;
+        const usersCluster = t.users_cluster ?? t.users_hum ?? usersRaw;
+        _usersCard = { mode: 'legacy', totalRaw: usersRaw, totalCluster: usersCluster, todayRaw: 0, todayCluster: 0 };
+        renderUsersCard();
+      }
 
       // events total in range
       $('#sum-events').textContent = fmtInt(t.auth_total ?? 0);
