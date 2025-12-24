@@ -17,6 +17,10 @@
 
   function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String(x); } }
 
+  function fireApiChanged(){
+    try{ window.dispatchEvent(new Event('adminApiChanged')); }catch(_){}
+  }
+
   async function jget(path){
     const url = api() + path;
     const r = await fetch(url, { headers: (window.adminHeaders ? window.adminHeaders() : {}) });
@@ -50,6 +54,7 @@
       unmerge: 'Расклейка',
     };
     $('#page-title').textContent = titleMap[name] || name;
+    if (name === 'summary') fireApiChanged();
   }
 
   function bindNav(){
@@ -79,6 +84,7 @@
     $('#save').addEventListener('click', ()=>{
       localStorage.setItem('ADMIN_API', apiEl.value.trim());
       localStorage.setItem('ADMIN_PWD', pwdEl.value);
+      fireApiChanged();
       // пробуем сразу подтянуть summary, чтобы пользователь видел что всё ок
       loadSummary().catch(()=>{});
     });

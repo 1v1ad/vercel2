@@ -294,3 +294,13 @@ body{
   font-size:12px;
   min-height:44px;
 }
+
+
+/* Summary charts */
+.panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.input.input-date{min-width:140px;width:140px}
+.chip{height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-weight:800;cursor:pointer}
+.chip:hover{background:rgba(255,255,255,.09)}
+.chip:active{transform:translateY(1px)}
+.chart-wrap svg{display:block}
+.summary-charts .panel-head{align-items:flex-start}

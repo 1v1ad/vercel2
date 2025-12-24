@@ -7,7 +7,7 @@
 
   <link rel="icon" type="image/svg+xml"
         href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%231a73e8"/><stop offset="1" stop-color="%234ed1a9"/></linearGradient></defs><rect rx="12" width="64" height="64" fill="%23f5f7fa"/><path d="M14 44l8-24h6l8 24h-6l-1.6-5H21.6L20 44h-6z" fill="url(%23g)"/></svg>' />
-  <link rel="stylesheet" href="/admin/admin2.css?v=20251224a" />
+  <link rel="stylesheet" href="/admin/admin2.css?v=20251224c" />
 </head>
 
 <body>
@@ -156,6 +156,40 @@
               <div class="kv">
                 <div class="k">API</div><div class="v" id="stat-api">—</div>
                 <div class="k">Admin</div><div class="v" id="stat-admin">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid two summary-charts">
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Аналитика по диапазону</div>
+                <div class="panel-actions">
+                  <span class="muted tiny">c</span>
+                  <input class="input input-date" id="range-from" type="date" />
+                  <span class="muted tiny">по</span>
+                  <input class="input input-date" id="range-to" type="date" />
+                  <button class="chip" data-preset="7">7д</button>
+                  <button class="chip" data-preset="30">30д</button>
+                  <button class="chip" data-preset="90">90д</button>
+                  <button class="chip" data-preset="365">Год</button>
+                  <button class="chip" data-preset="all">Всё</button>
+                  <button class="btn sm" id="range-apply">Показать</button>
+                </div>
+              </div>
+              <div class="chart-wrap">
+                <svg id="chart-range" width="100%" height="260" aria-label="Range chart"></svg>
+                <div class="muted tiny" id="range-note" style="margin-top:6px;"></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Аналитика посещений</div>
+                <span class="chip">7 дней</span>
+              </div>
+              <div class="chart-wrap">
+                <svg id="chart" width="100%" height="260" aria-label="Visits chart"></svg>
               </div>
             </div>
           </div>
@@ -332,8 +366,10 @@
   </div>
 
   <!-- auth shim / hum toggle -->
-  <script src="/admin/admin-auth-headers.js?v=20251224a"></script>
+  <script src="/admin/admin-auth-headers.js?v=20251224c"></script>
 
-  <script src="/admin/admin2.js?v=20251224a"></script>
+  <script src="/admin/admin2.js?v=20251224c"></script>
+  <script src="/admin/chart-range.js?v=20251224c"></script>
+  <script src="/admin/chart.js?v=20251224c"></script>
 </body>
 </html>

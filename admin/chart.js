@@ -184,5 +184,6 @@
 
   try {
     window.addEventListener('adminHumToggle', load);
+    window.addEventListener('adminApiChanged', load);
   } catch (_) {}
 })();

@@ -316,6 +316,7 @@
   // если глобальный переключатель HUM меняется — перерисуем график
   try {
     window.addEventListener('adminHumToggle', run);
+    window.addEventListener('adminApiChanged', run);
   } catch (_) {}
 
   // старт — последние 30 дней
