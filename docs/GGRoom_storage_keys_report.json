@@ -1,0 +1,648 @@
+{
+  "localStorage": {
+    "api_base": [
+      {
+        "op": "localStorage.getItem",
+        "file": "gg-linker.js",
+        "line": 3,
+        "snippet": "function api(){ return (window.API_BASE || localStorage.getItem('api_base') || '').toString().trim().replace(/\\/+$/,''); }",
+        "repo": "frontend"
+      }
+    ],
+    "device_id": [
+      {
+        "op": "localStorage.getItem",
+        "file": "gg-linker.js",
+        "line": 6,
+        "snippet": "let id = localStorage.getItem('device_id') || localStorage.getItem('gg_device_id');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "gg-linker.js",
+        "line": 8,
+        "snippet": "localStorage.setItem('device_id', id);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "index.html",
+        "line": 117,
+        "snippet": "let id = localStorage.getItem('device_id');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "index.html",
+        "line": 122,
+        "snippet": "localStorage.setItem('device_id', id);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "index.html",
+        "line": 128,
+        "snippet": "try{ localStorage.setItem('device_id', id); } catch{}",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "index.original_2025-10-25_18-00-54.html",
+        "line": 127,
+        "snippet": "let id = localStorage.getItem('device_id');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "index.original_2025-10-25_18-00-54.html",
+        "line": 132,
+        "snippet": "localStorage.setItem('device_id', id);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "index.original_2025-10-25_18-00-54.html",
+        "line": 138,
+        "snippet": "try{localStorage.setItem('device_id', id);}catch{}",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "js/app.js",
+        "line": 30,
+        "snippet": "let id = localStorage.getItem('device_id');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "js/app.js",
+        "line": 31,
+        "snippet": "if(!id){ id = genUuid(); localStorage.setItem('device_id', id); }",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "js/lobby-balance-fix.js",
+        "line": 10,
+        "snippet": "let id = localStorage.getItem('device_id');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "js/lobby-balance-fix.js",
+        "line": 13,
+        "snippet": "localStorage.setItem('device_id', id);",
+        "repo": "frontend"
+      }
+    ],
+    "gg_device_id": [
+      {
+        "op": "localStorage.getItem",
+        "file": "gg-linker.js",
+        "line": 6,
+        "snippet": "let id = localStorage.getItem('device_id') || localStorage.getItem('gg_device_id');",
+        "repo": "frontend"
+      }
+    ],
+    "admin.backend": [
+      {
+        "op": "localStorage.getItem",
+        "file": "admin-test/index.html",
+        "line": 145,
+        "snippet": "backend: localStorage.getItem('admin.backend') || DEFAULT_BACKEND,",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin-test/index.html",
+        "line": 157,
+        "snippet": "localStorage.setItem('admin.backend', state.backend);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.removeItem",
+        "file": "admin-test/index.html",
+        "line": 162,
+        "snippet": "localStorage.removeItem('admin.backend');",
+        "repo": "frontend"
+      }
+    ],
+    "admin.pwd": [
+      {
+        "op": "localStorage.getItem",
+        "file": "admin-test/index.html",
+        "line": 146,
+        "snippet": "pwd: localStorage.getItem('admin.pwd') || ''",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin-test/index.html",
+        "line": 158,
+        "snippet": "localStorage.setItem('admin.pwd', state.pwd);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.removeItem",
+        "file": "admin-test/index.html",
+        "line": 163,
+        "snippet": "localStorage.removeItem('admin.pwd');",
+        "repo": "frontend"
+      }
+    ],
+    "ADMIN_API": [
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/admin-auth-headers.js",
+        "line": 7,
+        "snippet": "const raw = (window.API || localStorage.getItem('ADMIN_API') || '').toString().trim();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/admin-topup-patch.js",
+        "line": 12,
+        "snippet": "const ls = (localStorage.getItem('admin_api') || localStorage.getItem('ADMIN_API') || '').trim();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/admin2.js",
+        "line": 7,
+        "snippet": "const raw = (window.API || localStorage.getItem('ADMIN_API') || '').toString().trim();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/admin2.js",
+        "line": 76,
+        "snippet": "apiEl.value = (localStorage.getItem('ADMIN_API') || '').toString();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/admin2.js",
+        "line": 80,
+        "snippet": "localStorage.setItem('ADMIN_API', apiEl.value.trim());",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/app.js",
+        "line": 4,
+        "snippet": "const api = (window.API || localStorage.getItem('ADMIN_API') || '').toString().trim();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/app.js",
+        "line": 46,
+        "snippet": "const API = (localStorage.getItem('ADMIN_API') || '').toString().trim().replace(/\\/+$/, '');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/chart-range.js",
+        "line": 19,
+        "snippet": "return (localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/chart.js",
+        "line": 6,
+        "snippet": "const api = () => (localStorage.getItem('ADMIN_API') || window.API || '').replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/finance.js",
+        "line": 4,
+        "snippet": "return (localStorage.getItem('ADMIN_API') || '').toString().trim().replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/index.html",
+        "line": 395,
+        "snippet": "apiEl.value = localStorage.getItem('ADMIN_API') || (window.API || '');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/index.html",
+        "line": 399,
+        "snippet": "localStorage.setItem('ADMIN_API', apiEl.value.trim());",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/index.html",
+        "line": 405,
+        "snippet": "const API = (localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/index.html",
+        "line": 416,
+        "snippet": "const API = (localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/index.html",
+        "line": 447,
+        "snippet": "const API = (localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/index.html",
+        "line": 490,
+        "snippet": "const API = (localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/index.html",
+        "line": 526,
+        "snippet": "const API = (localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/index.html",
+        "line": 536,
+        "snippet": "const API = (localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,'');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/merge-suggest.js",
+        "line": 3,
+        "snippet": "function getApi(){ return (window.API || localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,''); }",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/split.js",
+        "line": 7,
+        "snippet": "if (api) localStorage.setItem('ADMIN_API', api);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/split.js",
+        "line": 12,
+        "snippet": "function getApi(){ return (localStorage.getItem('ADMIN_API') || $('#api').value || location.origin).replace(/\\/$/,''); }",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/split.js",
+        "line": 119,
+        "snippet": "$('#api').value = localStorage.getItem('ADMIN_API') || '';",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/topup.html",
+        "line": 90,
+        "snippet": "const api = localStorage.getItem('ADMIN_API') || localStorage.getItem('admin_api');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/topup.html",
+        "line": 104,
+        "snippet": "if (api) { localStorage.setItem('ADMIN_API', api); localStorage.setItem('admin_api', api); }",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/topup.js",
+        "line": 3,
+        "snippet": "function getApi(){ return (window.API || localStorage.getItem('ADMIN_API') || '').replace(/\\/+$/,''); }",
+        "repo": "frontend"
+      }
+    ],
+    "ADMIN_PWD": [
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/admin-auth-headers.js",
+        "line": 13,
+        "snippet": "return (localStorage.getItem('ADMIN_PWD') || '').toString();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/admin2.js",
+        "line": 77,
+        "snippet": "pwdEl.value = (localStorage.getItem('ADMIN_PWD') || '').toString();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/admin2.js",
+        "line": 81,
+        "snippet": "localStorage.setItem('ADMIN_PWD', pwdEl.value);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/app.js",
+        "line": 8,
+        "snippet": "return (localStorage.getItem('ADMIN_PWD') || '').toString();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/index.html",
+        "line": 396,
+        "snippet": "pwdEl.value = localStorage.getItem('ADMIN_PWD') || '';",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/index.html",
+        "line": 400,
+        "snippet": "localStorage.setItem('ADMIN_PWD', pwdEl.value);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/split.js",
+        "line": 8,
+        "snippet": "if (pwd) localStorage.setItem('ADMIN_PWD', pwd);",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/split.js",
+        "line": 13,
+        "snippet": "function getPwd(){ return (localStorage.getItem('ADMIN_PWD') || $('#pwd').value || ''); }",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/split.js",
+        "line": 120,
+        "snippet": "$('#pwd').value = localStorage.getItem('ADMIN_PWD') || '';",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/topup.html",
+        "line": 91,
+        "snippet": "const pwd = localStorage.getItem('ADMIN_PWD') || localStorage.getItem('admin_pwd');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/topup.html",
+        "line": 105,
+        "snippet": "if (pwd) { localStorage.setItem('ADMIN_PWD', pwd); localStorage.setItem('admin_pwd', pwd); }",
+        "repo": "frontend"
+      }
+    ],
+    "admin_api": [
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/admin-topup-patch.js",
+        "line": 12,
+        "snippet": "const ls = (localStorage.getItem('admin_api') || localStorage.getItem('ADMIN_API') || '').trim();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/admin-topup-patch.js",
+        "line": 64,
+        "snippet": "if (api) try { localStorage.setItem('admin_api', api); } catch {}",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/events.js",
+        "line": 6,
+        "snippet": "const v = (localStorage.getItem('admin_api') || '').trim();",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/topup.html",
+        "line": 90,
+        "snippet": "const api = localStorage.getItem('ADMIN_API') || localStorage.getItem('admin_api');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/topup.html",
+        "line": 104,
+        "snippet": "if (api) { localStorage.setItem('ADMIN_API', api); localStorage.setItem('admin_api', api); }",
+        "repo": "frontend"
+      }
+    ],
+    "admin_pwd": [
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/admin-topup-patch.js",
+        "line": 18,
+        "snippet": "const ls = (localStorage.getItem('admin_pwd') || '').trim();",
+        "repo": "frontend"
+      },
+      {
+        "op": "sessionStorage.setItem",
+        "file": "admin/admin-topup-patch.js",
+        "line": 63,
+        "snippet": "try { if (pwd) sessionStorage.setItem('admin_pwd', pwd); } catch {}",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "admin/topup.html",
+        "line": 91,
+        "snippet": "const pwd = localStorage.getItem('ADMIN_PWD') || localStorage.getItem('admin_pwd');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "admin/topup.html",
+        "line": 105,
+        "snippet": "if (pwd) { localStorage.setItem('ADMIN_PWD', pwd); localStorage.setItem('admin_pwd', pwd); }",
+        "repo": "frontend"
+      }
+    ],
+    "gg_user": [
+      {
+        "op": "localStorage.getItem",
+        "file": "js/app.js",
+        "line": 40,
+        "snippet": "const u = JSON.parse(localStorage.getItem('gg_user')||'null');",
+        "repo": "frontend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "js/lobby-balance-fix.js",
+        "line": 223,
+        "snippet": "try{ localStorage.setItem('gg_user', JSON.stringify(u)); }catch(_){}",
+        "repo": "frontend"
+      }
+    ]
+  },
+  "backend_localStorage": {
+    "device_id": [
+      {
+        "op": "localStorage.getItem",
+        "file": "js/app.js",
+        "line": 30,
+        "snippet": "let id = localStorage.getItem('device_id');",
+        "repo": "backend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "js/app.js",
+        "line": 31,
+        "snippet": "if(!id){ id = genUuid(); localStorage.setItem('device_id', id); }",
+        "repo": "backend"
+      },
+      {
+        "op": "localStorage.getItem",
+        "file": "js/lobby-balance-fix.js",
+        "line": 10,
+        "snippet": "let id = localStorage.getItem('device_id');",
+        "repo": "backend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "js/lobby-balance-fix.js",
+        "line": 13,
+        "snippet": "localStorage.setItem('device_id', id);",
+        "repo": "backend"
+      }
+    ],
+    "gg_user": [
+      {
+        "op": "localStorage.getItem",
+        "file": "js/app.js",
+        "line": 40,
+        "snippet": "const u = JSON.parse(localStorage.getItem('gg_user')||'null');",
+        "repo": "backend"
+      },
+      {
+        "op": "localStorage.setItem",
+        "file": "js/lobby-balance-fix.js",
+        "line": 195,
+        "snippet": "try{ localStorage.setItem('gg_user', JSON.stringify(u)); }catch(_){}",
+        "repo": "backend"
+      }
+    ]
+  },
+  "cookies_frontend": {
+    "device_id": [
+      {
+        "repo": "frontend",
+        "file": "gg-linker.js",
+        "line": 9,
+        "snippet": "document.cookie = 'device_id='+id+'; Path=/; Max-Age='+31536000+'; SameSite=Lax';"
+      },
+      {
+        "repo": "frontend",
+        "file": "index.html",
+        "line": 124,
+        "snippet": "document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';"
+      },
+      {
+        "repo": "frontend",
+        "file": "index.html",
+        "line": 129,
+        "snippet": "document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';"
+      },
+      {
+        "repo": "frontend",
+        "file": "index.original_2025-10-25_18-00-54.html",
+        "line": 134,
+        "snippet": "document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';"
+      },
+      {
+        "repo": "frontend",
+        "file": "index.original_2025-10-25_18-00-54.html",
+        "line": 139,
+        "snippet": "document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';"
+      },
+      {
+        "repo": "frontend",
+        "file": "js/app.js",
+        "line": 33,
+        "snippet": "document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';"
+      },
+      {
+        "repo": "frontend",
+        "file": "js/lobby-balance-fix.js",
+        "line": 15,
+        "snippet": "document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';"
+      }
+    ]
+  },
+  "cookies_backend": {
+    "device_id": [
+      {
+        "repo": "backend",
+        "file": "js/app.js",
+        "line": 33,
+        "snippet": "document.cookie = 'device_id=' + id + '; Path=/; Max-Age=' + (60*60*24*365) + '; SameSite=Lax';"
+      },
+      {
+        "repo": "backend",
+        "file": "js/lobby-balance-fix.js",
+        "line": 15,
+        "snippet": "document.cookie = 'device_id='+id+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax';"
+      },
+      {
+        "repo": "backend",
+        "file": "src/routes_auth.js",
+        "line": 124,
+        "snippet": "res.cookie('device_id', deviceIdFromQuery, {"
+      }
+    ],
+    "link_state": [
+      {
+        "repo": "backend",
+        "file": "src/routes_auth.js",
+        "line": 140,
+        "snippet": "res.cookie('link_state', JSON.stringify(st), { httpOnly:true, sameSite:'lax', secure:true, path:'/', maxAge:15*60*1000 });"
+      }
+    ],
+    "vk_state": [
+      {
+        "repo": "backend",
+        "file": "src/routes_auth.js",
+        "line": 147,
+        "snippet": "res.cookie('vk_state', state,                 { httpOnly:true, sameSite:'lax', secure:true, path:'/', maxAge:10*60*1000 });"
+      }
+    ],
+    "vk_code_verifier": [
+      {
+        "repo": "backend",
+        "file": "src/routes_auth.js",
+        "line": 148,
+        "snippet": "res.cookie('vk_code_verifier', codeVerifier,  { httpOnly:true, sameSite:'lax', secure:true, path:'/', maxAge:10*60*1000 });"
+      }
+    ],
+    "sid": [
+      {
+        "repo": "backend",
+        "file": "src/routes_auth.js",
+        "line": 404,
+        "snippet": "res.cookie('sid', sessionJwt, {"
+      },
+      {
+        "repo": "backend",
+        "file": "src/routes_tg.js",
+        "line": 192,
+        "snippet": "res.cookie('sid', jwtStr, { httpOnly:true, sameSite:'none', secure:true, path:'/', maxAge:30*24*3600*1000 });"
+      }
+    ]
+  },
+  "generated_at": "2025-12-24T17:37:02.425197"
+}
