@@ -763,8 +763,8 @@ _usersMiniCtx = {
     const tbody = $('#tbl-events tbody');
     tbody.innerHTML = `<tr><td colspan="6" class="muted">Загрузка…</td></tr>`;
     try{
-      const r = await jget('/api/admin/events?limit=100');
-      const items = r.items || [];
+      const r = await jget('/api/admin/events?take=100');
+      const items = r.items || r.events || r.rows || [];
       if (!items.length){
         tbody.innerHTML = `<tr><td colspan="6" class="muted">Пусто</td></tr>`;
         return;
@@ -822,13 +822,23 @@ _usersMiniCtx = {
     const tbody = $('#mini-events tbody');
     tbody.innerHTML = `<tr><td colspan="4" class="muted">Загрузка…</td></tr>`;
     try{
-      const r = await jget('/api/admin/events?limit=10');
-      const items = r.items || [];
-      if (!items.length){
-        tbody.innerHTML = `<tr><td colspan="4" class="muted">Пусто</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = items.map(it=>{
+      // backend отдаёт { events: [...] } и использует параметры take/skip
+      const r = await jget('/api/admin/events?take=8');
+      const items = r.items || r.events || r.rows || [];
+
+      // Чтобы высота карточки была стабильной — всегда рисуем 8 строк (пустые дополняем).
+      const norm = (items || []).slice(0, 8);
+      while (norm.length < 8) norm.push(null);
+
+      tbody.innerHTML = norm.map(it=>{
+        if (!it){
+          return `<tr>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="right muted">—</td>
+          </tr>`;
+        }
         return `<tr>
           <td class="muted">${(it.created_at||'').toString().slice(11,19)}</td>
           <td>${escapeHtml(it.event_type || it.type || '—')}</td>
@@ -846,15 +856,23 @@ _usersMiniCtx = {
     const tbody = $('#mini-duels tbody');
     tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
     try{
-      const url = api() + '/api/duels/history?limit=10';
+      const url = api() + '/api/duels/history?limit=8';
       const r = await fetch(url, { credentials: 'include' });
       const j = await r.json().catch(()=>({ ok:false }));
-      const items = j.items || [];
-      if (!items.length){
-        tbody.innerHTML = `<tr><td colspan="5" class="muted">Пусто</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = items.map(it=>{
+      const items = (j.items || []).slice(0, 8);
+      const norm = items.slice(0,8);
+      while (norm.length < 8) norm.push(null);
+
+      tbody.innerHTML = norm.map(it=>{
+        if (!it){
+          return `<tr>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="right muted">—</td>
+          </tr>`;
+        }
         const pot = it.pot ?? it.result?.pot ?? '';
         const time = (it.finished_at||it.updated_at||'').toString().slice(11,19);
         return `<tr>
