@@ -82,8 +82,127 @@
     subEl.textContent = `raw: ${fmtInt(_usersCard.totalRaw)} / hum: ${fmtInt(_usersCard.totalCluster)}`;
   }
 
-  try {
-    window.addEventListener('adminHumToggle', renderUsersCard);
+
+  // --- Summary: Users mini-sparkline (90 days) ---
+  let _usersMiniData = null;
+
+  function cssVar(name, fallback){
+    try{
+      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fallback;
+    }catch(_){
+      return fallback;
+    }
+  }
+
+  function drawUsersMini(){
+    const svg = $('#users-mini-chart');
+    if (!svg) return;
+
+    const data = _usersMiniData;
+    const dates = data?.dates || data?.labels || [];
+    if (!dates.length){
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      return;
+    }
+
+    const hum = window.getAdminHumFlag ? !!window.getAdminHumFlag() : true;
+
+    const totals = hum ? (data.total_cluster || data.totalCluster || []) : (data.total_raw || data.totalRaw || []);
+    const news   = hum ? (data.new_cluster   || data.newCluster   || []) : (data.new_raw   || data.newRaw   || []);
+
+    renderUsersSpark(svg, totals, news);
+  }
+
+  function renderUsersSpark(svg, totals, news){
+    const NS = 'http://www.w3.org/2000/svg';
+
+    const W = svg.clientWidth  || 176;
+    const H = svg.clientHeight || 60;
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    const pad = 4;
+    const split = Math.round(H * 0.62); // верхняя зона: "всего", нижняя: "новые"
+    const gap = 6;
+
+    const topY0 = pad;
+    const topY1 = Math.max(topY0 + 10, split - gap);
+    const botY0 = Math.min(H - pad - 10, split + 2);
+    const botY1 = H - pad;
+
+    const topH = Math.max(10, topY1 - topY0);
+    const botH = Math.max(8,  botY1 - botY0);
+
+    const n = Math.max(1, totals.length, news.length);
+    const step = (n > 1) ? ((W - 2*pad) / (n - 1)) : 0;
+    const x = (i) => pad + i * step;
+
+    const safeNums = (arr) => (arr || []).map(v=>Number(v)).map(v=>Number.isFinite(v)?v:0);
+    const T = safeNums(totals);
+    const N = safeNums(news);
+
+    const maxTotal = Math.max(1, ...T);
+    const maxNew   = Math.max(1, ...N);
+
+    const border = cssVar('--border', '#1f2a37');
+    const totalColor = cssVar('--accent', '#4dabf7');
+    const newColor   = cssVar('--accent2', '#3ddc97');
+
+    // разделитель зон
+    const sep = document.createElementNS(NS,'line');
+    sep.setAttribute('x1', pad);
+    sep.setAttribute('x2', W - pad);
+    sep.setAttribute('y1', split);
+    sep.setAttribute('y2', split);
+    sep.setAttribute('stroke', border);
+    sep.setAttribute('stroke-width', '1');
+    svg.appendChild(sep);
+
+    // нижние "новые" — тонкие столбики/штрихи
+    const barW = Math.max(1, Math.min(4, step * 0.65));
+    for (let i=0;i<n;i++){
+      const v = N[i] || 0;
+      if (v <= 0) continue;
+
+      const h = (v / maxNew) * botH;
+      const yTop = botY1 - h;
+
+      const line = document.createElementNS(NS,'line');
+      line.setAttribute('x1', x(i));
+      line.setAttribute('x2', x(i));
+      line.setAttribute('y1', botY1);
+      line.setAttribute('y2', yTop);
+      line.setAttribute('stroke', newColor);
+      line.setAttribute('stroke-width', String(barW));
+      line.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(line);
+    }
+
+    // верхняя "всего" — линия
+    let pts = '';
+    for (let i=0;i<n;i++){
+      const v = T[i] || 0;
+      const yy = topY0 + (1 - (v / maxTotal)) * topH;
+      pts += `${x(i).toFixed(2)},${yy.toFixed(2)} `;
+    }
+
+    const pl = document.createElementNS(NS,'polyline');
+    pl.setAttribute('points', pts.trim());
+    pl.setAttribute('fill', 'none');
+    pl.setAttribute('stroke', totalColor);
+    pl.setAttribute('stroke-width', '2');
+    pl.setAttribute('stroke-linejoin', 'round');
+    pl.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(pl);
+  }
+
+
+    try {
+    window.addEventListener('adminHumToggle', ()=>{ renderUsersCard(); drawUsersMini(); });
   } catch (_) {}
 
   function bindNav(){
@@ -167,6 +286,10 @@
         _usersCard = { mode: 'legacy', totalRaw: usersRaw, totalCluster: usersCluster, todayRaw: 0, todayCluster: 0 };
         renderUsersCard();
       }
+
+      // users sparkline 90d (total + new)
+      _usersMiniData = sum.users_90d || sum.users90d || sum.users90 || null;
+      drawUsersMini();
 
       // events total in range
       $('#sum-events').textContent = fmtInt(t.auth_total ?? 0);
