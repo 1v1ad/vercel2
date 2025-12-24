@@ -7,7 +7,7 @@
 
   <link rel="icon" type="image/svg+xml"
         href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%231a73e8"/><stop offset="1" stop-color="%234ed1a9"/></linearGradient></defs><rect rx="12" width="64" height="64" fill="%23f5f7fa"/><path d="M14 44l8-24h6l8 24h-6l-1.6-5H21.6L20 44h-6z" fill="url(%23g)"/></svg>' />
-  <link rel="stylesheet" href="/admin/admin2.css?v=20251222a" />
+  <link rel="stylesheet" href="/admin/admin2.css?v=20251224i" />
 </head>
 
 <body>
@@ -23,28 +23,72 @@
 
       <nav class="nav">
         <a class="nav-item active" href="#summary" data-view="summary">
-          <span class="nav-ico">☰</span><span>Summary</span>
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="4" />
+            <path d="M7 17v-5" />
+            <path d="M12 17V7" />
+            <path d="M17 17v-8" />
+          </svg>
+          <span>Summary</span>
         </a>
         <a class="nav-item" href="#finance" data-view="finance">
-          <span class="nav-ico">₽</span><span>Финансы</span>
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="6" width="18" height="12" rx="3" />
+            <path d="M3 10h18" />
+            <path d="M7 14h4" />
+            <path d="M16.5 14h.01" />
+          </svg>
+          <span>Финансы</span>
         </a>
         <a class="nav-item" href="#users" data-view="users">
-          <span class="nav-ico">👥</span><span>Пользователи</span>
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9" cy="9" r="3" />
+            <path d="M3.5 20a6.5 6.5 0 0 1 11 0" />
+            <circle cx="17" cy="10" r="2" />
+            <path d="M14.5 20a5.5 5.5 0 0 1 6 0" />
+          </svg>
+          <span>Пользователи</span>
         </a>
         <a class="nav-item" href="#duels" data-view="duels">
-          <span class="nav-ico">⚔️</span><span>Дуэли</span>
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 4l6 6" />
+            <path d="M9 2l2 2-3 3-2-2z" />
+            <path d="M3 20l5-5" />
+            <path d="M19 4l-6 6" />
+            <path d="M15 2l-2 2 3 3 2-2z" />
+            <path d="M21 20l-5-5" />
+          </svg>
+          <span>Дуэли</span>
         </a>
         <a class="nav-item" href="#events" data-view="events">
-          <span class="nav-ico">🧾</span><span>События</span>
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 3h7l3 3v15a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z" />
+            <path d="M14 3v4a2 2 0 0 0 2 2h4" />
+            <path d="M7 13h10" />
+            <path d="M7 17h10" />
+          </svg>
+          <span>События</span>
         </a>
 
         <div class="nav-sep"></div>
 
         <a class="nav-item" href="#topup" data-view="topup">
-          <span class="nav-ico">➕</span><span>Ручное пополнение</span>
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="4" />
+            <path d="M12 8v8" />
+            <path d="M8 12h8" />
+          </svg>
+          <span>Ручное пополнение</span>
         </a>
         <a class="nav-item" href="#unmerge" data-view="unmerge">
-          <span class="nav-ico">🧩</span><span>Расклейка</span>
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 8h-1a4 4 0 0 0 0 8h1" />
+            <path d="M16 8h1a4 4 0 0 1 0 8h-1" />
+            <path d="M10 12h1" />
+            <path d="M13 12h1" />
+            <path d="M8 16l8-8" />
+          </svg>
+          <span>Расклейка</span>
         </a>
       </nav>
 
@@ -58,11 +102,16 @@
       <header class="topbar">
         <div class="topbar-left">
           <div class="page-title" id="page-title">Summary</div>
-          <div class="pill">
-            <label class="pill-label">HUM</label>
+          <label class="hum-switch" title="HUM-склейка">
+            <span class="hum-label">HUM-склейка</span>
             <input id="admin-hum-flag" type="checkbox" />
+            <span class="hum-track" aria-hidden="true">
+              <span class="hum-state hum-on">ON</span>
+              <span class="hum-state hum-off">OFF</span>
+              <span class="hum-thumb"></span>
+            </span>
             <span id="admin-hum-note" class="tiny muted"></span>
-          </div>
+          </label>
         </div>
 
         <div class="topbar-right">
@@ -77,15 +126,35 @@
 
         <section class="view active" id="view-summary">
           <div class="grid cards">
-            <div class="card">
-              <div class="card-title">Пользователи</div>
-              <div class="card-value" id="sum-users">—</div>
-              <div class="card-sub muted tiny" id="sum-users-sub">raw / hum</div>
+            <div class="card users-card">
+              <div class="card-main">
+                <div class="card-title">Пользователи</div>
+                <div class="card-value" id="sum-users">—</div>
+                <div class="card-sub muted tiny" id="sum-users-sub">всего / новые today</div>
+              </div>
+              <div class="card-spark" title="Динамика пользователей за последние 90 дней (всего + новые)">
+                <div id="users-mini-tip" class="spark-tip" aria-hidden="true"></div>
+                <svg id="users-mini-chart" class="spark-svg" aria-label="Users 90d sparkline"></svg>
+                <div class="spark-legend muted tiny">
+                  <span class="dot dot-total"></span><span>всего</span>
+                  <span class="dot dot-new"></span><span>новые</span>
+                </div>
+              </div>
             </div>
-            <div class="card">
-              <div class="card-title">События</div>
-              <div class="card-value" id="sum-events">—</div>
-              <div class="card-sub muted tiny">за период</div>
+            <div class="card events-card">
+              <div class="card-main">
+                <div class="card-title">События</div>
+                <div class="card-value" id="sum-events">—</div>
+                <div class="card-sub muted tiny" id="sum-events-sub">всего / сегодня</div>
+              </div>
+              <div class="card-spark" title="Динамика событий за последние 90 дней (всего + за день)">
+                <div id="events-mini-tip" class="spark-tip" aria-hidden="true"></div>
+                <svg id="events-mini-chart" class="spark-svg" aria-label="Events 90d sparkline"></svg>
+                <div class="spark-legend muted tiny">
+                  <span class="dot dot-total"></span><span>всего</span>
+                  <span class="dot dot-new"></span><span>за день</span>
+                </div>
+              </div>
             </div>
             <div class="card">
               <div class="card-title">Занесено всего</div>
@@ -99,7 +168,7 @@
             </div>
             <div class="card">
               <div class="card-title">Дуэли: оборот / рейк</div>
-              <div class="card-value" id="sum-turnover">—</div>
+              <div class="card-value"><span id="sum-turnover">—</span> / <span id="sum-rake" class="num-rake">—</span></div>
               <div class="card-sub muted tiny" id="sum-turnover-sub">—</div>
             </div>
             <div class="card">
@@ -107,6 +176,40 @@
               <div class="kv">
                 <div class="k">API</div><div class="v" id="stat-api">—</div>
                 <div class="k">Admin</div><div class="v" id="stat-admin">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid two summary-charts">
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Аналитика по диапазону</div>
+                <div class="panel-actions">
+                  <span class="muted tiny">c</span>
+                  <input class="input input-date" id="range-from" type="date" />
+                  <span class="muted tiny">по</span>
+                  <input class="input input-date" id="range-to" type="date" />
+                  <button class="chip" data-preset="7">7д</button>
+                  <button class="chip" data-preset="30">30д</button>
+                  <button class="chip" data-preset="90">90д</button>
+                  <button class="chip" data-preset="365">Год</button>
+                  <button class="chip" data-preset="all">Всё</button>
+                  <button class="btn sm" id="range-apply">Показать</button>
+                </div>
+              </div>
+              <div class="chart-wrap">
+                <svg id="chart-range" width="100%" height="260" aria-label="Range chart"></svg>
+                <div class="muted tiny" id="range-note" style="margin-top:6px;"></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Аналитика посещений</div>
+                <span class="chip">7 дней</span>
+              </div>
+              <div class="chart-wrap">
+                <svg id="chart" width="100%" height="260" aria-label="Visits chart"></svg>
               </div>
             </div>
           </div>
@@ -119,8 +222,8 @@
               </div>
               <div class="table-wrap">
                 <table class="table" id="mini-events">
-                  <thead><tr><th>Время</th><th>Тип</th><th>user</th><th class="right">amount</th></tr></thead>
-                  <tbody><tr><td colspan="4" class="muted">Загрузка…</td></tr></tbody>
+                  <thead><tr><th>ID</th><th>HUMid</th><th>user_id</th><th>event_type</th><th>IP</th><th>UA</th><th>Создано</th></tr></thead>
+                  <tbody><tr><td colspan="7" class="muted">Загрузка…</td></tr></tbody>
                 </table>
               </div>
             </div>
@@ -132,18 +235,7 @@
               </div>
               <div class="table-wrap">
                 <table class="table" id="mini-duels">
-                  <thead>
-                    <tr>
-                      <th>Время</th>
-                      <th>id</th>
-                      <th class="muted" style="width:40px;text-align:center">vs</th>
-                      <th>id</th>
-                      <th class="right">stake</th>
-                      <th>status</th>
-                      <th class="right">pot</th>
-                      <th class="right">rake</th>
-                    </tr>
-                  </thead>
+                  <thead><tr><th>Время</th><th>id</th><th>vs</th><th>id</th><th class="right">stake</th><th>status</th><th class="right">pot</th><th class="right">rake</th></tr></thead>
                   <tbody><tr><td colspan="8" class="muted">Загрузка…</td></tr></tbody>
                 </table>
               </div>
@@ -170,9 +262,9 @@
                 <div class="card-sub muted tiny">Σ balances</div>
               </div>
               <div class="card">
-                <div class="card-title">Turnover</div>
-                <div class="card-value" id="fin-turnover">—</div>
-                <div class="card-sub muted tiny" id="fin-turnover-sub">rake: —</div>
+                <div class="card-title">Turnover / Rake</div>
+                <div class="card-value"><span id="fin-turnover">—</span> / <span id="fin-rake" class="num-rake">—</span></div>
+                <div class="card-sub muted tiny" id="fin-turnover-sub">—</div>
               </div>
             </div>
 
@@ -191,7 +283,7 @@
             <div class="table-wrap">
               <table class="table" id="tbl-users">
                 <thead><tr><th>id</th><th>vk</th><th>имя</th><th class="right">balance</th><th>hum_id</th><th>created</th></tr></thead>
-                <tbody><tr><td colspan="6" class="muted">Загрузка…</td></tr></tbody>
+                <tbody><tr><td colspan="7" class="muted">Загрузка…</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -222,8 +314,8 @@
             <div class="note muted tiny">Это “сырой” лог — очень полезно для отладки платёжек и спорных кейсов.</div>
             <div class="table-wrap">
               <table class="table" id="tbl-events">
-                <thead><tr><th>время</th><th>тип</th><th>user</th><th>hum</th><th class="right">amount</th><th>payload</th></tr></thead>
-                <tbody><tr><td colspan="6" class="muted">Загрузка…</td></tr></tbody>
+                <thead><tr><th>ID</th><th>HUMid</th><th>user_id</th><th>event_type</th><th>IP</th><th>UA</th><th>Создано</th></tr></thead>
+                <tbody><tr><td colspan="7" class="muted">Загрузка…</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -294,8 +386,10 @@
   </div>
 
   <!-- auth shim / hum toggle -->
-  <script src="/admin/admin-auth-headers.js?v=20251222a"></script>
+  <script src="/admin/admin-auth-headers.js?v=20251224c"></script>
 
-  <script src="/admin/admin2.js?v=20251222a"></script>
+  <script src="/admin/admin2.js?v=20251224i"></script>
+  <script src="/admin/chart-range.js?v=20251224c"></script>
+  <script src="/admin/chart.js?v=20251224c"></script>
 </body>
 </html>
