@@ -85,6 +85,80 @@
 
   // --- Summary: Users mini-sparkline (90 days) ---
   let _usersMiniData = null;
+let _usersMiniCtx = null;
+let _usersMiniHover = null;
+let _usersMiniBound = false;
+
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+function ensureUsersMiniInteraction(svg){
+  if (_usersMiniBound) return;
+  _usersMiniBound = true;
+
+  const tip = $('#users-mini-tip');
+
+  const hide = ()=>{
+    try{ _usersMiniHover?.g?.setAttribute('opacity','0'); }catch(_){}
+    if (tip) tip.classList.remove('show');
+  };
+
+  const showAt = (clientX, clientY)=>{
+    const ctx = _usersMiniCtx;
+    if (!ctx) return;
+
+    const rect = svg.getBoundingClientRect();
+    const px = clientX - rect.left;
+    if (!Number.isFinite(px)) return;
+
+    const scaleX = ctx.W / Math.max(1, rect.width);
+    const xvb = px * scaleX;
+
+    const i = clamp(Math.round((xvb - ctx.pad) / Math.max(1e-6, ctx.step)), 0, ctx.n - 1);
+    const xi = ctx.x(i);
+
+    // hover markers
+    if (_usersMiniHover?.line && _usersMiniHover?.dot && _usersMiniHover?.g){
+      const t = ctx.totals[i] || 0;
+      const yy = ctx.topY0 + (1 - (t / ctx.maxTotal)) * ctx.topH;
+
+      _usersMiniHover.line.setAttribute('x1', xi);
+      _usersMiniHover.line.setAttribute('x2', xi);
+      _usersMiniHover.dot.setAttribute('cx', xi);
+      _usersMiniHover.dot.setAttribute('cy', yy);
+
+      _usersMiniHover.g.setAttribute('opacity', '1');
+    }
+
+    // tooltip
+    if (tip){
+      const d = ctx.dates[i] || '';
+      const total = ctx.totals[i] || 0;
+      const neu = ctx.news[i] || 0;
+
+      tip.innerHTML =
+        `<span class="d">${d}</span>` +
+        `<div class="row"><span class="k">всего</span><span class="v">${fmtInt(total)}</span></div>` +
+        `<div class="row"><span class="k">новые</span><span class="v">${fmtInt(neu)}</span></div>`;
+
+      tip.style.left = (xi / ctx.W * 100) + '%';
+      tip.classList.add('show');
+    }
+  };
+
+  svg.addEventListener('mousemove', (e)=>showAt(e.clientX, e.clientY));
+  svg.addEventListener('mouseleave', hide);
+
+  svg.addEventListener('touchstart', (e)=>{
+    const t = e.touches && e.touches[0];
+    if (t) showAt(t.clientX, t.clientY);
+  }, {passive:true});
+  svg.addEventListener('touchmove', (e)=>{
+    const t = e.touches && e.touches[0];
+    if (t) showAt(t.clientX, t.clientY);
+  }, {passive:true});
+  svg.addEventListener('touchend', hide);
+}
+
 
   function cssVar(name, fallback){
     try{
@@ -103,6 +177,8 @@
     const dates = data?.dates || data?.labels || [];
     if (!dates.length){
       while (svg.firstChild) svg.removeChild(svg.firstChild);
+      try{ _usersMiniHover?.g?.setAttribute('opacity','0'); }catch(_){ }
+      $('#users-mini-tip')?.classList?.remove('show');
       return;
     }
 
@@ -111,10 +187,12 @@
     const totals = hum ? (data.total_cluster || data.totalCluster || []) : (data.total_raw || data.totalRaw || []);
     const news   = hum ? (data.new_cluster   || data.newCluster   || []) : (data.new_raw   || data.newRaw   || []);
 
-    renderUsersSpark(svg, totals, news);
+    renderUsersSpark(svg, totals, news, dates);
+
+    ensureUsersMiniInteraction(svg);
   }
 
-  function renderUsersSpark(svg, totals, news){
+  function renderUsersSpark(svg, totals, news, dates){
     const NS = 'http://www.w3.org/2000/svg';
 
     const W = svg.clientWidth  || 176;
@@ -198,6 +276,46 @@
     pl.setAttribute('stroke-linejoin', 'round');
     pl.setAttribute('stroke-linecap', 'round');
     svg.appendChild(pl);
+
+// hover markers (tooltip)
+const hoverG = document.createElementNS(NS,'g');
+hoverG.setAttribute('opacity','0');
+
+const hoverLine = document.createElementNS(NS,'line');
+hoverLine.setAttribute('y1', '0');
+hoverLine.setAttribute('y2', String(H));
+hoverLine.setAttribute('stroke', border);
+hoverLine.setAttribute('stroke-width', '1');
+hoverLine.setAttribute('stroke-dasharray', '2 3');
+hoverG.appendChild(hoverLine);
+
+const hoverDot = document.createElementNS(NS,'circle');
+hoverDot.setAttribute('r', '3.2');
+hoverDot.setAttribute('fill', totalColor);
+hoverDot.setAttribute('stroke', '#0b1220');
+hoverDot.setAttribute('stroke-width', '1');
+hoverG.appendChild(hoverDot);
+
+svg.appendChild(hoverG);
+
+_usersMiniHover = { g: hoverG, line: hoverLine, dot: hoverDot };
+
+_usersMiniCtx = {
+  dates: (dates || []).slice(0, n),
+  totals: T,
+  news: N,
+  maxTotal,
+  maxNew,
+  W, H,
+  pad,
+  n,
+  step,
+  split,
+  topY0,
+  topH,
+  x,
+};
+
   }
 
 
