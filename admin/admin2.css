@@ -283,7 +283,8 @@ body{
   transform: translate(-50%, -110%);
   transition: opacity .12s ease;
   pointer-events:none;
-  z-index:2;
+  /* Above sticky topbar */
+  z-index:99999;
 }
 .spark-tip.show{opacity:1}
 .spark-tip .d{display:block; color:var(--muted); font-size:11px; margin-bottom:3px}
