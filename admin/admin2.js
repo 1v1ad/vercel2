@@ -10,9 +10,32 @@
 
   function fmtInt(x){
     if (x === null || x === undefined) return '—';
-    const n = Number(x);
-    if (!Number.isFinite(n)) return String(x);
+    // bigint-safe integers (часто приходят как текст из Postgres)
+    const s = String(x).trim();
+    if (/^-?\d+$/.test(s)){
+      try{
+        const bi = BigInt(s);
+        const sign = bi < 0n ? '-' : '';
+        const abs = bi < 0n ? -bi : bi;
+        const chars = abs.toString().split('');
+        let out = '';
+        for (let i = 0; i < chars.length; i++){
+          const j = chars.length - i;
+          out += chars[i];
+          if (j > 1 && (j - 1) % 3 === 0) out += ' ';
+        }
+        return sign + out;
+      }catch(_){}
+    }
+    const n = Number(s);
+    if (!Number.isFinite(n)) return s || '—';
     return n.toLocaleString('ru-RU');
+  }
+
+  function fmtPct(x){
+    if (x === null || x === undefined) return '—';
+    const s = String(x).trim();
+    return s ? s.replace('.', ',') : '—';
   }
 
   function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String(x); } }
@@ -656,22 +679,25 @@ _usersMiniCtx = {
       _eventsMiniData = sum.events_90d || sum.events90d || sum.events90 || null;
       drawEventsMini();
 
-
       // finance
       const dep = fin?.totals?.deposited ?? fin?.deposited ?? '0';
       const wdr = fin?.totals?.withdrawn ?? fin?.withdrawn ?? '0';
       const liab = fin?.totals?.liabilities ?? fin?.liabilities ?? '0';
-      const turnover = fin?.totals?.turnover ?? fin?.turnover ?? '0';
-      const rake = fin?.totals?.rake ?? fin?.rake ?? '0';
-      const rakePct = fin?.totals?.rake_pct ?? fin?.rake_pct ?? null;
+
+      const du = fin?.duels || {};
+      const turnover = du.turnover ?? fin?.totals?.turnover ?? fin?.turnover ?? '0';
+      const rake = du.rake ?? fin?.totals?.rake ?? fin?.rake ?? '0';
+      const games = du.games ?? fin?.totals?.games ?? fin?.games ?? 0;
+      const rakePct = du.rake_pct ?? fin?.totals?.rake_pct ?? fin?.rake_pct ?? null;
 
       $('#sum-deposited').textContent = fmtInt(dep);
       $('#sum-deposited-sub').textContent = `выводы: ${fmtInt(wdr)}`;
 
       $('#sum-liabilities').textContent = fmtInt(liab);
 
-      $('#sum-turnover').textContent = `${fmtInt(turnover)} / ${fmtInt(rake)}`;
-      $('#sum-turnover-sub').textContent = `${fmtInt(fin?.totals?.games ?? fin?.games ?? 0)} игр • рейк ${rakePct ?? '—'}%`;
+      $('#sum-turnover').textContent = fmtInt(turnover);
+      $('#sum-rake').textContent = fmtInt(rake);
+      $('#sum-turnover-sub').textContent = `${fmtInt(games)} игр • рейк ${fmtPct(rakePct)}%`;
 
       // mini tables
       loadMiniEvents().catch(()=>{});
@@ -688,15 +714,18 @@ _usersMiniCtx = {
       const dep = fin?.totals?.deposited ?? fin?.deposited ?? '0';
       const wdr = fin?.totals?.withdrawn ?? fin?.withdrawn ?? '0';
       const liab = fin?.totals?.liabilities ?? fin?.liabilities ?? '0';
-      const turnover = fin?.totals?.turnover ?? fin?.turnover ?? '0';
-      const rake = fin?.totals?.rake ?? fin?.rake ?? '0';
-      const rakePct = fin?.totals?.rake_pct ?? fin?.rake_pct ?? null;
+      const du = fin?.duels || {};
+      const turnover = du.turnover ?? fin?.totals?.turnover ?? fin?.turnover ?? '0';
+      const rake = du.rake ?? fin?.totals?.rake ?? fin?.rake ?? '0';
+      const games = du.games ?? 0;
+      const rakePct = du.rake_pct ?? null;
 
       $('#fin-deposited').textContent = fmtInt(dep);
       $('#fin-deposited-sub').textContent = `withdrawn: ${fmtInt(wdr)}`;
       $('#fin-liabilities').textContent = fmtInt(liab);
       $('#fin-turnover').textContent = fmtInt(turnover);
-      $('#fin-turnover-sub').textContent = `rake: ${fmtInt(rake)} (${rakePct ?? '—'}%)`;
+      $('#fin-rake').textContent = fmtInt(rake);
+      $('#fin-turnover-sub').textContent = `${fmtInt(games)} игр • рейк ${fmtPct(rakePct)}%`;
     }catch(e){
       alert('finance error: ' + (e?.message || e));
     }

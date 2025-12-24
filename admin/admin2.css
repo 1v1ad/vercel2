@@ -227,6 +227,7 @@ body{
 }
 .card-title{font-weight:900; font-size:13px; color:var(--muted)}
 .card-value{font-weight:900; font-size:28px; margin-top:6px}
+.num-rake{ color: var(--danger); font-weight:900; }
 .card-sub{margin-top:6px}
 
 /* Users card sparkline */
