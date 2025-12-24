@@ -741,6 +741,43 @@ $('#sum-turnover-today').textContent = fmtInt(turnoverToday);
 $('#sum-rake-all').textContent = fmtInt(rakeAll);
 $('#sum-rake-today').textContent = fmtInt(rakeToday);
 
+// --- Summary metric cards: show 2 big values in one row (left/right) ---
+try{
+  // Deposited / Withdrawn
+  const depCard = $('#sum-deposited-all')?.closest('.card');
+  const depHint = depCard?.querySelector('.card-sub:not(.secondary)');
+  if (depHint) depHint.textContent = 'занесено всего / сегодня • выведено всего / сегодня';
+
+  const wAllEl = $('#sum-withdrawn-all');
+  const wTodayEl = $('#sum-withdrawn-today');
+  const wRow = wAllEl?.closest('.card-sub');
+  if (wRow && wAllEl && wTodayEl){
+    wRow.classList.remove('muted','tiny');
+    wRow.classList.add('metric-inline-right');
+    wRow.textContent = '';
+    wRow.append(wAllEl, document.createTextNode(' / '), wTodayEl);
+  }
+
+  // Turnover / Rake
+  const duCard = $('#sum-turnover-all')?.closest('.card');
+  const duHint = duCard?.querySelector('.card-sub:not(.secondary)');
+  if (duHint) duHint.textContent = 'оборот всего / сегодня • рейк всего / сегодня';
+
+  const rAllEl = $('#sum-rake-all');
+  const rTodayEl = $('#sum-rake-today');
+  const rRow = rAllEl?.closest('.card-sub');
+  if (rRow && rAllEl && rTodayEl){
+    rRow.classList.remove('muted','tiny');
+    rRow.classList.add('metric-inline-right','num-rake');
+    // make the whole right part red (including the slash)
+    rAllEl.classList.remove('num-rake');
+    rTodayEl.classList.remove('num-rake');
+    rRow.textContent = '';
+    rRow.append(rAllEl, document.createTextNode(' / '), rTodayEl);
+  }
+}catch(_){ /* ignore */ }
+
+
       // mini tables
       loadMiniEvents().catch(()=>{});
       loadMiniDuels().catch(()=>{});

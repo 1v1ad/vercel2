@@ -390,3 +390,33 @@ body{
 .chip:active{transform:translateY(1px)}
 .chart-wrap svg{display:block}
 .summary-charts .panel-head{align-items:flex-start}
+
+
+/* Summary: metric cards (Deposited/Withdrawn, Turnover/Rake) — 2 big values in one row */
+#view-summary .card.card-metrics{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    "title title"
+    "left right"
+    "hint hint";
+  column-gap:12px;
+}
+#view-summary .card.card-metrics .card-title{ grid-area:title; }
+#view-summary .card.card-metrics .card-value{ grid-area:left; margin-top:6px; }
+#view-summary .card.card-metrics .card-sub.secondary{
+  grid-area:right;
+  margin-top:6px;
+  font-weight:900;
+  font-size:28px;
+  line-height:1.1;
+  text-align:right;
+  color:var(--text);
+  white-space:nowrap;
+}
+#view-summary .card.card-metrics .card-sub:not(.secondary){
+  grid-area:hint;
+  margin-top:6px;
+}
+#view-summary .card.card-metrics .card-sub.secondary.num-rake{ color: var(--danger); }
