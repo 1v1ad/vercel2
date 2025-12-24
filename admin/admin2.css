@@ -63,7 +63,16 @@ body{
   border-color:#253649;
   color:var(--text);
 }
-.nav-ico{width:24px; text-align:center; opacity:.95}
+.nav-ico{
+  width:20px;
+  height:20px;
+  display:block;
+  flex:0 0 20px;
+  opacity:.95;
+  color:var(--muted);
+}
+.nav-item.active .nav-ico{color:var(--text)}
+.nav-item:hover .nav-ico{color:#cfe0f2}
 
 .nav-sep{height:1px; background:var(--border); margin:6px 10px}
 
