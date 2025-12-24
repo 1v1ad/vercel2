@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GGRoom — Admin v2</title>
+
+  <link rel="icon" type="image/svg+xml"
+        href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%231a73e8"/><stop offset="1" stop-color="%234ed1a9"/></linearGradient></defs><rect rx="12" width="64" height="64" fill="%23f5f7fa"/><path d="M14 44l8-24h6l8 24h-6l-1.6-5H21.6L20 44h-6z" fill="url(%23g)"/></svg>' />
+  <link rel="stylesheet" href="/admin/admin2.css?v=20251222a" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">GG</div>
+        <div class="brand-text">
+          <div class="brand-title">GGRoom</div>
+          <div class="brand-sub">Admin v2</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a class="nav-item active" href="#summary" data-view="summary">
+          <span class="nav-ico">☰</span><span>Summary</span>
+        </a>
+        <a class="nav-item" href="#finance" data-view="finance">
+          <span class="nav-ico">₽</span><span>Финансы</span>
+        </a>
+        <a class="nav-item" href="#users" data-view="users">
+          <span class="nav-ico">👥</span><span>Пользователи</span>
+        </a>
+        <a class="nav-item" href="#duels" data-view="duels">
+          <span class="nav-ico">⚔️</span><span>Дуэли</span>
+        </a>
+        <a class="nav-item" href="#events" data-view="events">
+          <span class="nav-ico">🧾</span><span>События</span>
+        </a>
+
+        <div class="nav-sep"></div>
+
+        <a class="nav-item" href="#topup" data-view="topup">
+          <span class="nav-ico">➕</span><span>Ручное пополнение</span>
+        </a>
+        <a class="nav-item" href="#unmerge" data-view="unmerge">
+          <span class="nav-ico">🧩</span><span>Расклейка</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a class="muted-link" href="/admin/index.html">Классическая админка →</a>
+        <div class="muted tiny">Style: Keenetic-ish</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="page-title" id="page-title">Summary</div>
+          <div class="pill">
+            <label class="pill-label">HUM</label>
+            <input id="admin-hum-flag" type="checkbox" />
+            <span id="admin-hum-note" class="tiny muted"></span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <input id="api" class="input" placeholder="https://... (ADMIN_API)" />
+          <input id="pwd" class="input" placeholder="ADMIN_PWD" type="password" />
+          <button class="btn" id="save">Сохранить</button>
+          <button class="btn ghost" id="ping">Проверка</button>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <section class="view active" id="view-summary">
+          <div class="grid cards">
+            <div class="card">
+              <div class="card-title">Пользователи</div>
+              <div class="card-value" id="sum-users">—</div>
+              <div class="card-sub muted tiny" id="sum-users-sub">raw / hum</div>
+            </div>
+            <div class="card">
+              <div class="card-title">События</div>
+              <div class="card-value" id="sum-events">—</div>
+              <div class="card-sub muted tiny">за период</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Занесено всего</div>
+              <div class="card-value" id="sum-deposited">—</div>
+              <div class="card-sub muted tiny" id="sum-deposited-sub">депозиты / выводы</div>
+            </div>
+            <div class="card">
+              <div class="card-title">На балансах (обязательство)</div>
+              <div class="card-value" id="sum-liabilities">—</div>
+              <div class="card-sub muted tiny">сумма user.balance</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Дуэли: оборот / рейк</div>
+              <div class="card-value" id="sum-turnover">—</div>
+              <div class="card-sub muted tiny" id="sum-turnover-sub">—</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Статус</div>
+              <div class="kv">
+                <div class="k">API</div><div class="v" id="stat-api">—</div>
+                <div class="k">Admin</div><div class="v" id="stat-admin">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid two">
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Последние события</div>
+                <button class="btn ghost sm" id="refresh-events-mini">Обновить</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table" id="mini-events">
+                  <thead><tr><th>Время</th><th>Тип</th><th>user</th><th class="right">amount</th></tr></thead>
+                  <tbody><tr><td colspan="4" class="muted">Загрузка…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Последние дуэли</div>
+                <button class="btn ghost sm" id="refresh-duels-mini">Обновить</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table" id="mini-duels">
+                  <thead><tr><th>Время</th><th>id</th><th>stake</th><th>status</th><th class="right">pot</th></tr></thead>
+                  <tbody><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-finance">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Финансы</div>
+              <button class="btn sm" id="refresh-finance">Обновить</button>
+            </div>
+
+            <div class="grid cards small">
+              <div class="card">
+                <div class="card-title">Deposited</div>
+                <div class="card-value" id="fin-deposited">—</div>
+                <div class="card-sub muted tiny" id="fin-deposited-sub">withdrawn: —</div>
+              </div>
+              <div class="card">
+                <div class="card-title">Liabilities</div>
+                <div class="card-value" id="fin-liabilities">—</div>
+                <div class="card-sub muted tiny">Σ balances</div>
+              </div>
+              <div class="card">
+                <div class="card-title">Turnover</div>
+                <div class="card-value" id="fin-turnover">—</div>
+                <div class="card-sub muted tiny" id="fin-turnover-sub">rake: —</div>
+              </div>
+            </div>
+
+            <div class="note muted tiny">
+              Сейчас deposited считаем по событиям (admin_topup / deposit). Позже добавим платёжки и выводы.
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-users">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Пользователи</div>
+              <button class="btn sm" id="refresh-users">Обновить</button>
+            </div>
+            <div class="table-wrap">
+              <table class="table" id="tbl-users">
+                <thead><tr><th>id</th><th>vk</th><th>имя</th><th class="right">balance</th><th>hum_id</th><th>created</th></tr></thead>
+                <tbody><tr><td colspan="6" class="muted">Загрузка…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-duels">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Дуэли</div>
+              <button class="btn sm" id="refresh-duels">Обновить</button>
+            </div>
+            <div class="note muted tiny">Пока показываем последние 50 из базы. Позже добавим фильтры и “проваливание” в дуэль.</div>
+            <div class="table-wrap">
+              <table class="table" id="tbl-duels">
+                <thead><tr><th>id</th><th>mode</th><th class="right">stake</th><th>status</th><th class="right">fee_bps</th><th>creator</th><th>opponent</th><th>winner</th><th>finished</th></tr></thead>
+                <tbody><tr><td colspan="9" class="muted">Загрузка…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-events">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">События</div>
+              <button class="btn sm" id="refresh-events">Обновить</button>
+            </div>
+            <div class="note muted tiny">Это “сырой” лог — очень полезно для отладки платёжек и спорных кейсов.</div>
+            <div class="table-wrap">
+              <table class="table" id="tbl-events">
+                <thead><tr><th>время</th><th>тип</th><th>user</th><th>hum</th><th class="right">amount</th><th>payload</th></tr></thead>
+                <tbody><tr><td colspan="6" class="muted">Загрузка…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-topup">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Ручное пополнение</div>
+            </div>
+
+            <div class="form">
+              <div class="row">
+                <label>user_id</label>
+                <input class="input" id="topup-user" placeholder="например 97" />
+              </div>
+              <div class="row">
+                <label>amount</label>
+                <input class="input" id="topup-amount" placeholder="например 1000" />
+              </div>
+              <div class="row">
+                <label>comment</label>
+                <input class="input" id="topup-comment" placeholder="опционально" />
+              </div>
+              <div class="row">
+                <div></div>
+                <button class="btn" id="topup-btn">Пополнить</button>
+              </div>
+
+              <pre class="out" id="topup-out"></pre>
+              <div class="note muted tiny">Технически: POST /api/admin/users/:id/topup</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-unmerge">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Расклейка (unmerge)</div>
+            </div>
+
+            <div class="form">
+              <div class="row">
+                <label>hum_id</label>
+                <input class="input" id="unmerge-hum" placeholder="например 1" />
+              </div>
+              <div class="row">
+                <label>user_ids</label>
+                <input class="input" id="unmerge-users" placeholder="например 97, 468" />
+              </div>
+              <div class="row">
+                <label>reason</label>
+                <input class="input" id="unmerge-reason" placeholder="почему расклеиваем" />
+              </div>
+              <div class="row">
+                <div></div>
+                <button class="btn danger" id="unmerge-btn">Расклеить</button>
+              </div>
+
+              <pre class="out" id="unmerge-out"></pre>
+              <div class="note muted tiny">Технически: POST /api/admin/unmerge</div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- auth shim / hum toggle -->
+  <script src="/admin/admin-auth-headers.js?v=20251222a"></script>
+
+  <script src="/admin/admin2.js?v=20251222a"></script>
+</body>
+</html>
