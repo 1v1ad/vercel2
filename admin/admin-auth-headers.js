@@ -96,29 +96,45 @@
     } catch (_) {}
   };
 
-  // Синхронизация с чекбоксом в тулбаре (если есть)
+  // Синхронизация с переключателем HUM (если есть)
+  // Поддерживаем и старую админку (#hum-toggle), и новую v2 (#admin-hum-flag).
   document.addEventListener('DOMContentLoaded', function () {
-    const cb = document.getElementById('hum-toggle');
-    const note = document.getElementById('hum-toggle-note');
-    if (!cb) return;
+    const pairs = [
+      { cb: document.getElementById('hum-toggle'), note: document.getElementById('hum-toggle-note') },
+      { cb: document.getElementById('admin-hum-flag'), note: document.getElementById('admin-hum-note') },
+    ].filter(p => p.cb);
 
-    const current = readHum();
-    cb.checked = current;
+    if (!pairs.length) return;
 
-    if (note) {
-      note.textContent = current
+    function setNote(el, val){
+      if (!el) return;
+      el.textContent = val
         ? 'Показываем с учётом HUM-склейки'
         : 'Показываем по отдельным user_id';
     }
 
-    cb.addEventListener('change', function () {
-      const val = !!cb.checked;
-      if (note) {
-        note.textContent = val
-          ? 'Показываем с учётом HUM-склейки'
-          : 'Показываем по отдельным user_id';
-      }
-      window.setAdminHumFlag(val);
+    function sync(val){
+      pairs.forEach(p => {
+        try { p.cb.checked = !!val; } catch(_){}
+        setNote(p.note, !!val);
+      });
+    }
+
+    // init
+    sync(readHum());
+
+    // change from UI
+    pairs.forEach(p => {
+      p.cb.addEventListener('change', function () {
+        const val = !!p.cb.checked;
+        sync(val);
+        window.setAdminHumFlag(val);
+      });
+    });
+
+    // change from code (adminHumToggle)
+    window.addEventListener('adminHumToggle', function (ev) {
+      try { sync(!!(ev && ev.detail && ev.detail.value)); } catch(_){}
     });
   });
 })();
