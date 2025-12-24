@@ -230,14 +230,17 @@ body{
 .card-sub{margin-top:6px}
 
 /* Users card sparkline */
-.users-card{
+.users-card,
+.events-card{
   display:grid;
   grid-template-columns: 1fr 1fr 1fr; /* 1/3 текст + 2/3 мини-график */
   gap:12px;
   align-items:stretch;
 }
-.users-card .card-main{grid-column:1; min-width:0}
-.users-card .card-spark{
+.users-card .card-main,
+.events-card .card-main{grid-column:1; min-width:0}
+.users-card .card-spark,
+.events-card .card-spark{
   grid-column:2 / 4;
   width:auto;
   display:flex;
