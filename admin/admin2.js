@@ -10,39 +10,12 @@
 
   function fmtInt(x){
     if (x === null || x === undefined) return '—';
-    // bigint-safe integers (часто приходят как текст из Postgres)
-    const s = String(x).trim();
-    if (/^-?\d+$/.test(s)){
-      try{
-        const bi = BigInt(s);
-        const sign = bi < 0n ? '-' : '';
-        const abs = bi < 0n ? -bi : bi;
-        const chars = abs.toString().split('');
-        let out = '';
-        for (let i = 0; i < chars.length; i++){
-          const j = chars.length - i;
-          out += chars[i];
-          if (j > 1 && (j - 1) % 3 === 0) out += ' ';
-        }
-        return sign + out;
-      }catch(_){}
-    }
-    const n = Number(s);
-    if (!Number.isFinite(n)) return s || '—';
+    const n = Number(x);
+    if (!Number.isFinite(n)) return String(x);
     return n.toLocaleString('ru-RU');
   }
 
-  function fmtPct(x){
-    if (x === null || x === undefined) return '—';
-    const s = String(x).trim();
-    return s ? s.replace('.', ',') : '—';
-  }
-
   function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String(x); } }
-
-  function fireApiChanged(){
-    try{ window.dispatchEvent(new Event('adminApiChanged')); }catch(_){}
-  }
 
   async function jget(path){
     const url = api() + path;
@@ -77,510 +50,7 @@
       unmerge: 'Расклейка',
     };
     $('#page-title').textContent = titleMap[name] || name;
-    if (name === 'summary') fireApiChanged();
   }
-
-  // --- Summary: Users card (всего / новые today), reacts to HUM-toggle ---
-  let _usersCard = null;
-
-  function renderUsersCard(){
-    if (!_usersCard) return;
-    const valEl = $('#sum-users');
-    const subEl = $('#sum-users-sub');
-    if (!valEl || !subEl) return;
-
-    const hum = window.getAdminHumFlag ? !!window.getAdminHumFlag() : true;
-
-    if (_usersCard.mode === 'totals') {
-      const total = hum ? _usersCard.totalCluster : _usersCard.totalRaw;
-      const today = hum ? _usersCard.todayCluster : _usersCard.todayRaw;
-      valEl.textContent = `${fmtInt(total)} / ${fmtInt(today)}`;
-      subEl.textContent = 'всего / новые today';
-      return;
-    }
-
-    // legacy (уникальные по auth за диапазон)
-    const picked = hum ? _usersCard.totalCluster : _usersCard.totalRaw;
-    valEl.textContent = fmtInt(picked);
-    subEl.textContent = `raw: ${fmtInt(_usersCard.totalRaw)} / hum: ${fmtInt(_usersCard.totalCluster)}`;
-  }
-
-
-
-  // --- Summary: Events card (всего / сегодня), НЕ зависит от HUM-склейки ---
-  let _eventsCard = null;
-
-  function renderEventsCard(){
-    if (!_eventsCard) return;
-    const valEl = $('#sum-events');
-    const subEl = $('#sum-events-sub');
-    if (!valEl) return;
-    const total = _eventsCard.total ?? 0;
-    const today = _eventsCard.today ?? 0;
-    valEl.textContent = `${fmtInt(total)} / ${fmtInt(today)}`;
-    if (subEl) subEl.textContent = 'всего / сегодня';
-  }
-
-  // --- Summary: Users mini-sparkline (90 days) ---
-  let _usersMiniData = null;
-let _usersMiniCtx = null;
-let _usersMiniHover = null;
-let _usersMiniBound = false;
-
-function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-
-function ensureUsersMiniInteraction(svg){
-  if (_usersMiniBound) return;
-  _usersMiniBound = true;
-
-  const tip = $('#users-mini-tip');
-
-  const hide = ()=>{
-    try{ _usersMiniHover?.g?.setAttribute('opacity','0'); }catch(_){}
-    if (tip) tip.classList.remove('show');
-  };
-
-  const showAt = (clientX, clientY)=>{
-    const ctx = _usersMiniCtx;
-    if (!ctx) return;
-
-    const rect = svg.getBoundingClientRect();
-    const px = clientX - rect.left;
-    if (!Number.isFinite(px)) return;
-
-    const scaleX = ctx.W / Math.max(1, rect.width);
-    const xvb = px * scaleX;
-
-    const i = clamp(Math.round((xvb - ctx.pad) / Math.max(1e-6, ctx.step)), 0, ctx.n - 1);
-    const xi = ctx.x(i);
-
-    // hover markers
-    if (_usersMiniHover?.line && _usersMiniHover?.dot && _usersMiniHover?.g){
-      const t = ctx.totals[i] || 0;
-      const yy = ctx.topY0 + (1 - (t / ctx.maxTotal)) * ctx.topH;
-
-      _usersMiniHover.line.setAttribute('x1', xi);
-      _usersMiniHover.line.setAttribute('x2', xi);
-      _usersMiniHover.dot.setAttribute('cx', xi);
-      _usersMiniHover.dot.setAttribute('cy', yy);
-
-      _usersMiniHover.g.setAttribute('opacity', '1');
-    }
-
-    // tooltip
-    if (tip){
-      const d = ctx.dates[i] || '';
-      const total = ctx.totals[i] || 0;
-      const neu = ctx.news[i] || 0;
-
-      tip.innerHTML =
-        `<span class="d">${d}</span>` +
-        `<div class="row"><span class="k">всего</span><span class="v">${fmtInt(total)}</span></div>` +
-        `<div class="row"><span class="k">новые</span><span class="v">${fmtInt(neu)}</span></div>`;
-
-      tip.style.left = (xi / ctx.W * 100) + '%';
-      tip.classList.add('show');
-    }
-  };
-
-  svg.addEventListener('mousemove', (e)=>showAt(e.clientX, e.clientY));
-  svg.addEventListener('mouseleave', hide);
-
-  svg.addEventListener('touchstart', (e)=>{
-    const t = e.touches && e.touches[0];
-    if (t) showAt(t.clientX, t.clientY);
-  }, {passive:true});
-  svg.addEventListener('touchmove', (e)=>{
-    const t = e.touches && e.touches[0];
-    if (t) showAt(t.clientX, t.clientY);
-  }, {passive:true});
-  svg.addEventListener('touchend', hide);
-}
-
-
-  function cssVar(name, fallback){
-    try{
-      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-      return v || fallback;
-    }catch(_){
-      return fallback;
-    }
-  }
-
-  function drawUsersMini(){
-    const svg = $('#users-mini-chart');
-    if (!svg) return;
-
-    const data = _usersMiniData;
-    const dates = data?.dates || data?.labels || [];
-    if (!dates.length){
-      while (svg.firstChild) svg.removeChild(svg.firstChild);
-      try{ _usersMiniHover?.g?.setAttribute('opacity','0'); }catch(_){ }
-      $('#users-mini-tip')?.classList?.remove('show');
-      return;
-    }
-
-    const hum = window.getAdminHumFlag ? !!window.getAdminHumFlag() : true;
-
-    const totals = hum ? (data.total_cluster || data.totalCluster || []) : (data.total_raw || data.totalRaw || []);
-    const news   = hum ? (data.new_cluster   || data.newCluster   || []) : (data.new_raw   || data.newRaw   || []);
-
-    renderUsersSpark(svg, totals, news, dates);
-
-    ensureUsersMiniInteraction(svg);
-  }
-
-  function renderUsersSpark(svg, totals, news, dates){
-    const NS = 'http://www.w3.org/2000/svg';
-
-    const W = svg.clientWidth  || 176;
-    const H = svg.clientHeight || 60;
-
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.setAttribute('preserveAspectRatio', 'none');
-
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-
-    const pad = 4;
-    const split = Math.round(H * 0.62); // верхняя зона: "всего", нижняя: "новые"
-    const gap = 6;
-
-    const topY0 = pad;
-    const topY1 = Math.max(topY0 + 10, split - gap);
-    const botY0 = Math.min(H - pad - 10, split + 2);
-    const botY1 = H - pad;
-
-    const topH = Math.max(10, topY1 - topY0);
-    const botH = Math.max(8,  botY1 - botY0);
-
-    const n = Math.max(1, totals.length, news.length);
-    const step = (n > 1) ? ((W - 2*pad) / (n - 1)) : 0;
-    const x = (i) => pad + i * step;
-
-    const safeNums = (arr) => (arr || []).map(v=>Number(v)).map(v=>Number.isFinite(v)?v:0);
-    const T = safeNums(totals);
-    const N = safeNums(news);
-
-    const maxTotal = Math.max(1, ...T);
-    const maxNew   = Math.max(1, ...N);
-
-    const border = cssVar('--border', '#1f2a37');
-    const totalColor = cssVar('--accent', '#4dabf7');
-    const newColor   = cssVar('--accent2', '#3ddc97');
-
-    // разделитель зон
-    const sep = document.createElementNS(NS,'line');
-    sep.setAttribute('x1', pad);
-    sep.setAttribute('x2', W - pad);
-    sep.setAttribute('y1', split);
-    sep.setAttribute('y2', split);
-    sep.setAttribute('stroke', border);
-    sep.setAttribute('stroke-width', '1');
-    svg.appendChild(sep);
-
-    // нижние "новые" — тонкие столбики/штрихи
-    const barW = Math.max(1, Math.min(4, step * 0.65));
-    for (let i=0;i<n;i++){
-      const v = N[i] || 0;
-      if (v <= 0) continue;
-
-      const h = (v / maxNew) * botH;
-      const yTop = botY1 - h;
-
-      const line = document.createElementNS(NS,'line');
-      line.setAttribute('x1', x(i));
-      line.setAttribute('x2', x(i));
-      line.setAttribute('y1', botY1);
-      line.setAttribute('y2', yTop);
-      line.setAttribute('stroke', newColor);
-      line.setAttribute('stroke-width', String(barW));
-      line.setAttribute('stroke-linecap', 'round');
-      svg.appendChild(line);
-    }
-
-    // верхняя "всего" — линия
-    let pts = '';
-    for (let i=0;i<n;i++){
-      const v = T[i] || 0;
-      const yy = topY0 + (1 - (v / maxTotal)) * topH;
-      pts += `${x(i).toFixed(2)},${yy.toFixed(2)} `;
-    }
-
-    const pl = document.createElementNS(NS,'polyline');
-    pl.setAttribute('points', pts.trim());
-    pl.setAttribute('fill', 'none');
-    pl.setAttribute('stroke', totalColor);
-    pl.setAttribute('stroke-width', '2');
-    pl.setAttribute('stroke-linejoin', 'round');
-    pl.setAttribute('stroke-linecap', 'round');
-    svg.appendChild(pl);
-
-// hover markers (tooltip)
-const hoverG = document.createElementNS(NS,'g');
-hoverG.setAttribute('opacity','0');
-
-const hoverLine = document.createElementNS(NS,'line');
-hoverLine.setAttribute('y1', '0');
-hoverLine.setAttribute('y2', String(H));
-hoverLine.setAttribute('stroke', border);
-hoverLine.setAttribute('stroke-width', '1');
-hoverLine.setAttribute('stroke-dasharray', '2 3');
-hoverG.appendChild(hoverLine);
-
-const hoverDot = document.createElementNS(NS,'circle');
-hoverDot.setAttribute('r', '3.2');
-hoverDot.setAttribute('fill', totalColor);
-hoverDot.setAttribute('stroke', '#0b1220');
-hoverDot.setAttribute('stroke-width', '1');
-hoverG.appendChild(hoverDot);
-
-svg.appendChild(hoverG);
-
-_usersMiniHover = { g: hoverG, line: hoverLine, dot: hoverDot };
-
-_usersMiniCtx = {
-  dates: (dates || []).slice(0, n),
-  totals: T,
-  news: N,
-  maxTotal,
-  maxNew,
-  W, H,
-  pad,
-  n,
-  step,
-  split,
-  topY0,
-  topH,
-  x,
-};
-
-  }
-
-
-
-
-  // --- Summary: Events mini-sparkline (90 days), НЕ зависит от HUM-склейки ---
-  let _eventsMiniData = null;
-  let _eventsMiniCtx = null;
-  let _eventsMiniHover = null;
-  let _eventsMiniBound = false;
-
-  function ensureEventsMiniInteraction(svg){
-    if (_eventsMiniBound) return;
-    _eventsMiniBound = true;
-
-    const tip = $('#events-mini-tip');
-
-    const hide = ()=>{
-      try{ _eventsMiniHover?.g?.setAttribute('opacity','0'); }catch(_){}
-      if (tip) tip.classList.remove('show');
-    };
-
-    const showAt = (clientX, clientY)=>{
-      const ctx = _eventsMiniCtx;
-      if (!ctx) return;
-
-      const rect = svg.getBoundingClientRect();
-      const px = clientX - rect.left;
-      if (!Number.isFinite(px)) return;
-
-      const scaleX = ctx.W / Math.max(1, rect.width);
-      const xvb = px * scaleX;
-
-      const i = clamp(Math.round((xvb - ctx.pad) / Math.max(1e-6, ctx.step)), 0, ctx.n - 1);
-      const xi = ctx.x(i);
-
-      // hover markers
-      if (_eventsMiniHover?.line && _eventsMiniHover?.dot && _eventsMiniHover?.g){
-        const t = ctx.totals[i] || 0;
-        const yy = ctx.topY0 + (1 - (t / ctx.maxTotal)) * ctx.topH;
-
-        _eventsMiniHover.line.setAttribute('x1', xi);
-        _eventsMiniHover.line.setAttribute('x2', xi);
-        _eventsMiniHover.dot.setAttribute('cx', xi);
-        _eventsMiniHover.dot.setAttribute('cy', yy);
-
-        _eventsMiniHover.g.setAttribute('opacity', '1');
-      }
-
-      // tooltip
-      if (tip){
-        const d = ctx.dates[i] || '';
-        const total = ctx.totals[i] || 0;
-        const neu = ctx.news[i] || 0;
-
-        tip.innerHTML =
-          `<span class="d">${d}</span>` +
-          `<div class="row"><span class="k">всего</span><span class="v">${fmtInt(total)}</span></div>` +
-          `<div class="row"><span class="k">за день</span><span class="v">${fmtInt(neu)}</span></div>`;
-
-        tip.style.left = (xi / ctx.W * 100) + '%';
-        tip.classList.add('show');
-      }
-    };
-
-    svg.addEventListener('mousemove', (e)=>showAt(e.clientX, e.clientY));
-    svg.addEventListener('mouseleave', hide);
-
-    svg.addEventListener('touchstart', (e)=>{
-      const t = e.touches && e.touches[0];
-      if (t) showAt(t.clientX, t.clientY);
-    }, {passive:true});
-    svg.addEventListener('touchmove', (e)=>{
-      const t = e.touches && e.touches[0];
-      if (t) showAt(t.clientX, t.clientY);
-    }, {passive:true});
-    svg.addEventListener('touchend', hide);
-  }
-
-  function drawEventsMini(){
-    const svg = $('#events-mini-chart');
-    if (!svg) return;
-
-    const data = _eventsMiniData;
-    const dates = data?.dates || data?.labels || [];
-    if (!dates.length){
-      while (svg.firstChild) svg.removeChild(svg.firstChild);
-      try{ _eventsMiniHover?.g?.setAttribute('opacity','0'); }catch(_){ }
-      $('#events-mini-tip')?.classList?.remove('show');
-      return;
-    }
-
-    const totals = (data.total || data.totals || data.total_all || []);
-    const news   = (data.new   || data.news   || data.daily     || []);
-
-    renderEventsSpark(svg, totals, news, dates);
-    ensureEventsMiniInteraction(svg);
-  }
-
-  function renderEventsSpark(svg, totals, news, dates){
-    const NS = 'http://www.w3.org/2000/svg';
-
-    const W = svg.clientWidth  || 176;
-    const H = svg.clientHeight || 60;
-
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.setAttribute('preserveAspectRatio', 'none');
-
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-
-    const pad = 4;
-    const split = Math.round(H * 0.62); // верхняя зона: "всего", нижняя: "за день"
-    const gap = 6;
-
-    const topY0 = pad;
-    const topY1 = Math.max(topY0 + 10, split - gap);
-    const botY0 = Math.min(H - pad - 10, split + 2);
-    const botY1 = H - pad;
-
-    const topH = Math.max(10, topY1 - topY0);
-    const botH = Math.max(8,  botY1 - botY0);
-
-    const n = Math.max(1, totals.length, news.length);
-    const step = (n > 1) ? ((W - 2*pad) / (n - 1)) : 0;
-    const x = (i) => pad + i * step;
-
-    const safeNums = (arr) => (arr || []).map(v=>Number(v)).map(v=>Number.isFinite(v)?v:0);
-    const T = safeNums(totals);
-    const N = safeNums(news);
-
-    const maxTotal = Math.max(1, ...T);
-    const maxNew   = Math.max(1, ...N);
-
-    const border = cssVar('--border', '#1f2a37');
-    const totalColor = cssVar('--accent', '#4dabf7');
-    const newColor   = cssVar('--accent2', '#3ddc97');
-
-    // разделитель зон
-    const sep = document.createElementNS(NS,'line');
-    sep.setAttribute('x1', pad);
-    sep.setAttribute('x2', W - pad);
-    sep.setAttribute('y1', split);
-    sep.setAttribute('y2', split);
-    sep.setAttribute('stroke', border);
-    sep.setAttribute('stroke-width', '1');
-    svg.appendChild(sep);
-
-    // нижние "за день" — тонкие столбики/штрихи
-    const barW = Math.max(1, Math.min(4, step * 0.65));
-    for (let i=0;i<n;i++){
-      const v = N[i] || 0;
-      if (v <= 0) continue;
-
-      const h = (v / maxNew) * botH;
-      const yTop = botY1 - h;
-
-      const line = document.createElementNS(NS,'line');
-      line.setAttribute('x1', x(i));
-      line.setAttribute('x2', x(i));
-      line.setAttribute('y1', botY1);
-      line.setAttribute('y2', yTop);
-      line.setAttribute('stroke', newColor);
-      line.setAttribute('stroke-width', String(barW));
-      line.setAttribute('stroke-linecap', 'round');
-      svg.appendChild(line);
-    }
-
-    // верхняя "всего" — линия
-    let pts = '';
-    for (let i=0;i<n;i++){
-      const v = T[i] || 0;
-      const yy = topY0 + (1 - (v / maxTotal)) * topH;
-      pts += `${x(i).toFixed(2)},${yy.toFixed(2)} `;
-    }
-
-    const pl = document.createElementNS(NS,'polyline');
-    pl.setAttribute('points', pts.trim());
-    pl.setAttribute('fill', 'none');
-    pl.setAttribute('stroke', totalColor);
-    pl.setAttribute('stroke-width', '2');
-    pl.setAttribute('stroke-linejoin', 'round');
-    pl.setAttribute('stroke-linecap', 'round');
-    svg.appendChild(pl);
-
-    // hover markers (tooltip)
-    const hoverG = document.createElementNS(NS,'g');
-    hoverG.setAttribute('opacity','0');
-
-    const hoverLine = document.createElementNS(NS,'line');
-    hoverLine.setAttribute('y1', '0');
-    hoverLine.setAttribute('y2', String(H));
-    hoverLine.setAttribute('stroke', border);
-    hoverLine.setAttribute('stroke-width', '1');
-    hoverLine.setAttribute('stroke-dasharray', '2 3');
-    hoverG.appendChild(hoverLine);
-
-    const hoverDot = document.createElementNS(NS,'circle');
-    hoverDot.setAttribute('r', '3.2');
-    hoverDot.setAttribute('fill', totalColor);
-    hoverDot.setAttribute('stroke', '#0b1220');
-    hoverDot.setAttribute('stroke-width', '1');
-    hoverG.appendChild(hoverDot);
-
-    svg.appendChild(hoverG);
-
-    _eventsMiniHover = { g: hoverG, line: hoverLine, dot: hoverDot };
-
-    _eventsMiniCtx = {
-      dates: (dates || []).slice(0, n),
-      totals: T,
-      news: N,
-      maxTotal,
-      maxNew,
-      W, H,
-      pad,
-      n,
-      step,
-      split,
-      topY0,
-      topH,
-      x,
-    };
-  }
-
-    try {
-    window.addEventListener('adminHumToggle', ()=>{ renderUsersCard(); drawUsersMini(); });
-  } catch (_) {}
 
   function bindNav(){
     $$('.nav-item').forEach(a=>{
@@ -609,7 +79,6 @@ _usersMiniCtx = {
     $('#save').addEventListener('click', ()=>{
       localStorage.setItem('ADMIN_API', apiEl.value.trim());
       localStorage.setItem('ADMIN_PWD', pwdEl.value);
-      fireApiChanged();
       // пробуем сразу подтянуть summary, чтобы пользователь видел что всё ок
       loadSummary().catch(()=>{});
     });
@@ -642,62 +111,32 @@ _usersMiniCtx = {
       ]);
 
       $('#stat-admin').textContent = 'OK';
+
       // summary totals
       const t = sum.totals || {};
-      // users: всего зарегистрировано / новые сегодня (реагирует на HUM-переключатель)
-      const haveTotals = (t.users_total_raw != null) || (t.users_today_raw != null);
+      const usersRaw = t.users_raw ?? 0;
+      const usersHum = t.users_hum ?? 0;
+      $('#sum-users').textContent = fmtInt(t.users_selected ?? usersHum ?? usersRaw);
+      $('#sum-users-sub').textContent = `raw: ${fmtInt(usersRaw)} / hum: ${fmtInt(usersHum)}`;
 
-      if (haveTotals) {
-        _usersCard = {
-          mode: 'totals',
-          totalRaw: t.users_total_raw ?? 0,
-          totalCluster: t.users_total_cluster ?? 0,
-          todayRaw: t.users_today_raw ?? 0,
-          todayCluster: t.users_today_cluster ?? 0,
-        };
-        renderUsersCard();
-      } else {
-        // fallback: старое поведение (уникальные по auth за диапазон)
-        const usersRaw = t.users_raw ?? 0;
-        const usersCluster = t.users_cluster ?? t.users_hum ?? usersRaw;
-        _usersCard = { mode: 'legacy', totalRaw: usersRaw, totalCluster: usersCluster, todayRaw: 0, todayCluster: 0 };
-        renderUsersCard();
-      }
-
-      // users sparkline 90d (total + new)
-      _usersMiniData = sum.users_90d || sum.users90d || sum.users90 || null;
-      drawUsersMini();
-
-      // events: всего / сегодня (НЕ зависит от HUM)
-      _eventsCard = {
-        total: t.events_all ?? sum.events ?? 0,
-        today: t.events_today ?? sum.events_today ?? 0,
-      };
-      renderEventsCard();
-
-      // events sparkline 90d
-      _eventsMiniData = sum.events_90d || sum.events90d || sum.events90 || null;
-      drawEventsMini();
+      // events total in range
+      $('#sum-events').textContent = fmtInt(t.auth_total ?? 0);
 
       // finance
       const dep = fin?.totals?.deposited ?? fin?.deposited ?? '0';
       const wdr = fin?.totals?.withdrawn ?? fin?.withdrawn ?? '0';
       const liab = fin?.totals?.liabilities ?? fin?.liabilities ?? '0';
-
-      const du = fin?.duels || {};
-      const turnover = du.turnover ?? fin?.totals?.turnover ?? fin?.turnover ?? '0';
-      const rake = du.rake ?? fin?.totals?.rake ?? fin?.rake ?? '0';
-      const games = du.games ?? fin?.totals?.games ?? fin?.games ?? 0;
-      const rakePct = du.rake_pct ?? fin?.totals?.rake_pct ?? fin?.rake_pct ?? null;
+      const turnover = fin?.totals?.turnover ?? fin?.turnover ?? '0';
+      const rake = fin?.totals?.rake ?? fin?.rake ?? '0';
+      const rakePct = fin?.totals?.rake_pct ?? fin?.rake_pct ?? null;
 
       $('#sum-deposited').textContent = fmtInt(dep);
       $('#sum-deposited-sub').textContent = `выводы: ${fmtInt(wdr)}`;
 
       $('#sum-liabilities').textContent = fmtInt(liab);
 
-      $('#sum-turnover').textContent = fmtInt(turnover);
-      $('#sum-rake').textContent = fmtInt(rake);
-      $('#sum-turnover-sub').textContent = `${fmtInt(games)} игр • рейк ${fmtPct(rakePct)}%`;
+      $('#sum-turnover').textContent = `${fmtInt(turnover)} / ${fmtInt(rake)}`;
+      $('#sum-turnover-sub').textContent = `${fmtInt(fin?.totals?.games ?? fin?.games ?? 0)} игр • рейк ${rakePct ?? '—'}%`;
 
       // mini tables
       loadMiniEvents().catch(()=>{});
@@ -714,18 +153,15 @@ _usersMiniCtx = {
       const dep = fin?.totals?.deposited ?? fin?.deposited ?? '0';
       const wdr = fin?.totals?.withdrawn ?? fin?.withdrawn ?? '0';
       const liab = fin?.totals?.liabilities ?? fin?.liabilities ?? '0';
-      const du = fin?.duels || {};
-      const turnover = du.turnover ?? fin?.totals?.turnover ?? fin?.turnover ?? '0';
-      const rake = du.rake ?? fin?.totals?.rake ?? fin?.rake ?? '0';
-      const games = du.games ?? 0;
-      const rakePct = du.rake_pct ?? null;
+      const turnover = fin?.totals?.turnover ?? fin?.turnover ?? '0';
+      const rake = fin?.totals?.rake ?? fin?.rake ?? '0';
+      const rakePct = fin?.totals?.rake_pct ?? fin?.rake_pct ?? null;
 
       $('#fin-deposited').textContent = fmtInt(dep);
       $('#fin-deposited-sub').textContent = `withdrawn: ${fmtInt(wdr)}`;
       $('#fin-liabilities').textContent = fmtInt(liab);
       $('#fin-turnover').textContent = fmtInt(turnover);
-      $('#fin-rake').textContent = fmtInt(rake);
-      $('#fin-turnover-sub').textContent = `${fmtInt(games)} игр • рейк ${fmtPct(rakePct)}%`;
+      $('#fin-turnover-sub').textContent = `rake: ${fmtInt(rake)} (${rakePct ?? '—'}%)`;
     }catch(e){
       alert('finance error: ' + (e?.message || e));
     }
@@ -741,7 +177,7 @@ _usersMiniCtx = {
         tbody.innerHTML = `<tr><td colspan="6" class="muted">Пусто</td></tr>`;
         return;
       }
-      tbody.innerHTML = items.map(it=>{
+      const rows = items.map(it=>{
         const name = [it.first_name, it.last_name].filter(Boolean).join(' ') || '—';
         const vk = it.vk_id || it.provider_user_id || '—';
         return `<tr>
@@ -752,48 +188,44 @@ _usersMiniCtx = {
           <td>${it.hum_id ?? ''}</td>
           <td class="muted">${(it.created_at||'').toString().slice(0,19).replace('T',' ')}</td>
         </tr>`;
-      }).join('');
+      });
+
+      tbody.innerHTML = rows.join('');
     }catch(e){
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="6" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
-  
+
   async function loadEvents(){
     const tbody = $('#tbl-events tbody');
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="muted">Загрузка…</td></tr>`;
     try{
-      const r = await jget('/api/admin/events?take=100');
-      const items = r.items || r.events || r.rows || [];
+      const r = await jget('/api/admin/events?limit=100');
+      const items = r.items || [];
       if (!items.length){
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">Пусто</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="muted">Пусто</td></tr>`;
         return;
       }
-
-      tbody.innerHTML = items.map(it=>{
-        const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
-        const ip = it.ip ?? '';
-        const uaFull = it.ua ?? '';
-        const uaShort = uaFull ? shorten(uaFull, 64) : '';
-        const et = (it.event_type || it.type || '—');
-
+      const rows = items.map(it=>{
         return `<tr>
-          <td>${it.id ?? ''}</td>
-          <td>${it.hum_id ?? ''}</td>
+          <td class="muted">${(it.created_at||'').toString().slice(0,19).replace('T',' ')}</td>
+          <td>${escapeHtml(it.event_type || it.type || '—')}</td>
           <td>${it.user_id ?? ''}</td>
-          <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(et)}</span></td>
-          <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(ip)}</span></td>
-          <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
-          <td class="muted">${escapeHtml(createdFull)}</td>
+          <td>${it.hum_id ?? ''}</td>
+          <td class="right">${fmtInt(it.amount ?? 0)}</td>
+          <td class="mono">${escapeHtml(shorten(safeJson(it.payload), 180))}</td>
         </tr>`;
-      }).join('');
+      });
+
+      tbody.innerHTML = rows.join('');
     }catch(e){
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка загрузки</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
 
-async function loadDuels(){
+  async function loadDuels(){
     const tbody = $('#tbl-duels tbody');
     tbody.innerHTML = `<tr><td colspan="9" class="muted">Загрузка…</td></tr>`;
     try{
@@ -806,7 +238,7 @@ async function loadDuels(){
         tbody.innerHTML = `<tr><td colspan="9" class="muted">Пусто</td></tr>`;
         return;
       }
-      tbody.innerHTML = items.map(it=>{
+      const rows = items.map(it=>{
         const pot = it.pot ?? it.result?.pot ?? '';
         return `<tr>
           <td>${it.id}</td>
@@ -819,95 +251,106 @@ async function loadDuels(){
           <td>${it.winner_user_id ?? ''}</td>
           <td class="muted">${(it.finished_at||it.updated_at||'').toString().slice(0,19).replace('T',' ')}</td>
         </tr>`;
-      }).join('');
+      });
+
+      tbody.innerHTML = rows.join('');
     }catch(e){
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="9" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
-  
+
   async function loadMiniEvents(){
     const tbody = $('#mini-events tbody');
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" class="muted">Загрузка…</td></tr>`;
     try{
-      // backend отдаёт { events: [...] } и использует параметры take/skip
-      const r = await jget('/api/admin/events?take=8');
-      const items = r.items || r.events || r.rows || [];
-
-      // Чтобы высота карточки была стабильной — всегда рисуем 8 строк (пустые дополняем).
-      const norm = (items || []).slice(0, 8);
-      while (norm.length < 8) norm.push(null);
-
-      tbody.innerHTML = norm.map(it=>{
-        if (!it){
-          return `<tr>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-          </tr>`;
-        }
-
-        const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
-        const createdMini = createdFull ? createdFull.slice(5,16) : '';
-        const ip = it.ip ?? '';
-        const uaFull = it.ua ?? '';
-        const uaShort = uaFull ? shorten(uaFull, 42) : '';
-        const et = (it.event_type || it.type || '—');
-
+      const r = await jget('/api/admin/events?limit=10');
+      const items = r.items || [];
+      if (!items.length){
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">Пусто</td></tr>`;
+        return;
+      }
+      const rows = items.map(it=>{
         return `<tr>
-          <td>${it.id ?? ''}</td>
-          <td>${it.hum_id ?? ''}</td>
+          <td class="muted">${(it.created_at||'').toString().slice(11,19)}</td>
+          <td>${escapeHtml(it.event_type || it.type || '—')}</td>
           <td>${it.user_id ?? ''}</td>
-          <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(shorten(et, 22))}</span></td>
-          <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(shorten(ip, 18))}</span></td>
-          <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
-          <td class="muted" title="${escapeHtml(createdFull)}">${escapeHtml(createdMini)}</td>
+          <td class="right">${fmtInt(it.amount ?? 0)}</td>
         </tr>`;
       }).join('');
     }catch(e){
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="muted">Ошибка</td></tr>`;
     }
   }
 
-async function loadMiniDuels(){
+  async function loadMiniDuels(){
     const tbody = $('#mini-duels tbody');
-    tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="muted">Загрузка…</td></tr>`;
     try{
-      const url = api() + '/api/duels/history?limit=8';
+      // Для summary нужен общий список последних дуэлей (не только история текущего юзера).
+      // Используем публичный эндпойнт /api/duels со статусом finished.
+      const url = api() + '/api/duels?status=finished&limit=8&order=newest';
       const r = await fetch(url, { credentials: 'include' });
       const j = await r.json().catch(()=>({ ok:false }));
-      const items = (j.items || []).slice(0, 8);
-      const norm = items.slice(0,8);
-      while (norm.length < 8) norm.push(null);
+      const items = j.items || [];
+      if (!items.length){
+        tbody.innerHTML = `<tr><td colspan="8" class="muted">Пусто</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = items.map(it=>{
+        const time = (it.finished_at||it.updated_at||it.created_at||'').toString().slice(11,19);
 
-      tbody.innerHTML = norm.map(it=>{
-        if (!it){
-          return `<tr>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="right muted">—</td>
-          </tr>`;
-        }
-        const pot = it.pot ?? it.result?.pot ?? '';
-        const time = (it.finished_at||it.updated_at||'').toString().slice(11,19);
+        const cId = it.creator_user_id;
+        const oId = it.opponent_user_id;
+
+        const cName = [it.creator_first_name, it.creator_last_name].filter(Boolean).join(' ').trim();
+        const oName = [it.opponent_first_name, it.opponent_last_name].filter(Boolean).join(' ').trim();
+
+        const cAvatar = it.creator_avatar || '';
+        const oAvatar = it.opponent_avatar || '';
+
+        const pot = it.pot ?? (Number.isFinite(Number(it.stake)) ? (Number(it.stake) * 2) : 0);
+        const rake = it.rake ?? (Number.isFinite(Number(it.fee_bps))
+          ? Math.round((Number(pot||0) * Number(it.fee_bps||0)) / 10000)
+          : 0);
+
+        const uBadge = (id, avatar, name)=>{
+          const safeName = escapeHtml(name || ('user ' + (id ?? '')));
+          const av = avatar ? `<img class="mini-av" src="${escapeHtml(avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" />` : `<span class="mini-av ph"></span>`;
+          return `<span class="u-badge" title="${safeName}">${av}<span class="uid">${id ?? '—'}</span></span>`;
+        };
+
         return `<tr>
-          <td class="muted">${time}</td>
-          <td>${it.id}</td>
-          <td>${fmtInt(it.stake ?? 0)}</td>
+          <td class="muted">${time || '—'}</td>
+          <td>${uBadge(cId, cAvatar, cName)}</td>
+          <td class="muted vs-col">vs</td>
+          <td>${uBadge(oId, oAvatar, oName)}</td>
+          <td class="right">${fmtInt(it.stake ?? 0)}</td>
           <td>${escapeHtml(it.status || '—')}</td>
           <td class="right">${fmtInt(pot)}</td>
+          <td class="right"><span class="rake-red">${fmtInt(rake)}</span></td>
         </tr>`;
-      }).join('');
+      });
+
+      // Добиваем до 8 строк, чтобы карточка была такой же высоты.
+      while (rows.length < 8) {
+        rows.push(`<tr>
+          <td class="muted">—</td>
+          <td class="muted">—</td>
+          <td class="muted vs-col">vs</td>
+          <td class="muted">—</td>
+          <td class="right muted">—</td>
+          <td class="muted">—</td>
+          <td class="right muted">—</td>
+          <td class="right muted">—</td>
+        </tr>`);
+      }
+
+      tbody.innerHTML = rows.join('');
     }catch(e){
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="muted">Ошибка</td></tr>`;
     }
   }
 
