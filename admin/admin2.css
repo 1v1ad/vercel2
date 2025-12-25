@@ -408,6 +408,12 @@ body{
 .summary-charts .panel-head{align-items:flex-start}
 
 
+
+
+/* Summary: columns — users card under events, placeholder under duels */
+.summary-cols{align-items:start}
+.summary-cols .col-stack{display:flex;flex-direction:column;gap:14px}
+
 /* Summary: metric cards (Deposited/Withdrawn, Turnover/Rake) — 2 big values in one row */
 #view-summary .card.card-metrics{
   display:grid;
