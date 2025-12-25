@@ -7,7 +7,7 @@
 
   <link rel="icon" type="image/svg+xml"
         href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%231a73e8"/><stop offset="1" stop-color="%234ed1a9"/></linearGradient></defs><rect rx="12" width="64" height="64" fill="%23f5f7fa"/><path d="M14 44l8-24h6l8 24h-6l-1.6-5H21.6L20 44h-6z" fill="url(%23g)"/></svg>' />
-  <link rel="stylesheet" href="/admin/admin2.css?v=20251226a" />
+  <link rel="stylesheet" href="/admin/admin2.css?v=20251226b" />
   <script defer src="/admin/flags.js?v=20251225g"></script>
 </head>
 
@@ -53,7 +53,7 @@
 
         <div class="nav-sub" data-parent="users">
           <a class="nav-sub-item" href="#users/list" data-view="users" data-users-sub="list"><span>Список</span></a>
-          <a class="nav-sub-item" href="#users/analytics" data-view="users" data-users-sub="analytics"><span>Аналитика</span></a>
+          <a class="nav-sub-item" href="#users/analytics" data-view="users" data-users-sub="analytics"><span>Аналитика 1v1</span></a>
         </div>
         <a class="nav-item" href="#duels" data-view="duels">
           <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -362,7 +362,7 @@
 
     <div class="subtabs" id="users-subtabs">
       <button class="chip active" data-users-sub="list">Список</button>
-      <button class="chip" data-users-sub="analytics">Аналитика</button>
+      <button class="chip" data-users-sub="analytics">Аналитика 1v1</button>
     </div>
 
     <div class="users-subview active" id="users-sub-list">
@@ -428,6 +428,27 @@
               <th class="right">Участий</th>
               <th class="right">user_id</th>
               <th class="right">HUMid</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="section-sep"></div>
+
+      <div class="panel-head panel-head-slim">
+        <div class="panel-title">Самый успешный в дуэлях</div>
+      </div>
+      <div class="note muted tiny">Топ-10 по количеству побед в дуэлях за весь период.</div>
+
+      <div class="table-wrap">
+        <table class="table" id="tbl-users-analytics-duels-wins">
+          <thead>
+            <tr>
+              <th class="right">#</th>
+              <th>Пользователь</th>
+              <th class="right">Выигрышей</th>
+              <th class="right">user_id</th>
+              <th class="right">hum_id</th>
             </tr>
           </thead>
           <tbody><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody>

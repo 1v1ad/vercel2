@@ -384,6 +384,9 @@ body{
 
 .note{margin-top:10px}
 
+.section-sep{height:1px; background:var(--border); margin:14px 0 12px}
+
+
 
 .tools{display:flex; align-items:center; gap:8px}
 .input.sm{height:30px; padding:0 10px; font-size:12px}
