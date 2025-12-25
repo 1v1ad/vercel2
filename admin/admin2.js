@@ -650,195 +650,6 @@ _usersMiniCtx = {
     });
   }
 
-
-  // --- Summary: Liabilities mini-bars (90 days), НЕ зависит от HUM-склейки ---
-  // «На балансах» = сумма user.balance по дням (на конец дня).
-  let _liabMiniData = null;
-  let _liabMiniCtx = null;
-  let _liabMiniHover = null;
-  let _liabMiniBound = false;
-
-  function ensureLiabMiniInteraction(svg){
-    if (_liabMiniBound) return;
-    _liabMiniBound = true;
-
-    const tip = $('#liab-mini-tip');
-
-    const hide = ()=>{
-      try{ _liabMiniHover?.g?.setAttribute('opacity','0'); }catch(_){ }
-      if (tip) tip.classList.remove('show');
-    };
-
-    const showAt = (clientX, clientY)=>{
-      const ctx = _liabMiniCtx;
-      if (!ctx) return;
-
-      const rect = svg.getBoundingClientRect();
-      const px = clientX - rect.left;
-      if (!Number.isFinite(px)) return;
-
-      const scaleX = ctx.W / Math.max(1, rect.width);
-      const xvb = px * scaleX;
-
-      const i = clamp(Math.round((xvb - ctx.pad) / Math.max(1e-6, ctx.step)), 0, ctx.n - 1);
-      const xi = ctx.x(i);
-
-      // hover markers
-      if (_liabMiniHover?.line && _liabMiniHover?.dot && _liabMiniHover?.g){
-        const vNum = ctx.values[i] || 0;
-        const yy = ctx.y(vNum);
-
-        _liabMiniHover.line.setAttribute('x1', xi);
-        _liabMiniHover.line.setAttribute('x2', xi);
-        _liabMiniHover.dot.setAttribute('cx', xi);
-        _liabMiniHover.dot.setAttribute('cy', yy);
-
-        _liabMiniHover.g.setAttribute('opacity', '1');
-      }
-
-      // tooltip
-      if (tip){
-        const d = ctx.dates[i] || '';
-        const v = (ctx.values_raw && ctx.values_raw[i] != null) ? ctx.values_raw[i] : (ctx.values[i] || 0);
-
-        tip.innerHTML =
-          `<span class="d">${d}</span>` +
-          `<div class="row"><span class="k">на балансах</span><span class="v">${fmtInt(v)}</span></div>`;
-
-        tip.style.left = (xi / ctx.W * 100) + '%';
-        tip.classList.add('show');
-      }
-    };
-
-    svg.addEventListener('mousemove', (e)=>showAt(e.clientX, e.clientY));
-    svg.addEventListener('mouseleave', hide);
-
-    svg.addEventListener('touchstart', (e)=>{
-      const t = e.touches && e.touches[0];
-      if (t) showAt(t.clientX, t.clientY);
-    }, {passive:true});
-    svg.addEventListener('touchmove', (e)=>{
-      const t = e.touches && e.touches[0];
-      if (t) showAt(t.clientX, t.clientY);
-    }, {passive:true});
-    svg.addEventListener('touchend', hide);
-  }
-
-  function drawLiabMini(){
-    const svg = $('#liab-mini-chart');
-    if (!svg) return;
-
-    const data = _liabMiniData;
-    const dates = data?.dates || data?.labels || [];
-    const vals  = data?.balances || data?.values || data?.liabilities || [];
-
-    if (!dates.length || !vals.length){
-      while (svg.firstChild) svg.removeChild(svg.firstChild);
-      try{ _liabMiniHover?.g?.setAttribute('opacity','0'); }catch(_){ }
-      $('#liab-mini-tip')?.classList?.remove('show');
-      return;
-    }
-
-    renderLiabBars(svg, vals, dates);
-    ensureLiabMiniInteraction(svg);
-  }
-
-  function renderLiabBars(svg, values, dates){
-    const NS = 'http://www.w3.org/2000/svg';
-
-    const W = svg.clientWidth  || 176;
-    const H = svg.clientHeight || 60;
-
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    svg.setAttribute('preserveAspectRatio', 'none');
-
-    while (svg.firstChild) svg.removeChild(svg.firstChild);
-
-    const pad = 4;
-    const n = Math.max(1, values.length);
-    const step = (n > 1) ? ((W - 2*pad) / (n - 1)) : 0;
-    const x = (i) => pad + i * step;
-
-    const raw = (values || []).map(v => String(v ?? '0').trim());
-    const V = raw.map(s=>{
-      if (/^-?\d+$/.test(s)){
-        try{ return Number(BigInt(s)); }catch(_){ return Number(s) || 0; }
-      }
-      const k = Number(s);
-      return Number.isFinite(k) ? k : 0;
-    });
-    const maxV = Math.max(1, ...V);
-
-    const border = cssVar('--border', '#1f2a37');
-    const col = cssVar('--accent2', '#3ddc97');
-
-    const y0 = pad;
-    const y1 = H - pad;
-    const h = Math.max(8, y1 - y0);
-    const y = (v) => y0 + (1 - (v / maxV)) * h;
-
-    // baseline
-    const base = document.createElementNS(NS,'line');
-    base.setAttribute('x1', pad);
-    base.setAttribute('x2', W - pad);
-    base.setAttribute('y1', y1);
-    base.setAttribute('y2', y1);
-    base.setAttribute('stroke', border);
-    base.setAttribute('stroke-width', '1');
-    svg.appendChild(base);
-
-    const barW = Math.max(1, Math.min(7, step * 0.82));
-    for (let i=0;i<n;i++){
-      const v = V[i] || 0;
-      const yy = y(v);
-
-      const line = document.createElementNS(NS,'line');
-      line.setAttribute('x1', x(i));
-      line.setAttribute('x2', x(i));
-      line.setAttribute('y1', y1);
-      line.setAttribute('y2', yy);
-      line.setAttribute('stroke', col);
-      line.setAttribute('stroke-width', String(barW));
-      line.setAttribute('stroke-linecap', 'round');
-      svg.appendChild(line);
-    }
-
-    // hover markers
-    const hoverG = document.createElementNS(NS,'g');
-    hoverG.setAttribute('opacity','0');
-
-    const hoverLine = document.createElementNS(NS,'line');
-    hoverLine.setAttribute('y1', '0');
-    hoverLine.setAttribute('y2', String(H));
-    hoverLine.setAttribute('stroke', border);
-    hoverLine.setAttribute('stroke-width', '1');
-    hoverLine.setAttribute('stroke-dasharray', '2 3');
-    hoverG.appendChild(hoverLine);
-
-    const hoverDot = document.createElementNS(NS,'circle');
-    hoverDot.setAttribute('r', '3.2');
-    hoverDot.setAttribute('fill', col);
-    hoverDot.setAttribute('stroke', '#0b1220');
-    hoverDot.setAttribute('stroke-width', '1');
-    hoverG.appendChild(hoverDot);
-
-    svg.appendChild(hoverG);
-    _liabMiniHover = { g: hoverG, line: hoverLine, dot: hoverDot };
-
-    _liabMiniCtx = {
-      dates: (dates || []).slice(0, n),
-      values: V,
-      values_raw: raw.slice(0, n),
-      maxV,
-      W, H,
-      pad,
-      n,
-      step,
-      x,
-      y,
-    };
-  }
-
   // ----- loaders -----
 
   async function loadSummary(){
@@ -925,10 +736,6 @@ $('#sum-withdrawn-today').textContent = fmtInt(wdrToday);
 
 $('#sum-liabilities').textContent = fmtInt(liab);
 
-// liabilities mini chart (90d) — НЕ зависит от HUM
-_liabMiniData = sum?.liabilities_90d || sum?.liabilities90d || sum?.liab_90d || null;
-drawLiabMini();
-
 $('#sum-turnover-all').textContent = fmtInt(turnoverAll);
 $('#sum-turnover-today').textContent = fmtInt(turnoverToday);
 $('#sum-rake-all').textContent = fmtInt(rakeAll);
@@ -974,7 +781,6 @@ try{
       // mini tables
       loadMiniEvents().catch(()=>{});
       loadMiniDuels().catch(()=>{});
-      loadMiniUsers().catch(()=>{});
     }catch(e){
       console.error(e);
       $('#stat-admin').textContent = 'ERR';
@@ -1004,67 +810,154 @@ try{
     }
   }
 
-  async function loadUsers(){
-    const tbody = $('#tbl-users tbody');
-    tbody.innerHTML = `<tr><td colspan="6" class="muted">Загрузка…</td></tr>`;
-    try{
-      const u = await jget('/api/admin/users?limit=50');
-      const items = u.items || u.users || [];
-      if (!items.length){
-        tbody.innerHTML = `<tr><td colspan="6" class="muted">Пусто</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = items.map(it=>{
-        const name = [it.first_name, it.last_name].filter(Boolean).join(' ') || '—';
-        const vk = it.vk_id || it.provider_user_id || '—';
-        return `<tr>
-          <td>${it.id}</td>
-          <td>${vk}</td>
-          <td>${escapeHtml(name)}</td>
-          <td class="right">${fmtInt(it.balance ?? 0)}</td>
-          <td>${it.hum_id ?? ''}</td>
-          <td class="muted">${(it.created_at||'').toString().slice(0,19).replace('T',' ')}</td>
-        </tr>`;
-      }).join('');
-    }catch(e){
-      console.error(e);
-      tbody.innerHTML = `<tr><td colspan="6" class="muted">Ошибка загрузки</td></tr>`;
-    }
-  }
   
-  async function loadEvents(){
-    const tbody = $('#tbl-events tbody');
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
+  // --- Users view (таблица + фильтры + сортировка) ---
+  const _usersPage = { sort:'created_at', dir:'desc', debounce:null, inited:false };
+
+  function usersFilters(){
+    const vkRaw = ($('#users-f-vkid')?.value || '').trim();
+    const first = ($('#users-f-first')?.value || '').trim();
+    const last  = ($('#users-f-last')?.value  || '').trim();
+    const hum   = ($('#users-f-hum')?.value   || '').trim();
+    const uid   = ($('#users-f-uid')?.value   || '').trim();
+
+    // нормализуем vk/tg id: разрешаем "tg:123" / "vk:123" / "123"
+    let vk_tg = vkRaw;
+    if (vk_tg && (vk_tg.startsWith('tg ') || vk_tg.startsWith('vk '))){
+      vk_tg = vk_tg.replace(/\s+/, ':');
+    }
+    return { vk_tg, first, last, hum, uid };
+  }
+
+  function usersBuildUrl(){
+    const f = usersFilters();
+    const p = new URLSearchParams();
+    p.set('take','25');
+    p.set('sort', _usersPage.sort);
+    p.set('dir', _usersPage.dir);
+
+    if (f.vk_tg) p.set('vk_tg', f.vk_tg);
+    if (f.first) p.set('first_name', f.first);
+    if (f.last)  p.set('last_name', f.last);
+    if (f.hum)   p.set('hum_id', f.hum);
+    if (f.uid)   p.set('user_id', f.uid);
+
+    return '/api/admin/users?' + p.toString();
+  }
+
+  function usersSetSortUI(){
+    const ths = document.querySelectorAll('#tbl-users thead th.sortable');
+    ths.forEach(th=>{
+      th.classList.remove('sorted-asc','sorted-desc');
+      if ((th.dataset.sort||'') === _usersPage.sort){
+        th.classList.add(_usersPage.dir === 'asc' ? 'sorted-asc' : 'sorted-desc');
+      }
+    });
+  }
+
+  function initUsersView(){
+    if (_usersPage.inited) return;
+    _usersPage.inited = true;
+
+    // сортировка по клику на заголовок
+    document.querySelectorAll('#tbl-users thead th.sortable').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const key = th.dataset.sort || 'id';
+        if (_usersPage.sort === key){
+          _usersPage.dir = (_usersPage.dir === 'asc') ? 'desc' : 'asc';
+        } else {
+          _usersPage.sort = key;
+          _usersPage.dir = 'asc';
+        }
+        usersSetSortUI();
+        loadUsers();
+      });
+    });
+
+    const debouncedReload = ()=>{
+      clearTimeout(_usersPage.debounce);
+      _usersPage.debounce = setTimeout(()=>loadUsers(), 220);
+    };
+
+    // фильтры: ввод + Enter
+    ['users-f-vkid','users-f-first','users-f-last','users-f-hum','users-f-uid'].forEach(id=>{
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', debouncedReload);
+      el.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter') loadUsers();
+      });
+    });
+
+    $('#users-clear')?.addEventListener('click', ()=>{
+      ['users-f-vkid','users-f-first','users-f-last','users-f-hum','users-f-uid'].forEach(id=>{
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      loadUsers();
+    });
+  }
+
+  async function loadUsers(){
+    initUsersView();
+    usersSetSortUI();
+
+    const tbody = $('#tbl-users tbody');
+    tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
     try{
-      const r = await jget('/api/admin/events?take=100');
-      const items = r.items || r.events || r.rows || [];
+      const u = await jget(usersBuildUrl());
+      const items = u.users || u.items || u.rows || [];
       if (!items.length){
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">Пусто</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="muted">Пусто</td></tr>`;
         return;
       }
 
+      const fmtDT = (s)=> (s||'').toString().slice(0,19).replace('T',' ');
+      const flag = (cc)=>{
+        if (!cc) return '—';
+        try{
+          return (window.ccToFlag ? window.ccToFlag(cc) : cc);
+        }catch(_){ return cc; }
+      };
+
       tbody.innerHTML = items.map(it=>{
-        const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
-        const ip = it.ip ?? '';
-        const uaFull = it.ua ?? '';
-        const uaShort = uaFull ? shorten(uaFull, 64) : '';
-        const et = (it.event_type || it.type || '—');
+        const humId = it.hum_id ?? it.id ?? '';
+        const userId = it.id ?? '';
+        const fullName = [it.first_name, it.last_name].filter(Boolean).join(' ').trim();
+
+        const pid = it.provider_ids || {};
+        let vktg = '—';
+        if (pid.tg) vktg = `tg:${pid.tg}`;
+        else if (it.vk_id) vktg = `${it.vk_id}`;
+        else if (pid.vk) vktg = `${pid.vk}`;
+
+        const providers = Array.isArray(it.providers) ? it.providers.join(',') : (it.providers || '');
+        const avatarUrl = it.avatar || it.avatar_url || '';
+        const created = fmtDT(it.created_at);
+
+        const ava = avatarUrl
+          ? `<img class="ava big" src="${escapeHtml(avatarUrl)}" alt="" title="${escapeHtml(fullName || ('user '+userId))}">`
+          : `<span class="ava big" title="${escapeHtml(fullName || ('user '+userId))}"></span>`;
 
         return `<tr>
-          <td>${it.id ?? ''}</td>
-          <td>${it.hum_id ?? ''}</td>
-          <td>${it.user_id ?? ''}</td>
-          <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(et)}</span></td>
-          <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(ip)}</span></td>
-          <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
-          <td class="muted">${escapeHtml(createdFull)}</td>
+          <td title="HUMid">${escapeHtml(String(humId))}</td>
+          <td title="${escapeHtml(fullName || ('user '+userId))}">${escapeHtml(String(userId))}</td>
+          <td>${escapeHtml(String(vktg))}</td>
+          <td>${escapeHtml(it.first_name || '—')}</td>
+          <td>${escapeHtml(it.last_name || '—')}</td>
+          <td class="right">${fmtInt(it.balance ?? 0)}</td>
+          <td>${flag(it.country_code)}</td>
+          <td class="muted">${escapeHtml(created)}</td>
+          <td class="tight">${escapeHtml(providers)}</td>
+          <td class="tight right">${ava}</td>
         </tr>`;
       }).join('');
     }catch(e){
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка загрузки</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
+
 
 async function loadDuels(){
     const tbody = $('#tbl-duels tbody');
@@ -1144,67 +1037,6 @@ async function loadDuels(){
     }catch(e){
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка</td></tr>`;
-    }
-  }
-
-
-  async function loadMiniUsers(){
-    const tbody = $('#mini-users tbody');
-    if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
-    try{
-      const r = await jget('/api/admin/users?take=6');
-      const items = r.items || r.users || r.rows || [];
-      const norm = (items || []).slice(0, 6);
-      while (norm.length < 6) norm.push(null);
-
-      tbody.innerHTML = norm.map(u=>{
-        if (!u){
-          return `<tr>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted right">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-          </tr>`;
-        }
-
-        const hum = u.hum_id ?? u.HUMid ?? u.id ?? '';
-        const uid = u.id ?? '';
-        const vk = u.vk_id ?? '';
-        const fn = (u.first_name || '').toString().trim();
-        const ln = (u.last_name || '').toString().trim();
-        const full = [fn, ln].filter(Boolean).join(' ').trim();
-        const title = full ? full : (uid ? `id ${uid}` : '');
-        const createdFull = (u.created_at || '').toString().slice(0,19).replace('T',' ');
-        const createdMini = createdFull ? createdFull.slice(5,16) : '';
-        const cc = ((u.country_code || '') + '').toUpperCase();
-        const providers = Array.isArray(u.providers) ? u.providers.join(', ') : (u.providers || '');
-        const avatar = (u.avatar || '').toString().trim();
-
-        return `<tr>
-          <td class="mono" title="${escapeHtml(title)}">${escapeHtml(hum)}</td>
-          <td class="mono" title="${escapeHtml(title)}">${escapeHtml(uid)}</td>
-          <td class="mono">${escapeHtml(vk)}</td>
-          <td>${escapeHtml(fn)}</td>
-          <td>${escapeHtml(ln)}</td>
-          <td class="right">${fmtInt(u.balance ?? 0)}</td>
-          <td data-cc="${escapeHtml(cc)}"></td>
-          <td class="muted" title="${escapeHtml(createdFull)}">${escapeHtml(createdMini)}</td>
-          <td><span class="providers" title="${escapeHtml(providers)}">${escapeHtml(providers)}</span></td>
-          <td class="avatar-cell">${avatar ? `<img class="mini-ava-lg" src="${escapeHtml(avatar)}" alt="" loading="lazy" title="${escapeHtml(title)}">` : ''}</td>
-        </tr>`;
-      }).join('');
-
-      if (window.decorateFlags) window.decorateFlags(tbody);
-    }catch(e){
-      console.error(e);
-      tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
 
@@ -1291,7 +1123,6 @@ async function loadMiniDuels(){
     $('#refresh-duels')?.addEventListener('click', loadDuels);
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);
-    $('#refresh-users-mini')?.addEventListener('click', loadMiniUsers);
 
     $('#topup-btn')?.addEventListener('click', async ()=>{
       const out = $('#topup-out');

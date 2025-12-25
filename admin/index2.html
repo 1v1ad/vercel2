@@ -7,7 +7,7 @@
 
   <link rel="icon" type="image/svg+xml"
         href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%231a73e8"/><stop offset="1" stop-color="%234ed1a9"/></linearGradient></defs><rect rx="12" width="64" height="64" fill="%23f5f7fa"/><path d="M14 44l8-24h6l8 24h-6l-1.6-5H21.6L20 44h-6z" fill="url(%23g)"/></svg>' />
-  <link rel="stylesheet" href="/admin/admin2.css?v=20251225e" />
+  <link rel="stylesheet" href="/admin/admin2.css?v=20251225f" />
 </head>
 
 <body>
@@ -166,19 +166,10 @@
                 выведено: <span id="sum-withdrawn-all">—</span> / <span id="sum-withdrawn-today">—</span>
               </div>
             </div>
-            <div class="card liabilities-card">
-              <div class="card-main">
-                <div class="card-title">На балансах</div>
-                <div class="card-value" id="sum-liabilities">—</div>
-                <div class="card-sub muted tiny">сумма на балансах пользователей</div>
-              </div>
-              <div class="card-spark" title="Сумма на балансах пользователей за последние 90 дней">
-                <div id="liab-mini-tip" class="spark-tip" aria-hidden="true"></div>
-                <svg id="liab-mini-chart" class="spark-svg" aria-label="Liabilities 90d bars"></svg>
-                <div class="spark-legend muted tiny">
-                  <span class="dot dot-new"></span><span>на балансах</span>
-                </div>
-              </div>
+            <div class="card">
+              <div class="card-title">На балансах (обязательство)</div>
+              <div class="card-value" id="sum-liabilities">—</div>
+              <div class="card-sub muted tiny">сумма user.balance</div>
             </div>
                         <div class="card card-metrics">
               <div class="card-title">Дуэли: оборот / рейк</div>
@@ -233,67 +224,33 @@
             </div>
           </div>
 
-          
-<div class="grid two summary-cols">
-  <div class="panel">
-    <div class="panel-head">
-      <div class="panel-title">Последние события</div>
-      <button class="btn ghost sm" id="refresh-events-mini">Обновить</button>
-    </div>
-    <div class="table-wrap">
-      <table class="table" id="mini-events">
-        <thead><tr><th>ID</th><th>HUMid</th><th>user_id</th><th>event_type</th><th>IP</th><th>UA</th><th>Создано</th></tr></thead>
-        <tbody><tr><td colspan="7" class="muted">Загрузка…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
+          <div class="grid two">
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Последние события</div>
+                <button class="btn ghost sm" id="refresh-events-mini">Обновить</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table" id="mini-events">
+                  <thead><tr><th>ID</th><th>HUMid</th><th>user_id</th><th>event_type</th><th>IP</th><th>UA</th><th>Создано</th></tr></thead>
+                  <tbody><tr><td colspan="7" class="muted">Загрузка…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
 
-  <div class="panel">
-    <div class="panel-head">
-      <div class="panel-title">Последние дуэли</div>
-      <button class="btn ghost sm" id="refresh-duels-mini">Обновить</button>
-    </div>
-    <div class="table-wrap">
-      <table class="table" id="mini-duels">
-        <thead><tr><th>Время</th><th>id</th><th>vs</th><th>id</th><th class="right">stake</th><th>status</th><th class="right">pot</th><th class="right">rake</th></tr></thead>
-        <tbody><tr><td colspan="8" class="muted">Загрузка…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-head">
-      <div class="panel-title">Пользователи</div>
-      <button class="btn ghost sm" id="refresh-users-mini">Обновить</button>
-    </div>
-    <div class="table-wrap">
-      <table class="table" id="mini-users">
-        <thead>
-          <tr>
-            <th>HUMid</th>
-            <th>user_id</th>
-            <th>VK/Tg</th>
-            <th>Имя</th>
-            <th>Фамилия</th>
-            <th class="right">Баланс</th>
-            <th>Страна</th>
-            <th>Создан</th>
-            <th>vk/tg</th>
-            <th>Аватар</th>
-          </tr>
-        </thead>
-        <tbody><tr><td colspan="10" class="muted">Загрузка…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="panel panel-empty">
-    <div class="panel-head">
-      <div class="panel-title">&nbsp;</div>
-    </div>
-    <div class="empty-box"></div>
-  </div>
-</div>
+            <div class="panel">
+              <div class="panel-head">
+                <div class="panel-title">Последние дуэли</div>
+                <button class="btn ghost sm" id="refresh-duels-mini">Обновить</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table" id="mini-duels">
+                  <thead><tr><th>Время</th><th>id</th><th>vs</th><th>id</th><th class="right">stake</th><th>status</th><th class="right">pot</th><th class="right">rake</th></tr></thead>
+                  <tbody><tr><td colspan="8" class="muted">Загрузка…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="view" id="view-finance">
@@ -331,12 +288,52 @@
           <div class="panel">
             <div class="panel-head">
               <div class="panel-title">Пользователи</div>
-              <button class="btn sm" id="refresh-users">Обновить</button>
+              <div class="panel-actions">
+                <button class="btn sm ghost" id="users-clear">Сброс</button>
+                <button class="btn sm" id="refresh-users">Обновить</button>
+              </div>
             </div>
+
+            <div class="filters users-filters">
+              <label class="f">
+                <span>vk/tg id</span>
+                <input class="input sm" id="users-f-vkid" placeholder="107… или tg:…" />
+              </label>
+              <label class="f">
+                <span>имя</span>
+                <input class="input sm" id="users-f-first" placeholder="Alex" />
+              </label>
+              <label class="f">
+                <span>фамилия</span>
+                <input class="input sm" id="users-f-last" placeholder="Захаров" />
+              </label>
+              <label class="f">
+                <span>HUMid</span>
+                <input class="input sm" id="users-f-hum" inputmode="numeric" placeholder="97" />
+              </label>
+              <label class="f">
+                <span>user_id</span>
+                <input class="input sm" id="users-f-uid" inputmode="numeric" placeholder="97" />
+              </label>
+            </div>
+
             <div class="table-wrap">
-              <table class="table" id="tbl-users">
-                <thead><tr><th>id</th><th>vk</th><th>имя</th><th class="right">balance</th><th>hum_id</th><th>created</th></tr></thead>
-                <tbody><tr><td colspan="7" class="muted">Загрузка…</td></tr></tbody>
+              <table class="table users-table" id="tbl-users">
+                <thead>
+                  <tr>
+                    <th class="sortable" data-sort="hum_id">HUMid</th>
+                    <th class="sortable" data-sort="id">user_id</th>
+                    <th class="sortable" data-sort="vk_tg">VK/Tg</th>
+                    <th class="sortable" data-sort="first_name">Имя</th>
+                    <th class="sortable" data-sort="last_name">Фамилия</th>
+                    <th class="sortable right" data-sort="balance">Баланс</th>
+                    <th class="sortable" data-sort="country_code">Страна</th>
+                    <th class="sortable" data-sort="created_at">Создан</th>
+                    <th class="sortable tight" data-sort="providers">vk/tg</th>
+                    <th class="tight">Аватар</th>
+                  </tr>
+                </thead>
+                <tbody><tr><td colspan="10" class="muted">Загрузка…</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -439,10 +436,9 @@
   </div>
 
   <!-- auth shim / hum toggle -->
-  <script src="/admin/admin-auth-headers.js?v=20251225c"></script>
-  <script src="/admin/flags.js?v=20251225c"></script>
+  <script src="/admin/admin-auth-headers.js?v=20251224c"></script>
 
-  <script src="/admin/admin2.js?v=20251225e"></script>
+  <script src="/admin/admin2.js?v=20251225f"></script>
   <script src="/admin/chart-range.js?v=20251224c"></script>
   <script src="/admin/chart.js?v=20251224c"></script>
 </body>
