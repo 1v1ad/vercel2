@@ -974,6 +974,7 @@ try{
       // mini tables
       loadMiniEvents().catch(()=>{});
       loadMiniDuels().catch(()=>{});
+      loadMiniUsers().catch(()=>{});
     }catch(e){
       console.error(e);
       $('#stat-admin').textContent = 'ERR';
@@ -1146,6 +1147,67 @@ async function loadDuels(){
     }
   }
 
+
+  async function loadMiniUsers(){
+    const tbody = $('#mini-users tbody');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
+    try{
+      const r = await jget('/api/admin/users?take=6');
+      const items = r.items || r.users || r.rows || [];
+      const norm = (items || []).slice(0, 6);
+      while (norm.length < 6) norm.push(null);
+
+      tbody.innerHTML = norm.map(u=>{
+        if (!u){
+          return `<tr>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted right">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+          </tr>`;
+        }
+
+        const hum = u.hum_id ?? u.HUMid ?? u.id ?? '';
+        const uid = u.id ?? '';
+        const vk = u.vk_id ?? '';
+        const fn = (u.first_name || '').toString().trim();
+        const ln = (u.last_name || '').toString().trim();
+        const full = [fn, ln].filter(Boolean).join(' ').trim();
+        const title = full ? full : (uid ? `id ${uid}` : '');
+        const createdFull = (u.created_at || '').toString().slice(0,19).replace('T',' ');
+        const createdMini = createdFull ? createdFull.slice(5,16) : '';
+        const cc = ((u.country_code || '') + '').toUpperCase();
+        const providers = Array.isArray(u.providers) ? u.providers.join(', ') : (u.providers || '');
+        const avatar = (u.avatar || '').toString().trim();
+
+        return `<tr>
+          <td class="mono" title="${escapeHtml(title)}">${escapeHtml(hum)}</td>
+          <td class="mono" title="${escapeHtml(title)}">${escapeHtml(uid)}</td>
+          <td class="mono">${escapeHtml(vk)}</td>
+          <td>${escapeHtml(fn)}</td>
+          <td>${escapeHtml(ln)}</td>
+          <td class="right">${fmtInt(u.balance ?? 0)}</td>
+          <td data-cc="${escapeHtml(cc)}"></td>
+          <td class="muted" title="${escapeHtml(createdFull)}">${escapeHtml(createdMini)}</td>
+          <td><span class="providers" title="${escapeHtml(providers)}">${escapeHtml(providers)}</span></td>
+          <td class="avatar-cell">${avatar ? `<img class="mini-ava-lg" src="${escapeHtml(avatar)}" alt="" loading="lazy" title="${escapeHtml(title)}">` : ''}</td>
+        </tr>`;
+      }).join('');
+
+      if (window.decorateFlags) window.decorateFlags(tbody);
+    }catch(e){
+      console.error(e);
+      tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
+    }
+  }
+
 async function loadMiniDuels(){
     const tbody = $('#mini-duels tbody');
     tbody.innerHTML = `<tr><td colspan="8" class="muted">Загрузка…</td></tr>`;
@@ -1229,6 +1291,7 @@ async function loadMiniDuels(){
     $('#refresh-duels')?.addEventListener('click', loadDuels);
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);
+    $('#refresh-users-mini')?.addEventListener('click', loadMiniUsers);
 
     $('#topup-btn')?.addEventListener('click', async ()=>{
       const out = $('#topup-out');
