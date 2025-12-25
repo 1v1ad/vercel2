@@ -781,6 +781,7 @@ try{
       // mini tables
       loadMiniEvents().catch(()=>{});
       loadMiniDuels().catch(()=>{});
+      loadMiniUsers().catch(()=>{});
     }catch(e){
       console.error(e);
       $('#stat-admin').textContent = 'ERR';
@@ -913,11 +914,9 @@ try{
       }
 
       const fmtDT = (s)=> (s||'').toString().slice(0,19).replace('T',' ');
-      const flag = (cc)=>{
-        if (!cc) return '—';
-        try{
-          return (window.ccToFlag ? window.ccToFlag(cc) : cc);
-        }catch(_){ return cc; }
+      const ccCell = (cc)=>{
+        const s = (cc||'').toString().toUpperCase();
+        return `<td data-cc="${escapeHtml(s)}"></td>`;
       };
 
       tbody.innerHTML = items.map(it=>{
@@ -946,12 +945,13 @@ try{
           <td>${escapeHtml(it.first_name || '—')}</td>
           <td>${escapeHtml(it.last_name || '—')}</td>
           <td class="right">${fmtInt(it.balance ?? 0)}</td>
-          <td>${flag(it.country_code)}</td>
+          ${ccCell(it.country_code)}
           <td class="muted">${escapeHtml(created)}</td>
           <td class="tight">${escapeHtml(providers)}</td>
           <td class="tight right">${ava}</td>
         </tr>`;
       }).join('');
+      if (window.decorateFlags) window.decorateFlags(tbody);
     }catch(e){
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
@@ -986,6 +986,7 @@ async function loadDuels(){
           <td class="muted">${(it.finished_at||it.updated_at||'').toString().slice(0,19).replace('T',' ')}</td>
         </tr>`;
       }).join('');
+      if (window.decorateFlags) window.decorateFlags(tbody);
     }catch(e){
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="9" class="muted">Ошибка загрузки</td></tr>`;
@@ -1034,9 +1035,77 @@ async function loadDuels(){
           <td class="muted" title="${escapeHtml(createdFull)}">${escapeHtml(createdMini)}</td>
         </tr>`;
       }).join('');
+      if (window.decorateFlags) window.decorateFlags(tbody);
     }catch(e){
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка</td></tr>`;
+    }
+  }
+
+
+  async function loadMiniUsers(){
+    const tbody = $('#mini-users tbody');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
+    try{
+      const r = await jget('/api/admin/users?take=6');
+      const items = r.items || r.users || r.rows || [];
+      const norm = (items || []).slice(0, 6);
+      while (norm.length < 6) norm.push(null);
+
+      const fmtDT = (s)=> (s||'').toString().slice(0,19).replace('T',' ');
+      const fmtMini = (s)=> (s||'').toString().slice(5,16).replace('T',' ');
+
+      tbody.innerHTML = norm.map(u=>{
+        if (!u){
+          return `<tr>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted right">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+            <td class="muted">—</td>
+          </tr>`;
+        }
+
+        const humId = u.hum_id ?? u.id ?? '';
+        const userId = u.id ?? '';
+        const pid = u.provider_ids || {};
+        let vktg = '—';
+        if (pid.tg) vktg = `tg:${pid.tg}`;
+        else if (pid.vk) vktg = String(pid.vk);
+
+        const providers = (u.providers || []).join(',');
+        const createdFull = fmtDT(u.created_at);
+        const createdMini = fmtMini(u.created_at);
+        const cc = (u.country_code || '').toString().toUpperCase();
+
+        const avatar = u.avatar_url || u.avatar || '';
+        const title = [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || `user ${userId}`;
+
+        return `<tr>
+          <td title="HUMid">${escapeHtml(String(humId))}</td>
+          <td title="${escapeHtml(title)}">${escapeHtml(String(userId))}</td>
+          <td>${escapeHtml(String(vktg))}</td>
+          <td>${escapeHtml(u.first_name || '—')}</td>
+          <td>${escapeHtml(u.last_name || '—')}</td>
+          <td class="right">${fmtInt(u.balance ?? 0)}</td>
+          <td data-cc="${escapeHtml(cc)}"></td>
+          <td class="muted" title="${escapeHtml(createdFull)}">${escapeHtml(createdMini)}</td>
+          <td class="tight"><span class="providers" title="${escapeHtml(providers)}">${escapeHtml(providers)}</span></td>
+          <td class="tight right avatar-cell">${avatar ? `<img class="mini-ava-lg" src="${escapeHtml(avatar)}" alt="" loading="lazy" title="${escapeHtml(title)}">` : ''}</td>
+        </tr>`;
+      }).join('');
+      if (window.decorateFlags) window.decorateFlags(tbody);
+
+      if (window.decorateFlags) window.decorateFlags(tbody);
+    }catch(e){
+      console.error(e);
+      tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
 
@@ -1110,6 +1179,7 @@ async function loadMiniDuels(){
           <td class="right num-rake">${fmtInt(rake)}</td>
         </tr>`;
       }).join('');
+      if (window.decorateFlags) window.decorateFlags(tbody);
     }catch(e){
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="8" class="muted">Ошибка</td></tr>`;
@@ -1123,6 +1193,7 @@ async function loadMiniDuels(){
     $('#refresh-duels')?.addEventListener('click', loadDuels);
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);
+    $('#refresh-users-mini')?.addEventListener('click', loadMiniUsers);
 
     $('#topup-btn')?.addEventListener('click', async ()=>{
       const out = $('#topup-out');
