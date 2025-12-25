@@ -85,7 +85,15 @@ function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String
     return j;
   }
 
-  function setView(name){
+  
+  function updateUsersNavSubActive(){
+    const isUsers = document.querySelector('.nav-item[data-view="users"]')?.classList.contains('active');
+    document.querySelectorAll('.nav-sub-item[data-users-sub]').forEach(a=>{
+      const sub = (a.getAttribute('data-users-sub') || '').toString();
+      a.classList.toggle('active', !!isUsers && sub === (_usersSub || 'list'));
+    });
+  }
+function setView(name){
     $$('.nav-item').forEach(a => a.classList.toggle('active', a.dataset.view === name));
     $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
     const titleMap = {
@@ -104,6 +112,7 @@ function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String
       _topupRawList = null;
         loadTopupHistory(true).catch(()=>{});
     }
+    updateUsersNavSubActive();
   }
 
   // --- Summary: Users card (всего / новые today), reacts to HUM-toggle ---
@@ -797,19 +806,53 @@ _usersMiniCtx = {
     window.addEventListener('adminHumToggle', ()=>{ renderUsersCard(); drawUsersMini(); });
   } catch (_) {}
 
-  function bindNav(){
+  
+  function parseHash(){
+    const raw = (location.hash || '#summary').slice(1);
+    const parts = raw.split('/').filter(Boolean);
+    return { view: (parts[0] || 'summary'), sub: (parts[1] || '') };
+  }
+
+  function gotoView(view, sub){
+    const h = '#' + view + (sub ? ('/' + sub) : '');
+    try{ history.replaceState(null,'', h); }catch(_){ location.hash = h; }
+
+    setView(view);
+
+    // Ленивая загрузка
+    if (view === 'summary') return loadSummary();
+    if (view === 'finance') return loadFinance();
+    if (view === 'events') return loadEvents();
+    if (view === 'duels') return loadDuels();
+
+    if (view === 'topup'){
+      _topupRawList = null;
+      loadTopupHistory(true).catch(()=>{});
+      return;
+    }
+
+    if (view === 'users'){
+      initUsersView();
+      initUsersSubtabs();
+      if (sub) setUsersSub(sub, { silent:true });
+      return loadUsers();
+    }
+  }
+function bindNav(){
     $$('.nav-item').forEach(a=>{
       a.addEventListener('click', (e)=>{
         e.preventDefault();
         const v = a.dataset.view;
-        history.replaceState(null,'', '#' + v);
-        setView(v);
-        // легкая ленивая загрузка
-        if (v === 'summary') loadSummary();
-        if (v === 'finance') loadFinance();
-        if (v === 'users') loadUsers();
-        if (v === 'events') loadEvents();
-        if (v === 'duels') loadDuels();
+        gotoView(v);
+      });
+    });
+
+    $$('.nav-sub-item').forEach(a=>{
+      a.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const v = a.dataset.view || 'users';
+        const sub = a.getAttribute('data-users-sub') || '';
+        gotoView(v, sub);
       });
     });
   }
@@ -1937,10 +1980,10 @@ async function loadMiniDuels(){
     bindTopbar();
     bindActions();
 
-    const v = (location.hash || '#summary').slice(1);
-    setView(v);
-    // initial load
-    loadSummary().catch(()=>{});
+    const { view, sub } = parseHash();
+    gotoView(view, sub);
+
+    // initial load for summary is handled in gotoView()
   }
 
   document.addEventListener('DOMContentLoaded', init);

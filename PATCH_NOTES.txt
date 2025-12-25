@@ -32,3 +32,4 @@ PATCH: vercel2 — Admin v2: вкладка «Ручное пополнение�
 - admin/index2.html
 - admin/admin2.js
 - admin/admin2.css
+[2025-12-25 18:41] Admin v2: Summary hover cards + Users sidebar sub-menu (Список/Аналитика) with hash routing
