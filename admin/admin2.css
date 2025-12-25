@@ -341,7 +341,7 @@ body{
   line-height:1.2;
   white-space:nowrap;
   opacity:0;
-  transform: translate(-50%, -110%);
+  transform: translate(-50%, 0%);
   transition: opacity .12s ease;
   pointer-events:none;
   /* Above sticky topbar */
