@@ -900,6 +900,37 @@ function bindNav(){
     });
   }
 
+  function bindSidebarCollapse(){
+    const key = 'ADMIN2_SIDEBAR_COLLAPSED';
+    const layout = document.querySelector('.layout');
+    const btn = document.getElementById('sidebar-toggle');
+    if(!layout || !btn) return;
+
+    // Native tooltips: keep labels accessible when sidebar collapsed
+    $$('.nav-item').forEach(a=>{
+      const s = a.querySelector('span')?.textContent?.trim();
+      if(s && !a.getAttribute('title')) a.setAttribute('title', s);
+    });
+
+    function apply(collapsed, persist){
+      layout.classList.toggle('sidebar-collapsed', !!collapsed);
+      btn.setAttribute('aria-pressed', collapsed ? 'true' : 'false');
+      const ico = btn.querySelector('.toggle-ico');
+      const txt = btn.querySelector('.toggle-text');
+      if(ico) ico.textContent = collapsed ? '›' : '‹';
+      if(txt) txt.textContent = collapsed ? 'Показать меню' : 'Скрыть меню';
+      btn.title = collapsed ? 'Показать меню' : 'Скрыть меню';
+      if(persist) localStorage.setItem(key, collapsed ? '1' : '0');
+    }
+
+    apply(localStorage.getItem(key) === '1', false);
+
+    btn.addEventListener('click', ()=>{
+      const next = !layout.classList.contains('sidebar-collapsed');
+      apply(next, true);
+    });
+  }
+
   function bindTopbar(){
     const apiEl = $('#api');
     const pwdEl = $('#pwd');
@@ -2021,6 +2052,7 @@ async function loadMiniDuels(){
 
   function init(){
     bindNav();
+    bindSidebarCollapse();
     bindTopbar();
     bindActions();
 
