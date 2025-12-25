@@ -167,10 +167,19 @@
                 выведено: <span id="sum-withdrawn-all">—</span> / <span id="sum-withdrawn-today">—</span>
               </div>
             </div>
-            <div class="card">
-              <div class="card-title">На балансах (обязательство)</div>
-              <div class="card-value" id="sum-liabilities">—</div>
-              <div class="card-sub muted tiny">сумма user.balance</div>
+            <div class="card liabilities-card">
+              <div class="card-main">
+                <div class="card-title">На балансах</div>
+                <div class="card-value" id="sum-liabilities">—</div>
+                <div class="card-sub muted tiny">сумма на балансах пользователей</div>
+              </div>
+              <div class="card-spark" title="Сумма на балансах пользователей за последние 90 дней">
+                <div id="liab-mini-tip" class="spark-tip" aria-hidden="true"></div>
+                <svg id="liab-mini-chart" class="spark-svg" aria-label="Liabilities 90d bars"></svg>
+                <div class="spark-legend muted tiny">
+                  <span class="dot dot-new"></span><span>на балансах</span>
+                </div>
+              </div>
             </div>
                         <div class="card card-metrics">
               <div class="card-title">Дуэли: оборот / рейк</div>
