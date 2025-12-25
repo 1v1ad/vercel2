@@ -1079,6 +1079,7 @@ function setUsersSub(name, opts){
   if (!opts?.silent && v === 'analytics'){
     loadUsersAnalyticsDuels().catch(()=>{});
   }
+  updateUsersNavSubActive();
 }
 
 function initUsersSubtabs(){

@@ -266,6 +266,18 @@ body{
 #view-summary .card:active{
   transform: translateY(-1px);
 }
+
+#view-summary .panel{
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+#view-summary .panel:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 18px 44px rgba(0,0,0,.45);
+  border-color: rgba(78,209,169,.22);
+}
+#view-summary .panel:active{
+  transform: translateY(-1px);
+}
 .card-title{font-weight:900; font-size:13px; color:var(--muted)}
 .card-value{font-weight:900; font-size:28px; margin-top:6px}
 .num-rake{ color: var(--danger); font-weight:900; }
