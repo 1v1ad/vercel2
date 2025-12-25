@@ -650,6 +650,195 @@ _usersMiniCtx = {
     });
   }
 
+
+  // --- Summary: Liabilities mini-bars (90 days), НЕ зависит от HUM-склейки ---
+  // «На балансах» = сумма user.balance по дням (на конец дня).
+  let _liabMiniData = null;
+  let _liabMiniCtx = null;
+  let _liabMiniHover = null;
+  let _liabMiniBound = false;
+
+  function ensureLiabMiniInteraction(svg){
+    if (_liabMiniBound) return;
+    _liabMiniBound = true;
+
+    const tip = $('#liab-mini-tip');
+
+    const hide = ()=>{
+      try{ _liabMiniHover?.g?.setAttribute('opacity','0'); }catch(_){ }
+      if (tip) tip.classList.remove('show');
+    };
+
+    const showAt = (clientX, clientY)=>{
+      const ctx = _liabMiniCtx;
+      if (!ctx) return;
+
+      const rect = svg.getBoundingClientRect();
+      const px = clientX - rect.left;
+      if (!Number.isFinite(px)) return;
+
+      const scaleX = ctx.W / Math.max(1, rect.width);
+      const xvb = px * scaleX;
+
+      const i = clamp(Math.round((xvb - ctx.pad) / Math.max(1e-6, ctx.step)), 0, ctx.n - 1);
+      const xi = ctx.x(i);
+
+      // hover markers
+      if (_liabMiniHover?.line && _liabMiniHover?.dot && _liabMiniHover?.g){
+        const vNum = ctx.values[i] || 0;
+        const yy = ctx.y(vNum);
+
+        _liabMiniHover.line.setAttribute('x1', xi);
+        _liabMiniHover.line.setAttribute('x2', xi);
+        _liabMiniHover.dot.setAttribute('cx', xi);
+        _liabMiniHover.dot.setAttribute('cy', yy);
+
+        _liabMiniHover.g.setAttribute('opacity', '1');
+      }
+
+      // tooltip
+      if (tip){
+        const d = ctx.dates[i] || '';
+        const v = (ctx.values_raw && ctx.values_raw[i] != null) ? ctx.values_raw[i] : (ctx.values[i] || 0);
+
+        tip.innerHTML =
+          `<span class="d">${d}</span>` +
+          `<div class="row"><span class="k">на балансах</span><span class="v">${fmtInt(v)}</span></div>`;
+
+        tip.style.left = (xi / ctx.W * 100) + '%';
+        tip.classList.add('show');
+      }
+    };
+
+    svg.addEventListener('mousemove', (e)=>showAt(e.clientX, e.clientY));
+    svg.addEventListener('mouseleave', hide);
+
+    svg.addEventListener('touchstart', (e)=>{
+      const t = e.touches && e.touches[0];
+      if (t) showAt(t.clientX, t.clientY);
+    }, {passive:true});
+    svg.addEventListener('touchmove', (e)=>{
+      const t = e.touches && e.touches[0];
+      if (t) showAt(t.clientX, t.clientY);
+    }, {passive:true});
+    svg.addEventListener('touchend', hide);
+  }
+
+  function drawLiabMini(){
+    const svg = $('#liab-mini-chart');
+    if (!svg) return;
+
+    const data = _liabMiniData;
+    const dates = data?.dates || data?.labels || [];
+    const vals  = data?.balances || data?.values || data?.liabilities || [];
+
+    if (!dates.length || !vals.length){
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      try{ _liabMiniHover?.g?.setAttribute('opacity','0'); }catch(_){ }
+      $('#liab-mini-tip')?.classList?.remove('show');
+      return;
+    }
+
+    renderLiabBars(svg, vals, dates);
+    ensureLiabMiniInteraction(svg);
+  }
+
+  function renderLiabBars(svg, values, dates){
+    const NS = 'http://www.w3.org/2000/svg';
+
+    const W = svg.clientWidth  || 176;
+    const H = svg.clientHeight || 60;
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    const pad = 4;
+    const n = Math.max(1, values.length);
+    const step = (n > 1) ? ((W - 2*pad) / (n - 1)) : 0;
+    const x = (i) => pad + i * step;
+
+    const raw = (values || []).map(v => String(v ?? '0').trim());
+    const V = raw.map(s=>{
+      if (/^-?\d+$/.test(s)){
+        try{ return Number(BigInt(s)); }catch(_){ return Number(s) || 0; }
+      }
+      const k = Number(s);
+      return Number.isFinite(k) ? k : 0;
+    });
+    const maxV = Math.max(1, ...V);
+
+    const border = cssVar('--border', '#1f2a37');
+    const col = cssVar('--accent2', '#3ddc97');
+
+    const y0 = pad;
+    const y1 = H - pad;
+    const h = Math.max(8, y1 - y0);
+    const y = (v) => y0 + (1 - (v / maxV)) * h;
+
+    // baseline
+    const base = document.createElementNS(NS,'line');
+    base.setAttribute('x1', pad);
+    base.setAttribute('x2', W - pad);
+    base.setAttribute('y1', y1);
+    base.setAttribute('y2', y1);
+    base.setAttribute('stroke', border);
+    base.setAttribute('stroke-width', '1');
+    svg.appendChild(base);
+
+    const barW = Math.max(1, Math.min(7, step * 0.82));
+    for (let i=0;i<n;i++){
+      const v = V[i] || 0;
+      const yy = y(v);
+
+      const line = document.createElementNS(NS,'line');
+      line.setAttribute('x1', x(i));
+      line.setAttribute('x2', x(i));
+      line.setAttribute('y1', y1);
+      line.setAttribute('y2', yy);
+      line.setAttribute('stroke', col);
+      line.setAttribute('stroke-width', String(barW));
+      line.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(line);
+    }
+
+    // hover markers
+    const hoverG = document.createElementNS(NS,'g');
+    hoverG.setAttribute('opacity','0');
+
+    const hoverLine = document.createElementNS(NS,'line');
+    hoverLine.setAttribute('y1', '0');
+    hoverLine.setAttribute('y2', String(H));
+    hoverLine.setAttribute('stroke', border);
+    hoverLine.setAttribute('stroke-width', '1');
+    hoverLine.setAttribute('stroke-dasharray', '2 3');
+    hoverG.appendChild(hoverLine);
+
+    const hoverDot = document.createElementNS(NS,'circle');
+    hoverDot.setAttribute('r', '3.2');
+    hoverDot.setAttribute('fill', col);
+    hoverDot.setAttribute('stroke', '#0b1220');
+    hoverDot.setAttribute('stroke-width', '1');
+    hoverG.appendChild(hoverDot);
+
+    svg.appendChild(hoverG);
+    _liabMiniHover = { g: hoverG, line: hoverLine, dot: hoverDot };
+
+    _liabMiniCtx = {
+      dates: (dates || []).slice(0, n),
+      values: V,
+      values_raw: raw.slice(0, n),
+      maxV,
+      W, H,
+      pad,
+      n,
+      step,
+      x,
+      y,
+    };
+  }
+
   // ----- loaders -----
 
   async function loadSummary(){
@@ -735,6 +924,10 @@ $('#sum-withdrawn-all').textContent = fmtInt(wdrAll);
 $('#sum-withdrawn-today').textContent = fmtInt(wdrToday);
 
 $('#sum-liabilities').textContent = fmtInt(liab);
+
+// liabilities mini chart (90d) — НЕ зависит от HUM
+_liabMiniData = sum?.liabilities_90d || sum?.liabilities90d || sum?.liab_90d || null;
+drawLiabMini();
 
 $('#sum-turnover-all').textContent = fmtInt(turnoverAll);
 $('#sum-turnover-today').textContent = fmtInt(turnoverToday);
