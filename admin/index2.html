@@ -287,13 +287,26 @@
               </div>
             </div>
 
-            <div class="panel panel-empty">
+                        <div class="panel" id="panel-mini-topups">
               <div class="panel-head">
-                <div class="panel-title">&nbsp;</div>
+                <div class="panel-title">История ручных пополнений</div>
+                <button class="btn ghost sm" id="refresh-topups-mini">Обновить</button>
               </div>
-              <div class="empty-box"></div>
+              <div class="table-wrap">
+                <table class="table" id="mini-topups">
+                  <thead>
+                    <tr>
+                      <th>Время</th>
+                      <th>Админ</th>
+                      <th>Кому (user / HUM)</th>
+                      <th class="right">Сумма</th>
+                      <th>Комментарий</th>
+                    </tr>
+                  </thead>
+                  <tbody><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody>
+                </table>
+              </div>
             </div>
-          </div>
         </section>
 
         <section class="view" id="view-finance">
@@ -445,9 +458,15 @@
           </div>
 
           <div class="panel" style="margin-top:12px">
-            <div class="panel-head">
-              <div class="panel-title">История ручных пополнений</div>
-              <div class="muted tiny">Клик по заголовку — сортировка</div>
+                        <div class="panel-head">
+              <div>
+                <div class="panel-title">История ручных пополнений</div>
+                <div class="muted tiny">Клик по заголовку — сортировка</div>
+              </div>
+              <div class="tools">
+                <input class="input sm" id="topup-filter" placeholder="Фильтр: user:97 hum:12 admin:1 sum:1000 comment:текст" />
+                <button class="btn ghost sm" id="topup-filter-clear" title="Очистить фильтр">×</button>
+              </div>
             </div>
 
             <div class="table-wrap">

@@ -101,7 +101,8 @@ function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String
     if (name === 'summary') fireApiChanged();
     if (name === 'topup') {
       // lazy-load history (old admin topup.html behavior)
-      loadTopupHistory().catch(()=>{});
+      _topupRawList = null;
+        loadTopupHistory(true).catch(()=>{});
     }
   }
 
@@ -983,6 +984,7 @@ try{
       loadMiniEvents().catch(()=>{});
       loadMiniDuels().catch(()=>{});
       loadMiniUsers().catch(()=>{});
+      loadMiniTopups().catch(()=>{});
     }catch(e){
       console.error(e);
       $('#stat-admin').textContent = 'ERR';
@@ -1425,6 +1427,9 @@ async function loadMiniDuels(){
   let _topupSortKey = 'created_at';
   let _topupSortDir = -1; // desc
 
+  let _topupRawList = null;
+  let _topupFilter = '';
+
   function toBigIntSafe(x){
     if (x === null || x === undefined) return 0n;
     if (typeof x === 'bigint') return x;
@@ -1457,6 +1462,91 @@ async function loadMiniDuels(){
     return Number.isFinite(t) ? t : 0;
   }
 
+  
+  async function ensureTopupEvents(force=false){
+    if (!force && Array.isArray(_topupRawList) && _topupRawList.length) return _topupRawList;
+    const r = await jget('/api/admin/events?type=admin_topup&take=200&skip=0');
+    _topupRawList = r.items || r.events || r.rows || [];
+    return _topupRawList;
+  }
+
+  function normTopupRows(list){
+    if (!Array.isArray(list)) return [];
+    return list.map(ev=>{
+      const p = ev.payload || {};
+      const created_at = pick(ev, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], ''));
+      const admin      = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
+      const user_id    = pick(ev, ['user_id'], pick(p, ['user_id'], '—'));
+      const hum_id     = pick(ev, ['hum_id','HUMid'], pick(p, ['hum_id','HUMid'], '—'));
+      const amountBI   = toBigIntSafe(pick(ev, ['amount'], pick(p, ['amount','value','sum','delta'], 0)));
+      const comment    = String(pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], '')) || '');
+      const amountText = (amountBI > 0n ? '+' : '') + fmtInt(amountBI.toString());
+      const amountSigned = (amountBI > 0n ? '+' : '') + amountBI.toString();
+      return { created_at, admin: String(admin ?? ''), user_id, hum_id, amountBI, amountText, amountSigned, comment };
+    });
+  }
+
+  function matchTopupRow(row, q){
+    const query = String(q || '').trim().toLowerCase();
+    if (!query) return true;
+
+    const hayAll = `${row.admin} ${row.user_id} ${row.hum_id} ${row.amountSigned} ${row.amountText} ${row.comment}`.toLowerCase();
+
+    const tokens = query.split(/\s+/).filter(Boolean);
+    return tokens.every(tok=>{
+      const t = tok.trim();
+      const idx = t.indexOf(':');
+      if (idx > 0){
+        const k = t.slice(0, idx);
+        const v = t.slice(idx+1);
+        if (!v) return true;
+        if (k === 'hum' || k === 'hum_id' || k === 'humid') return String(row.hum_id ?? '').toLowerCase().includes(v);
+        if (k === 'user' || k === 'user_id' || k === 'uid') return String(row.user_id ?? '').toLowerCase().includes(v);
+        if (k === 'admin') return String(row.admin ?? '').toLowerCase().includes(v);
+        if (k === 'sum' || k === 'amount') return (`${row.amountSigned} ${row.amountText}`).toLowerCase().includes(v);
+        if (k === 'comment' || k === 'c') return String(row.comment ?? '').toLowerCase().includes(v);
+        return hayAll.includes(v);
+      }
+      return hayAll.includes(t);
+    });
+  }
+
+  function renderMiniTopupsFromList(list){
+    const tbody = $('#mini-topups tbody');
+    if (!tbody) return;
+    const rows = normTopupRows(list)
+      .sort((a,b)=> tsVal(b.created_at) - tsVal(a.created_at))
+      .slice(0, 6);
+
+    if (!rows.length){
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">Нет событий…</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r=>{
+      const cls = r.amountBI > 0n ? 'pill pos' : (r.amountBI < 0n ? 'pill neg' : 'pill zero');
+      const c = r.comment ? escapeHtml(r.comment) : '—';
+      return `<tr>
+        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
+        <td>${escapeHtml(r.admin || '—')}</td>
+        <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
+        <td class="right"><span class="${cls}">${escapeHtml(r.amountText)}</span></td>
+        <td class="truncate" title="${escapeHtml(r.comment || '')}">${c}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function loadMiniTopups(force=false){
+    try{
+      const list = await ensureTopupEvents(force);
+      renderMiniTopupsFromList(list);
+    }catch(e){
+      console.error(e);
+      const tbody = $('#mini-topups tbody');
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+    }
+  }
+
   function renderTopupHistory(list){
     const tbody = $('#tbl-topup tbody');
     if (!tbody) return;
@@ -1467,16 +1557,13 @@ async function loadMiniDuels(){
       return;
     }
 
-    const rows = list.map(ev=>{
-      const p = ev.payload || {};
-      const created_at = pick(ev, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], ''));
-      const admin      = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
-      const user_id    = pick(ev, ['user_id'], pick(p, ['user_id'], '—'));
-      const hum_id     = pick(ev, ['hum_id','HUMid'], pick(p, ['hum_id','HUMid'], '—'));
-      const amountBI   = toBigIntSafe(pick(ev, ['amount'], pick(p, ['amount','value','sum','delta'], 0)));
-      const comment    = String(pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], '')) || '');
-      return { created_at, admin, user_id, hum_id, amountBI, comment };
-    });
+    let rows = normTopupRows(list);
+
+    // filter
+    if (_topupFilter){
+      rows = rows.filter(r=>matchTopupRow(r, _topupFilter));
+    }
+
 
     rows.sort((a,b)=>{
       if (_topupSortKey === 'created_at') return (tsVal(a.created_at) - tsVal(b.created_at)) * _topupSortDir;
@@ -1493,29 +1580,30 @@ async function loadMiniDuels(){
 
     tbody.innerHTML = rows.map(r=>{
       const cls = r.amountBI > 0n ? 'pill pos' : (r.amountBI < 0n ? 'pill neg' : 'pill zero');
-      const amountText = (r.amountBI > 0n ? '+' : '') + fmtInt(r.amountBI.toString());
+      const amountText = r.amountText;
       const c = r.comment ? escapeHtml(r.comment) : '—';
       return `<tr>
         <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
         <td>${escapeHtml(r.admin || '—')}</td>
         <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
         <td class="right"><span class="${cls}">${escapeHtml(amountText)}</span></td>
-        <td class="mono">${c}</td>
+        <td class="truncate" title="${escapeHtml(r.comment || '')}">${c}</td>
       </tr>`;
     }).join('');
   }
 
-  async function loadTopupHistory(){
+  async function loadTopupHistory(force=false){
     const tbody = $('#tbl-topup tbody');
-    if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
     try{
-      const r = await jget('/api/admin/events?type=admin_topup&take=100&skip=0');
-      const list = r.items || r.events || r.rows || [];
-      renderTopupHistory(list);
+      const list = await ensureTopupEvents(!!force);
+      if (tbody) renderTopupHistory(list);
+      renderMiniTopupsFromList(list);
     }catch(e){
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+      const mini = $('#mini-topups tbody');
+      if (mini) mini.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
 
@@ -1527,16 +1615,33 @@ async function loadMiniDuels(){
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);
     $('#refresh-users-mini')?.addEventListener('click', loadMiniUsers);
+    $('#refresh-topups-mini')?.addEventListener('click', ()=>loadMiniTopups(true).catch(()=>{}));
 
-    $('#topup-reload')?.addEventListener('click', ()=>loadTopupHistory().catch(()=>{}));
+    $('#topup-reload')?.addEventListener('click', ()=>loadTopupHistory(true).catch(()=>{}));
+
+    // filter (client-side)
+    $('#topup-filter')?.addEventListener('input', (e)=>{
+      _topupFilter = String(e?.target?.value || '');
+      renderTopupHistory(_topupRawList || []);
+    });
+    $('#topup-filter-clear')?.addEventListener('click', ()=>{
+      _topupFilter = '';
+      try{ $('#topup-filter').value = ''; }catch(_){}
+      renderTopupHistory(_topupRawList || []);
+    });
     document.querySelectorAll('#tbl-topup th[data-k]').forEach(th=>{
       th.addEventListener('click', ()=>{
         const k = th.getAttribute('data-k');
         if (!k) return;
-        const key = (k === 'user') ? 'user' : (k === 'amount' ? 'amount' : (k === 'comment' ? 'comment' : (k === 'admin' ? 'admin' : 'created_at')));
+        const key =
+          (k === 'user') ? 'user' :
+          (k === 'amount') ? 'amount' :
+          (k === 'comment') ? 'comment' :
+          (k === 'admin') ? 'admin' :
+          'created_at';
         _topupSortDir = (_topupSortKey === key) ? -_topupSortDir : -1;
         _topupSortKey = key;
-        loadTopupHistory().catch(()=>{});
+        renderTopupHistory(_topupRawList || []);
       });
     });
 

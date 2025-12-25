@@ -314,6 +314,10 @@ body{
 .panel-title{font-weight:900}
 .note{margin-top:10px}
 
+
+.tools{display:flex; align-items:center; gap:8px}
+.input.sm{height:30px; padding:0 10px; font-size:12px}
+.table td.truncate{max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .table-wrap{overflow:auto; border-radius:12px; border:1px solid var(--border)}
 .table{
   width:100%;
