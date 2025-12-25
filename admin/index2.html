@@ -396,16 +396,37 @@
         </section>
 
         <section class="view" id="view-duels">
+
           <div class="panel">
             <div class="panel-head">
-              <div class="panel-title">Дуэли</div>
-              <button class="btn sm" id="refresh-duels">Обновить</button>
+              <div>
+                <div class="panel-title">Дуэли</div>
+                <div class="muted tiny">Клик по заголовку — сортировка</div>
+              </div>
+              <div class="tools">
+                <input class="input sm" id="duels-filter" placeholder="Фильтр: id:123 status:cancelled user:97 hum:1 stake:1000 creator:97 opponent:12 winner:45" />
+                <button class="btn ghost sm" id="duels-filter-clear" title="Очистить фильтр">×</button>
+                <button class="btn sm" id="refresh-duels">Обновить</button>
+              </div>
             </div>
-            <div class="note muted tiny">Пока показываем последние 50 из базы. Позже добавим фильтры и “проваливание” в дуэль.</div>
+            <div class="note muted tiny">Показываем последние 200 дуэлей из базы (включая <code>cancelled</code>). Фильтр/сортировка — на клиенте.</div>
             <div class="table-wrap">
               <table class="table" id="tbl-duels">
-                <thead><tr><th>id</th><th>mode</th><th class="right">stake</th><th>status</th><th class="right">fee_bps</th><th>creator</th><th>opponent</th><th>winner</th><th>finished</th></tr></thead>
-                <tbody><tr><td colspan="9" class="muted">Загрузка…</td></tr></tbody>
+                <thead>
+                  <tr>
+                    <th data-k="id" class="sortable">id</th>
+                    <th data-k="mode" class="sortable">mode</th>
+                    <th data-k="created_at" class="sortable">created</th>
+                    <th data-k="stake" class="sortable right">stake</th>
+                    <th data-k="status" class="sortable">status</th>
+                    <th data-k="fee_bps" class="sortable right">fee_bps</th>
+                    <th data-k="creator" class="sortable">creator</th>
+                    <th data-k="opponent" class="sortable">opponent</th>
+                    <th data-k="winner" class="sortable">winner</th>
+                    <th data-k="finished_at" class="sortable">finished</th>
+                  </tr>
+                </thead>
+                <tbody><tr><td colspan="10" class="muted">Загрузка…</td></tr></tbody>
               </table>
             </div>
           </div>

@@ -369,6 +369,28 @@ body{
 .mini-ava{width:22px; height:22px; border-radius:999px; object-fit:cover; border:1px solid var(--border); background:#0e1624}
 .mini-id{font-family:var(--mono); font-weight:900}
 .mini-vs{color:var(--muted); font-weight:900; text-transform:uppercase; letter-spacing:.04em}
+/* Duels table: user cells + status tags */
+#tbl-duels td{vertical-align:middle}
+.duel-user{display:inline-flex; align-items:center; gap:8px; max-width:220px}
+.duel-user .mini-ava{flex:none}
+.duel-user-txt{display:inline-block; overflow:hidden; text-overflow:ellipsis; max-width:190px}
+.duel-user-id{font-family:var(--mono); font-weight:900; margin-right:6px}
+.duel-user-name{font-weight:800}
+.status-tag{
+  display:inline-flex;
+  align-items:center;
+  height:20px;
+  padding:0 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.10);
+  font-weight:900;
+  font-size:12px;
+  text-transform:lowercase;
+}
+.status-finished{background:rgba(46, 204, 113, .14); color:#c9ffe0; border-color:rgba(46, 204, 113, .25)}
+.status-cancelled{background:rgba(231, 76, 60,  .14); color:#ffd0cc; border-color:rgba(231, 76, 60,  .25)}
+.status-open{background:rgba(52, 152, 219, .14); color:#d4ecff; border-color:rgba(52, 152, 219, .25)}
+.status-active{background:rgba(155, 89, 182, .14); color:#f0d8ff; border-color:rgba(155, 89, 182, .25)}
 
 .table .ua, .table .ip, .table .etype{
   display:inline-block;

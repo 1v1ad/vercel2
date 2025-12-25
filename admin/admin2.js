@@ -1162,40 +1162,173 @@ try{
   }
 
 
-async function loadDuels(){
-    const tbody = $('#tbl-duels tbody');
-    tbody.innerHTML = `<tr><td colspan="9" class="muted">Загрузка…</td></tr>`;
-    try{
-      // в бэке пока нет отдельного admin/duels эндпойнта; дергаем напрямую публичный /api/duels/history
-      const url = api() + '/api/duels/history?limit=50';
-      const r = await fetch(url, { credentials: 'include' });
-      const j = await r.json().catch(()=>({ ok:false }));
-      const items = j.items || [];
-      if (!items.length){
-        tbody.innerHTML = `<tr><td colspan="9" class="muted">Пусто</td></tr>`;
-        return;
+  // --- Duels table (admin) ---
+  let _duelsSortKey = 'created_at';
+  let _duelsSortDir = -1; // desc
+  let _duelsRaw = null;
+  let _duelsFilter = '';
+
+  function normDuelRows(list){
+    if (!Array.isArray(list)) return [];
+    const userFrom = (it, pref)=>{
+      const id = it[`${pref}_user_id`];
+      const hum_id = it[`${pref}_hum_id`];
+      const first = it[`${pref}_first_name`];
+      const last = it[`${pref}_last_name`];
+      const avatar = it[`${pref}_avatar`];
+      const name = [first, last].filter(Boolean).join(' ').trim();
+      return { id: id ?? '', hum_id: hum_id ?? '', first:first||'', last:last||'', avatar: avatar||'', name };
+    };
+
+    return list.map(it=>{
+      const creator = userFrom(it, 'creator');
+      const opponent = userFrom(it, 'opponent');
+      const winner = userFrom(it, 'winner');
+      return {
+        id: it.id ?? '',
+        mode: it.mode || '',
+        created_at: it.created_at || it.createdAt || '',
+        stake: Number(it.stake ?? 0) || 0,
+        status: it.status || '',
+        fee_bps: Number(it.fee_bps ?? it.feeBps ?? 0) || 0,
+        creator, opponent, winner,
+        finished_at: it.finished_at || it.updated_at || it.finishedAt || '',
+      };
+    });
+  }
+
+  function duelUserHtml(u){
+    const uid = (u && u.id !== undefined && u.id !== null && u.id !== '') ? String(u.id) : '—';
+    const name = (u && u.name) ? String(u.name) : '';
+    const hum = (u && u.hum_id !== undefined && u.hum_id !== null && u.hum_id !== '') ? String(u.hum_id) : '';
+    const title = name
+      ? `${name} (id ${uid}${hum ? ', HUM ' + hum : ''})`
+      : (uid !== '—' ? `id ${uid}${hum ? ', HUM ' + hum : ''}` : '—');
+
+    const ava = (u && u.avatar) ? String(u.avatar) : '';
+    const avaTag = ava
+      ? `<img class="mini-ava" src="${escapeHtml(ava)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
+      : `<span class="mini-ava" aria-hidden="true"></span>`;
+
+    const label = name ? name : '—';
+
+    return `<span class="duel-user" title="${escapeHtml(title)}">${avaTag}<span class="duel-user-txt"><span class="duel-user-id">#${escapeHtml(uid)}</span><span class="duel-user-name">${escapeHtml(label)}</span></span></span>`;
+  }
+
+  function duelStatusHtml(s){
+    const st = String(s || '—').toLowerCase().trim() || '—';
+    const cls =
+      st === 'finished' ? 'status-tag status-finished' :
+      st === 'cancelled' ? 'status-tag status-cancelled' :
+      st === 'open' ? 'status-tag status-open' :
+      st === 'active' ? 'status-tag status-active' :
+      'status-tag';
+    return `<span class="${cls}">${escapeHtml(st)}</span>`;
+  }
+
+  function matchDuelRow(row, q){
+    const query = String(q || '').trim().toLowerCase();
+    if (!query) return true;
+
+    const uStr = (u)=> `${u?.id||''} ${u?.hum_id||''} ${u?.name||''}`.toLowerCase();
+    const hayAll = `${row.id} ${row.mode} ${row.created_at} ${row.stake} ${row.status} ${row.fee_bps} ${row.finished_at} ${uStr(row.creator)} ${uStr(row.opponent)} ${uStr(row.winner)}`.toLowerCase();
+
+    const tokens = query.split(/\s+/).filter(Boolean);
+    return tokens.every(tok=>{
+      const t = tok.trim();
+      const idx = t.indexOf(':');
+      if (idx > 0){
+        const k = t.slice(0, idx);
+        const v = t.slice(idx+1);
+        if (!v) return true;
+        const vv = v.toLowerCase();
+
+        if (k === 'id') return String(row.id ?? '').toLowerCase().includes(vv);
+        if (k === 'mode') return String(row.mode ?? '').toLowerCase().includes(vv);
+        if (k === 'status') return String(row.status ?? '').toLowerCase().includes(vv);
+        if (k === 'stake' || k === 'sum') return String(row.stake ?? '').toLowerCase().includes(vv);
+        if (k === 'fee' || k === 'fee_bps') return String(row.fee_bps ?? '').toLowerCase().includes(vv);
+        if (k === 'created') return String(row.created_at ?? '').toLowerCase().includes(vv);
+        if (k === 'finished') return String(row.finished_at ?? '').toLowerCase().includes(vv);
+
+        if (k === 'creator') return uStr(row.creator).includes(vv);
+        if (k === 'opponent') return uStr(row.opponent).includes(vv);
+        if (k === 'winner') return uStr(row.winner).includes(vv);
+        if (k === 'user') return (`${uStr(row.creator)} ${uStr(row.opponent)} ${uStr(row.winner)}`).includes(vv);
+        if (k === 'hum' || k === 'hum_id' || k === 'humid'){
+          const hh = `${row.creator?.hum_id||''} ${row.opponent?.hum_id||''} ${row.winner?.hum_id||''}`.toLowerCase();
+          return hh.includes(vv);
+        }
+
+        return hayAll.includes(vv);
       }
-      tbody.innerHTML = items.map(it=>{
-        const pot = it.pot ?? it.result?.pot ?? '';
-        return `<tr>
-          <td>${it.id}</td>
-          <td>${escapeHtml(it.mode || '—')}</td>
-          <td class="right">${fmtInt(it.stake ?? 0)}</td>
-          <td>${escapeHtml(it.status || '—')}</td>
-          <td class="right">${fmtInt(it.fee_bps ?? '')}</td>
-          <td>${it.creator_user_id ?? ''}</td>
-          <td>${it.opponent_user_id ?? ''}</td>
-          <td>${it.winner_user_id ?? ''}</td>
-          <td class="muted">${(it.finished_at||it.updated_at||'').toString().slice(0,19).replace('T',' ')}</td>
-        </tr>`;
-      }).join('');
-      if (window.decorateFlags) window.decorateFlags(tbody);
+      return hayAll.includes(t);
+    });
+  }
+
+  function renderDuelsTable(list){
+    const tbody = $('#tbl-duels tbody');
+    if (!tbody) return;
+
+    let rows = normDuelRows(list || []);
+
+    if (_duelsFilter){
+      rows = rows.filter(r=>matchDuelRow(r, _duelsFilter));
+    }
+
+    rows.sort((a,b)=>{
+      const dir = _duelsSortDir || -1;
+      const key = _duelsSortKey || 'created_at';
+
+      if (key === 'id') return (Number(a.id||0) - Number(b.id||0)) * dir;
+      if (key === 'stake') return (Number(a.stake||0) - Number(b.stake||0)) * dir;
+      if (key === 'fee_bps') return (Number(a.fee_bps||0) - Number(b.fee_bps||0)) * dir;
+      if (key === 'created_at') return (tsVal(a.created_at) - tsVal(b.created_at)) * dir;
+      if (key === 'finished_at') return (tsVal(a.finished_at) - tsVal(b.finished_at)) * dir;
+      if (key === 'creator') return (Number(a.creator?.id||0) - Number(b.creator?.id||0)) * dir;
+      if (key === 'opponent') return (Number(a.opponent?.id||0) - Number(b.opponent?.id||0)) * dir;
+      if (key === 'winner') return (Number(a.winner?.id||0) - Number(b.winner?.id||0)) * dir;
+
+      const ak = String(a[key] ?? '');
+      const bk = String(b[key] ?? '');
+      return ak.localeCompare(bk) * dir;
+    });
+
+    if (!rows.length){
+      tbody.innerHTML = `<tr><td colspan="10" class="muted">Пусто</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r=>{
+      return `<tr>
+        <td>${escapeHtml(String(r.id ?? ''))}</td>
+        <td>${escapeHtml(r.mode || '—')}</td>
+        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
+        <td class="right">${fmtInt(r.stake || 0)}</td>
+        <td>${duelStatusHtml(r.status)}</td>
+        <td class="right">${escapeHtml(String(r.fee_bps ?? ''))}</td>
+        <td>${duelUserHtml(r.creator)}</td>
+        <td>${duelUserHtml(r.opponent)}</td>
+        <td>${duelUserHtml(r.winner)}</td>
+        <td class="muted">${escapeHtml(fmtDT(r.finished_at))}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function loadDuels(){
+    const tbody = $('#tbl-duels tbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
+    try{
+      const r = await jget('/api/admin/duels?take=200&skip=0');
+      const items = r.items || r.rows || r.duels || [];
+      _duelsRaw = items;
+      renderDuelsTable(_duelsRaw);
     }catch(e){
       console.error(e);
-      tbody.innerHTML = `<tr><td colspan="9" class="muted">Ошибка загрузки</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
-  
+
   async function loadMiniEvents(){
     const tbody = $('#mini-events tbody');
     tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
@@ -1618,6 +1751,26 @@ async function loadMiniDuels(){
     $('#refresh-topups-mini')?.addEventListener('click', ()=>loadMiniTopups(true).catch(()=>{}));
 
     $('#topup-reload')?.addEventListener('click', ()=>loadTopupHistory(true).catch(()=>{}));
+
+    // duels filter/sort (client-side)
+    $('#duels-filter')?.addEventListener('input', (e)=>{
+      _duelsFilter = String(e?.target?.value || '');
+      renderDuelsTable(_duelsRaw || []);
+    });
+    $('#duels-filter-clear')?.addEventListener('click', ()=>{
+      _duelsFilter = '';
+      try{ $('#duels-filter').value = ''; }catch(_){}
+      renderDuelsTable(_duelsRaw || []);
+    });
+    document.querySelectorAll('#tbl-duels th[data-k]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const k = th.getAttribute('data-k');
+        if (!k) return;
+        _duelsSortDir = (_duelsSortKey === k) ? -_duelsSortDir : -1;
+        _duelsSortKey = k;
+        renderDuelsTable(_duelsRaw || []);
+      });
+    });
 
     // filter (client-side)
     $('#topup-filter')?.addEventListener('input', (e)=>{
