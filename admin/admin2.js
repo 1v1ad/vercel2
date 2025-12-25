@@ -1214,9 +1214,11 @@ async function loadUsersAnalyticsDuels(){
 
   const tbodyActive = $('#tbl-users-analytics-duels tbody');
   const tbodyWins   = $('#tbl-users-analytics-duels-wins tbody');
+  const tbodyMoney  = $('#tbl-users-analytics-duels-money tbody');
 
   if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
   if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+  if (tbodyMoney)  tbodyMoney.innerHTML  = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
 
   const renderRows = (items, valueKey) => (items || []).slice(0,10).map((it, idx)=>{
     const user_id = it.user_id ?? it.id ?? '';
@@ -1237,9 +1239,10 @@ async function loadUsersAnalyticsDuels(){
   }).join('');
 
   try{
-    const [ra, rw] = await Promise.allSettled([
+    const [ra, rw, rm] = await Promise.allSettled([
       jget('/api/admin/analytics/duels/most-active?limit=10'),
       jget('/api/admin/analytics/duels/most-successful?limit=10'),
+      jget('/api/admin/analytics/duels/most-money?limit=10'),
     ]);
 
     if (tbodyActive){
@@ -1263,10 +1266,21 @@ async function loadUsersAnalyticsDuels(){
         tbodyWins.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
       }
     }
+    if (tbodyMoney){
+      if (rm.status === 'fulfilled'){
+        const j = rm.value || {};
+        const items = j.items || j.rows || [];
+        tbodyMoney.innerHTML = renderRows(items, 'won_amount') || `<tr><td colspan="5" class="muted">Нет данных</td></tr>`;
+      } else {
+        console.error(rm.reason);
+        tbodyMoney.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+      }
+    }
   }catch(e){
     console.error(e);
     if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
     if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+    if (tbodyMoney)  tbodyMoney.innerHTML  = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
   }
 }
 
