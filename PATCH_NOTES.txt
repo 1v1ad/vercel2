@@ -51,5 +51,6 @@ PATCH: vercel2 — Admin v2: вкладка «Ручное пополнение�
 Файлы:
 - admin/index2.html
 - admin/admin2.js
+2025-12-25 21:29 
+- [admin v2] Mobile: topbar wraps to 2 lines on portrait; KPI numbers smaller; sidebar scroll fixed on landscape; Desktop: restore sidebar collapse-to-icons toggle.
 
-[2025-12-25 21:02] Mobile admin: off-canvas sidebar (button+swipe), smaller KPI numbers on phones, landscape padding tweaks.

@@ -881,24 +881,114 @@ _usersMiniCtx = {
       return loadUsers();
     }
   }
-function bindNav(){
+
+  function bindNav(){
+    const sidebar = $('.sidebar');
+    const backdrop = $('#sidebar-backdrop');
+    const mobileBtn = $('#mobile-menu-btn');
+    const collapseBtn = $('#sidebar-collapse-btn');
+
+    const mobileMq = () => window.matchMedia('(max-width: 900px)').matches;
+
+    function setMobileOpen(open){
+      if (!sidebar) return;
+      if (open){
+        sidebar.classList.add('open');
+        backdrop && backdrop.classList.add('show');
+        document.documentElement.classList.add('no-scroll');
+        document.body.classList.add('no-scroll');
+      }else{
+        sidebar.classList.remove('open');
+        backdrop && backdrop.classList.remove('show');
+        document.documentElement.classList.remove('no-scroll');
+        document.body.classList.remove('no-scroll');
+      }
+    }
+
+    // nav item titles (useful in collapsed mode)
     $$('.nav-item').forEach(a=>{
+      const label = a.querySelector('span')?.textContent?.trim();
+      if (label && !a.getAttribute('title')) a.setAttribute('title', label);
+
       a.addEventListener('click', (e)=>{
         e.preventDefault();
         const v = a.dataset.view;
         gotoView(v);
+        if (mobileMq()) setMobileOpen(false);
       });
     });
 
     $$('.nav-sub-item').forEach(a=>{
+      const label = a.textContent?.trim();
+      if (label && !a.getAttribute('title')) a.setAttribute('title', label);
+
       a.addEventListener('click', (e)=>{
         e.preventDefault();
         const v = a.dataset.view || 'users';
         const sub = a.getAttribute('data-users-sub') || '';
         gotoView(v, sub);
+        if (mobileMq()) setMobileOpen(false);
       });
     });
+
+    // desktop collapse to icons
+    function applyCollapseState(){
+      if (!sidebar || mobileMq()) return;
+      const isCollapsed = localStorage.getItem('ADMIN_SIDEBAR_COLLAPSED') === '1';
+      sidebar.classList.toggle('collapsed', isCollapsed);
+      if (collapseBtn){
+        if (isCollapsed){
+          collapseBtn.querySelector('.collapse-ico').textContent = '⟩';
+          const t = collapseBtn.querySelector('.collapse-text');
+          if (t) t.textContent = 'Показать меню';
+          collapseBtn.title = 'Показать меню';
+        }else{
+          collapseBtn.querySelector('.collapse-ico').textContent = '⟨';
+          const t = collapseBtn.querySelector('.collapse-text');
+          if (t) t.textContent = 'Скрыть меню';
+          collapseBtn.title = 'Скрыть меню';
+        }
+      }
+    }
+
+    if (collapseBtn){
+      collapseBtn.addEventListener('click', ()=>{
+        if (!sidebar) return;
+        // on mobile: just close
+        if (mobileMq()){
+          setMobileOpen(false);
+          return;
+        }
+        const next = !sidebar.classList.contains('collapsed');
+        sidebar.classList.toggle('collapsed', next);
+        localStorage.setItem('ADMIN_SIDEBAR_COLLAPSED', next ? '1' : '0');
+        applyCollapseState();
+      });
+    }
+
+    // mobile open/close
+    if (mobileBtn){
+      mobileBtn.addEventListener('click', ()=>{
+        const open = !sidebar?.classList.contains('open');
+        setMobileOpen(open);
+      });
+    }
+    if (backdrop){
+      backdrop.addEventListener('click', ()=> setMobileOpen(false));
+    }
+    document.addEventListener('keydown', (e)=>{
+      if (e.key === 'Escape') setMobileOpen(false);
+    });
+
+    // Re-apply collapse on load & on resize
+    applyCollapseState();
+    window.addEventListener('resize', ()=>{
+      // when leaving mobile, ensure backdrop closed and collapse applied
+      if (!mobileMq()) setMobileOpen(false);
+      applyCollapseState();
+    });
   }
+
 
   function bindTopbar(){
     const apiEl = $('#api');
@@ -2031,79 +2121,10 @@ async function loadMiniDuels(){
     return str.length > n ? (str.slice(0, n-1) + '…') : str;
   }
 
-  function bindMobileNav(){
-  const btn = $('#mobile-menu-btn');
-  const backdrop = $('#sidebar-backdrop');
-  if(!btn || !backdrop) return;
-
-  const mq = window.matchMedia('(max-width: 1100px)');
-  const isOpen = ()=> document.body.classList.contains('mobile-nav-open');
-  const setOpen = (open)=>{
-    if(!mq.matches){ document.body.classList.remove('mobile-nav-open'); return; }
-    document.body.classList.toggle('mobile-nav-open', !!open);
-    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  };
-
-  btn.addEventListener('click', ()=> setOpen(!isOpen()));
-  backdrop.addEventListener('click', ()=> setOpen(false));
-
-  // Закрываем меню при клике на пункт навигации (только на мобильном)
-  $$('.sidebar a').forEach(a=>{
-    a.addEventListener('click', ()=>{
-      if(mq.matches) setOpen(false);
-    }, { passive:true });
-  });
-
-  // Escape закрывает
-  window.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape') setOpen(false);
-  });
-
-  // Swipe: открыть с левого края / закрыть свайпом влево
-  let sx=0, sy=0, tracking=false, startedInsideSidebar=false;
-
-  window.addEventListener('touchstart', (e)=>{
-    if(!mq.matches) return;
-    if(!e.touches || e.touches.length!==1) return;
-    const t = e.touches[0];
-    sx = t.clientX; sy = t.clientY;
-    startedInsideSidebar = !!(e.target && e.target.closest && e.target.closest('.sidebar'));
-    tracking = (sx < 24) || isOpen() || startedInsideSidebar;
-  }, { passive:true });
-
-  window.addEventListener('touchmove', (e)=>{
-    if(!mq.matches || !tracking) return;
-    if(!e.touches || e.touches.length!==1) return;
-    const t = e.touches[0];
-    const dx = t.clientX - sx;
-    const dy = t.clientY - sy;
-
-    // если это вертикальный скролл — не мешаем
-    if(Math.abs(dy) > Math.abs(dx) + 8) return;
-
-    // открыть: свайп вправо от левого края
-    if(!isOpen() && sx < 24 && dx > 70){
-      setOpen(true);
-      tracking=false;
-    }
-
-    // закрыть: свайп влево по открытому меню
-    if(isOpen() && (startedInsideSidebar || sx < 320) && dx < -70){
-      setOpen(false);
-      tracking=false;
-    }
-  }, { passive:true });
-
-  // при ресайзе/смене режима — закрываем
-  if(mq.addEventListener){ mq.addEventListener('change', ()=> setOpen(false)); }
-      else if(mq.addListener){ mq.addListener(()=> setOpen(false)); }
-}
-
-function init(){
+  function init(){
     bindNav();
     bindTopbar();
     bindActions();
-    bindMobileNav();
 
     const { view, sub } = parseHash();
     gotoView(view, sub);
