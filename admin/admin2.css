@@ -242,6 +242,7 @@ body{
 @media (max-width: 1100px){
   .grid.cards{grid-template-columns: repeat(2, minmax(0, 1fr))}
   .grid.two{grid-template-columns: 1fr}
+  .sidebar{display:none}
   .hum-switch{margin-left:0}
 }
 
@@ -664,100 +665,15 @@ body{
 .layout.sidebar-collapsed .sidebar-toggle .toggle-text{display:none}
 
 
-.no-scroll{overflow:hidden !important;}
-
-/* ===== Mobile & Sidebar UX fixes (2025-12-26) ===== */
-
-/* sidebar: allow full scroll to bottom (landscape too) */
-.sidebar{ min-height:100vh; }
-.nav{ flex:1 1 auto; min-height:0; overflow-y:auto; padding-right:4px; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
-
-/* collapse button (desktop) */
-.sidebar-collapse-btn{
-  width:100%;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 10px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.03);
-  color:var(--text);
-  cursor:pointer;
+/* Users → Analytics: make multiple analytics tables look like separate sections */
+#users-sub-analytics .table-wrap{ margin-bottom:18px; }
+#users-sub-analytics .table-wrap + .panel-head,
+#users-sub-analytics .table-wrap + .panel-title,
+#users-sub-analytics .table-wrap + .note{
+  margin-top:18px;
 }
-.sidebar-collapse-btn:hover{ background:rgba(255,255,255,.06); }
-.sidebar-collapse-btn:active{ transform: translateY(1px); }
-.sidebar-collapse-btn .collapse-ico{ font-weight:900; width:18px; text-align:center; opacity:.9; }
-.sidebar-collapse-btn .collapse-text{ font-weight:700; font-size:13px; opacity:.9; }
-
-/* collapsed sidebar (desktop) */
-.sidebar.collapsed{ width:72px; padding:18px 10px; }
-.sidebar.collapsed .brand-text{ display:none; }
-.sidebar.collapsed .nav-item{ justify-content:center; }
-.sidebar.collapsed .nav-item span{ display:none; }
-.sidebar.collapsed .sidebar-footer .muted-link,
-.sidebar.collapsed .sidebar-footer .muted{ display:none; }
-.sidebar.collapsed .sidebar-collapse-btn{ justify-content:center; }
-.sidebar.collapsed .sidebar-collapse-btn .collapse-text{ display:none; }
-
-/* mobile: hamburger button */
-.icon-btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:36px;
-  height:36px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.04);
-  color:var(--text);
-  cursor:pointer;
-}
-.icon-btn:hover{ background:rgba(255,255,255,.07); }
-.icon-btn:active{ transform: translateY(1px); }
-.mobile-only{ display:none; }
-
-/* off-canvas sidebar for small screens (keep desktop intact) */
-.sidebar-backdrop{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  display:none;
-  z-index:49;
-}
-.sidebar-backdrop.show{ display:block; }
-
-@media (max-width: 900px){
-  /* keep sidebar accessible instead of display:none */
-  .mobile-only{ display:inline-flex; }
-  .sidebar{
-    position:fixed;
-    top:0; left:0; bottom:0;
-    height:100vh;
-    transform:translateX(-105%);
-    transition:transform .22s ease;
-    z-index:50;
-    box-shadow: var(--shadow);
-  }
-  .sidebar.open{ transform:translateX(0); }
-  /* collapsed mode irrelevant on mobile */
-  .sidebar.collapsed{ width:260px; padding:18px 14px; }
-}
-
-/* topbar on portrait: two-line layout for API/PWD/Buttons */
-@media (max-width: 600px) and (orientation: portrait){
-  .topbar{ height:auto; flex-wrap:wrap; gap:10px; align-items:flex-start; }
-  .topbar-right{ width:100%; display:flex; flex-wrap:wrap; gap:8px; }
-  .topbar-right .input,
-  .topbar-right .btn{ flex:1 1 calc(50% - 8px); min-width:0; }
-  /* numbers smaller on phone (only portrait) */
-  .card-value{ font-size:18px; margin-top:4px; }
-  .num-rake{ font-size:18px; }
-}
-
-/* landscape on phones: squeeze paddings so big charts feel full width */
-@media (max-width: 900px) and (orientation: landscape){
-  .content{ padding:12px 10px; }
-  .panel{ width:100%; }
+#users-sub-analytics .table-wrap + .panel-head{
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,.06);
 }
 
