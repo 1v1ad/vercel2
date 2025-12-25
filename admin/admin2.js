@@ -1215,12 +1215,15 @@ async function loadUsersAnalyticsDuels(){
   const tbodyActive = $('#tbl-users-analytics-duels tbody');
   const tbodyWins   = $('#tbl-users-analytics-duels-wins tbody');
   const tbodyMoney  = $('#tbl-users-analytics-duels-money tbody');
+  const tbodyProfit = $('#tbl-users-analytics-duels-profit tbody');
 
   if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
   if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
   if (tbodyMoney)  tbodyMoney.innerHTML  = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+  if (tbodyProfit) tbodyProfit.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
 
-  const renderRows = (items, valueKey) => (items || []).slice(0,10).map((it, idx)=>{
+  const renderRows = (items, valueKey, opts={}) => (items || []).slice(0,10).map((it, idx)=>{
+    const suffix = opts?.suffix || '';
     const user_id = it.user_id ?? it.id ?? '';
     const hum_id = it.hum_id ?? '';
     const name = [it.first_name, it.last_name].filter(Boolean).join(' ').trim();
@@ -1232,17 +1235,18 @@ async function loadUsersAnalyticsDuels(){
     return `<tr>
       <td class="right muted">${idx + 1}</td>
       <td>${duelUserHtml(u)}</td>
-      <td class="right"><span class="mono">${escapeHtml(fmtInt(val))}</span></td>
+      <td class="right"><span class="mono">${escapeHtml(fmtInt(val))}${suffix}</span></td>
       <td class="right">${escapeHtml(String(user_id || '—'))}</td>
       <td class="right">${escapeHtml(String(hum_id || '—'))}</td>
     </tr>`;
   }).join('');
 
   try{
-    const [ra, rw, rm] = await Promise.allSettled([
+    const [ra, rw, rm, rp] = await Promise.allSettled([
       jget('/api/admin/analytics/duels/most-active?limit=10'),
       jget('/api/admin/analytics/duels/most-successful?limit=10'),
       jget('/api/admin/analytics/duels/most-money?limit=10'),
+      jget('/api/admin/analytics/duels/most-profit?limit=10'),
     ]);
 
     if (tbodyActive){
@@ -1270,10 +1274,21 @@ async function loadUsersAnalyticsDuels(){
       if (rm.status === 'fulfilled'){
         const j = rm.value || {};
         const items = j.items || j.rows || [];
-        tbodyMoney.innerHTML = renderRows(items, 'won_amount') || `<tr><td colspan="5" class="muted">Нет данных</td></tr>`;
+        tbodyMoney.innerHTML = renderRows(items, 'won_amount', { suffix: ' ₽' }) || `<tr><td colspan="5" class="muted">Нет данных</td></tr>`;
       } else {
         console.error(rm.reason);
         tbodyMoney.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+      }
+    }
+
+    if (tbodyProfit){
+      if (rp.status === 'fulfilled'){
+        const j = rp.value || {};
+        const items = j.items || j.rows || [];
+        tbodyProfit.innerHTML = renderRows(items, 'profit', { suffix: ' ₽' }) || `<tr><td colspan="5" class="muted">Нет данных</td></tr>`;
+      } else {
+        console.error(rp.reason);
+        tbodyProfit.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
       }
     }
   }catch(e){
@@ -1281,6 +1296,7 @@ async function loadUsersAnalyticsDuels(){
     if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
     if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
     if (tbodyMoney)  tbodyMoney.innerHTML  = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+    if (tbodyProfit) tbodyProfit.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
   }
 }
 
