@@ -900,7 +900,62 @@ function bindNav(){
     });
   }
 
-  function bindTopbar(){
+  
+  function bindSidebarCollapse(){
+    const layout = document.querySelector('.layout');
+    const btn = document.getElementById('sidebar-toggle');
+    if (!layout || !btn) return;
+
+    const KEY = 'ADMIN_SIDEBAR_COLLAPSED';
+
+    const isMobile = ()=> window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+
+    function setNavTitles(collapsed){
+      try{
+        document.querySelectorAll('.nav-item').forEach(a=>{
+          const label = a.querySelector('span')?.textContent?.trim() || '';
+          if (collapsed && label) a.setAttribute('title', label);
+          else a.removeAttribute('title');
+        });
+      }catch(_){}
+    }
+
+    function apply(collapsed){
+      // На мобиле не режем сайдбар: там своя логика (off-canvas / скрытие)
+      if (isMobile()){
+        layout.classList.remove('sidebar-collapsed');
+        setNavTitles(false);
+        // оставляем текст по умолчанию
+        btn.querySelector('.toggle-ico').textContent = '⟨';
+        btn.querySelector('.toggle-text').textContent = 'Скрыть меню';
+        return;
+      }
+
+      layout.classList.toggle('sidebar-collapsed', !!collapsed);
+      btn.querySelector('.toggle-ico').textContent = collapsed ? '⟩' : '⟨';
+      btn.querySelector('.toggle-text').textContent = collapsed ? 'Показать меню' : 'Скрыть меню';
+      setNavTitles(!!collapsed);
+    }
+
+    // init from storage
+    const saved = (localStorage.getItem(KEY) === '1');
+    apply(saved);
+
+    btn.addEventListener('click', ()=>{
+      const now = !layout.classList.contains('sidebar-collapsed');
+      localStorage.setItem(KEY, now ? '1' : '0');
+      apply(now);
+    });
+
+    // respond to resize (desktop <-> mobile)
+    try{
+      const mq = window.matchMedia('(max-width: 900px)');
+      mq.addEventListener ? mq.addEventListener('change', ()=>apply(localStorage.getItem(KEY)==='1'))
+                          : mq.addListener(()=>apply(localStorage.getItem(KEY)==='1'));
+    }catch(_){}
+  }
+
+function bindTopbar(){
     const apiEl = $('#api');
     const pwdEl = $('#pwd');
 
@@ -2058,6 +2113,7 @@ async function loadMiniDuels(){
 
   function init(){
     bindNav();
+    bindSidebarCollapse();
     bindTopbar();
     bindActions();
 
