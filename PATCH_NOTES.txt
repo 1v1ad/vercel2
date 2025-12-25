@@ -23,3 +23,12 @@ PATCH: vercel2 — Admin v2: вкладка «Ручное пополнение�
 - Duels: added created_at column, avatars + names for creator/opponent/winner, status badges (incl. cancelled).
 - Duels: client-side filter + sorting across all columns.
 - Duels: switched to /api/admin/duels (new backend endpoint).
+
+
+[2025-12-25] Admin v2: Users → Аналитика
+- Добавлена подвкладка «Аналитика» во вкладке «Пользователи».
+- Таблица «Самый активный в дуэлях»: топ-10 по числу участий (создатель + участник) за весь период.
+Файлы:
+- admin/index2.html
+- admin/admin2.js
+- admin/admin2.css

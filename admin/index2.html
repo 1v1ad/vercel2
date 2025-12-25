@@ -341,61 +341,93 @@
         </section>
 
         <section class="view" id="view-users">
-          <div class="panel">
-            <div class="panel-head">
-              <div class="panel-title">Пользователи</div>
-              <div class="panel-actions">
-                <button class="btn sm ghost" id="users-clear">Сброс</button>
-                <button class="btn sm" id="refresh-users">Обновить</button>
-              </div>
-            </div>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Пользователи</div>
+      <div class="panel-actions">
+        <button class="btn sm ghost" id="users-clear">Сброс</button>
+        <button class="btn sm" id="refresh-users">Обновить</button>
+      </div>
+    </div>
 
-            <div class="filters users-filters">
-              <label class="f">
-                <span>vk/tg id</span>
-                <input class="input sm" id="users-f-vkid" placeholder="107… или tg:…" />
-              </label>
-              <label class="f">
-                <span>имя</span>
-                <input class="input sm" id="users-f-first" placeholder="Alex" />
-              </label>
-              <label class="f">
-                <span>фамилия</span>
-                <input class="input sm" id="users-f-last" placeholder="Захаров" />
-              </label>
-              <label class="f">
-                <span>HUMid</span>
-                <input class="input sm" id="users-f-hum" inputmode="numeric" placeholder="97" />
-              </label>
-              <label class="f">
-                <span>user_id</span>
-                <input class="input sm" id="users-f-uid" inputmode="numeric" placeholder="97" />
-              </label>
-            </div>
+    <div class="subtabs" id="users-subtabs">
+      <button class="chip active" data-users-sub="list">Список</button>
+      <button class="chip" data-users-sub="analytics">Аналитика</button>
+    </div>
 
-            <div class="table-wrap">
-              <table class="table users-table" id="tbl-users">
-                <thead>
-                  <tr>
-                    <th class="sortable" data-sort="hum_id">HUMid</th>
-                    <th class="sortable" data-sort="id">user_id</th>
-                    <th class="sortable" data-sort="vk_tg">VK/Tg</th>
-                    <th class="sortable" data-sort="first_name">Имя</th>
-                    <th class="sortable" data-sort="last_name">Фамилия</th>
-                    <th class="sortable right" data-sort="balance">Баланс</th>
-                    <th class="sortable" data-sort="country_code">Страна</th>
-                    <th class="sortable" data-sort="created_at">Создан</th>
-                    <th class="sortable tight" data-sort="providers">vk/tg</th>
-                    <th class="tight">Аватар</th>
-                  </tr>
-                </thead>
-                <tbody><tr><td colspan="10" class="muted">Загрузка…</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
+    <div class="users-subview active" id="users-sub-list">
+      <div class="filters users-filters">
+        <label class="f">
+          <span>vk/tg id</span>
+          <input class="input sm" id="users-f-vkid" placeholder="107… или tg:…" />
+        </label>
+        <label class="f">
+          <span>имя</span>
+          <input class="input sm" id="users-f-first" placeholder="Alex" />
+        </label>
+        <label class="f">
+          <span>фамилия</span>
+          <input class="input sm" id="users-f-last" placeholder="Захаров" />
+        </label>
+        <label class="f">
+          <span>HUMid</span>
+          <input class="input sm" id="users-f-hum" inputmode="numeric" placeholder="97" />
+        </label>
+        <label class="f">
+          <span>user_id</span>
+          <input class="input sm" id="users-f-uid" inputmode="numeric" placeholder="97" />
+        </label>
+      </div>
 
-        <section class="view" id="view-duels">
+      <div class="table-wrap">
+        <table class="table users-table" id="tbl-users">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="hum_id">HUMid</th>
+              <th class="sortable" data-sort="id">user_id</th>
+              <th class="sortable" data-sort="vk_tg">VK/Tg</th>
+              <th class="sortable" data-sort="first_name">Имя</th>
+              <th class="sortable" data-sort="last_name">Фамилия</th>
+              <th class="sortable right" data-sort="balance">Баланс</th>
+              <th class="sortable" data-sort="country_code">Страна</th>
+              <th class="sortable" data-sort="created_at">Создан</th>
+              <th class="sortable tight" data-sort="providers">vk/tg</th>
+              <th class="tight">Аватар</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="10" class="muted">Загрузка…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="users-subview" id="users-sub-analytics">
+      <div class="panel-head panel-head-slim">
+        <div class="panel-title">Самый активный в дуэлях</div>
+        <div class="panel-actions">
+          <button class="btn sm" id="refresh-users-analytics">Обновить</button>
+        </div>
+      </div>
+      <div class="note muted tiny">Топ-10 по количеству участий в дуэлях за весь период (создатель + участник).</div>
+
+      <div class="table-wrap">
+        <table class="table" id="tbl-users-analytics-duels">
+          <thead>
+            <tr>
+              <th class="right">#</th>
+              <th>Пользователь</th>
+              <th class="right">Участий</th>
+              <th class="right">user_id</th>
+              <th class="right">HUMid</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-duels">
 
           <div class="panel">
             <div class="panel-head">

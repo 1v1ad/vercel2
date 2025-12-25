@@ -312,6 +312,21 @@ body{
   margin-bottom:10px;
 }
 .panel-title{font-weight:900}
+
+
+/* Users subtabs */
+.subtabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 12px;
+}
+.subtabs .chip{cursor:pointer}
+.subtabs .chip.active{background:rgba(77,171,247,.18); border-color:rgba(77,171,247,.35)}
+.users-subview{display:none}
+.users-subview.active{display:block}
+.panel-head.panel-head-slim{margin: 8px 0 6px}
+
 .note{margin-top:10px}
 
 

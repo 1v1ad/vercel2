@@ -1018,6 +1018,81 @@ try{
   // --- Users view (таблица + фильтры + сортировка) ---
   const _usersPage = { sort:'created_at', dir:'desc', debounce:null, inited:false };
 
+
+// Users sub-tabs inside "Пользователи"
+let _usersSub = 'list';
+
+function setUsersSub(name, opts){
+  const v = (String(name || '').toLowerCase() === 'analytics') ? 'analytics' : 'list';
+  _usersSub = v;
+  try{ localStorage.setItem('ADMIN_USERS_SUB', v); }catch(_){}
+  const list = $('#users-sub-list');
+  const an = $('#users-sub-analytics');
+  if (list) list.classList.toggle('active', v === 'list');
+  if (an) an.classList.toggle('active', v === 'analytics');
+  $$('#users-subtabs [data-users-sub]').forEach(btn=>{
+    btn.classList.toggle('active', (btn.getAttribute('data-users-sub')||'') === v);
+  });
+  if (!opts?.silent && v === 'analytics'){
+    loadUsersAnalyticsDuels().catch(()=>{});
+  }
+}
+
+function initUsersSubtabs(){
+  const tabs = $('#users-subtabs');
+  if (!tabs || tabs.dataset.inited === '1') return;
+  tabs.dataset.inited = '1';
+
+  tabs.querySelectorAll('[data-users-sub]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      setUsersSub(btn.getAttribute('data-users-sub'));
+    });
+  });
+
+  let saved = 'list';
+  try{ saved = (localStorage.getItem('ADMIN_USERS_SUB') || 'list').toString(); }catch(_){}
+  setUsersSub(saved, { silent:true });
+}
+
+async function loadUsersAnalyticsDuels(){
+  initUsersSubtabs();
+  setUsersSub('analytics', { silent:true });
+
+  const tbody = $('#tbl-users-analytics-duels tbody');
+  if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+
+  try{
+    const j = await jget('/api/admin/analytics/duels/most-active?limit=10');
+    const items = j.items || j.rows || [];
+    if (!items.length){
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Пусто</td></tr>`;
+      return;
+    }
+
+    if (tbody){
+      tbody.innerHTML = items.slice(0,10).map((it, idx)=>{
+        const user_id = it.user_id ?? it.id ?? '';
+        const hum_id = it.hum_id ?? '';
+        const name = [it.first_name, it.last_name].filter(Boolean).join(' ').trim();
+        const avatar = it.avatar || it.avatar_url || '';
+        const u = { id: user_id, hum_id, name, avatar };
+
+        return `<tr>
+          <td class="right muted">${idx + 1}</td>
+          <td>${duelUserHtml(u)}</td>
+          <td class="right"><span class="mono">${escapeHtml(fmtInt(it.duels_count ?? it.count ?? 0))}</span></td>
+          <td class="right">${escapeHtml(String(user_id || '—'))}</td>
+          <td class="right">${escapeHtml(String(hum_id || '—'))}</td>
+        </tr>`;
+      }).join('');
+    }
+  }catch(e){
+    console.error(e);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+  }
+}
+
+
   function usersFilters(){
     const vkRaw = ($('#users-f-vkid')?.value || '').trim();
     const first = ($('#users-f-first')?.value || '').trim();
@@ -1063,6 +1138,8 @@ try{
     if (_usersPage.inited) return;
     _usersPage.inited = true;
 
+    initUsersSubtabs();
+
     // сортировка по клику на заголовок
     document.querySelectorAll('#tbl-users thead th.sortable').forEach(th=>{
       th.addEventListener('click', ()=>{
@@ -1094,6 +1171,7 @@ try{
     });
 
     $('#users-clear')?.addEventListener('click', ()=>{
+      setUsersSub('list', { silent:true });
       ['users-f-vkid','users-f-first','users-f-last','users-f-hum','users-f-uid'].forEach(id=>{
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -1104,6 +1182,12 @@ try{
 
   async function loadUsers(){
     initUsersView();
+    initUsersSubtabs();
+
+    // если открыт сабтаб "Аналитика" — грузим его, а не список
+    if (_usersSub === 'analytics') return loadUsersAnalyticsDuels();
+
+    setUsersSub('list', { silent:true });
     usersSetSortUI();
 
     const tbody = $('#tbl-users tbody');
@@ -1743,6 +1827,7 @@ async function loadMiniDuels(){
   function bindActions(){
     $('#refresh-finance')?.addEventListener('click', loadFinance);
     $('#refresh-users')?.addEventListener('click', loadUsers);
+    $('#refresh-users-analytics')?.addEventListener('click', loadUsersAnalyticsDuels);
     $('#refresh-events')?.addEventListener('click', loadEvents);
     $('#refresh-duels')?.addEventListener('click', loadDuels);
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
