@@ -881,114 +881,24 @@ _usersMiniCtx = {
       return loadUsers();
     }
   }
-
-  function bindNav(){
-    const sidebar = $('.sidebar');
-    const backdrop = $('#sidebar-backdrop');
-    const mobileBtn = $('#mobile-menu-btn');
-    const collapseBtn = $('#sidebar-collapse-btn');
-
-    const mobileMq = () => window.matchMedia('(max-width: 900px)').matches;
-
-    function setMobileOpen(open){
-      if (!sidebar) return;
-      if (open){
-        sidebar.classList.add('open');
-        backdrop && backdrop.classList.add('show');
-        document.documentElement.classList.add('no-scroll');
-        document.body.classList.add('no-scroll');
-      }else{
-        sidebar.classList.remove('open');
-        backdrop && backdrop.classList.remove('show');
-        document.documentElement.classList.remove('no-scroll');
-        document.body.classList.remove('no-scroll');
-      }
-    }
-
-    // nav item titles (useful in collapsed mode)
+function bindNav(){
     $$('.nav-item').forEach(a=>{
-      const label = a.querySelector('span')?.textContent?.trim();
-      if (label && !a.getAttribute('title')) a.setAttribute('title', label);
-
       a.addEventListener('click', (e)=>{
         e.preventDefault();
         const v = a.dataset.view;
         gotoView(v);
-        if (mobileMq()) setMobileOpen(false);
       });
     });
 
     $$('.nav-sub-item').forEach(a=>{
-      const label = a.textContent?.trim();
-      if (label && !a.getAttribute('title')) a.setAttribute('title', label);
-
       a.addEventListener('click', (e)=>{
         e.preventDefault();
         const v = a.dataset.view || 'users';
         const sub = a.getAttribute('data-users-sub') || '';
         gotoView(v, sub);
-        if (mobileMq()) setMobileOpen(false);
       });
-    });
-
-    // desktop collapse to icons
-    function applyCollapseState(){
-      if (!sidebar || mobileMq()) return;
-      const isCollapsed = localStorage.getItem('ADMIN_SIDEBAR_COLLAPSED') === '1';
-      sidebar.classList.toggle('collapsed', isCollapsed);
-      if (collapseBtn){
-        if (isCollapsed){
-          collapseBtn.querySelector('.collapse-ico').textContent = '⟩';
-          const t = collapseBtn.querySelector('.collapse-text');
-          if (t) t.textContent = 'Показать меню';
-          collapseBtn.title = 'Показать меню';
-        }else{
-          collapseBtn.querySelector('.collapse-ico').textContent = '⟨';
-          const t = collapseBtn.querySelector('.collapse-text');
-          if (t) t.textContent = 'Скрыть меню';
-          collapseBtn.title = 'Скрыть меню';
-        }
-      }
-    }
-
-    if (collapseBtn){
-      collapseBtn.addEventListener('click', ()=>{
-        if (!sidebar) return;
-        // on mobile: just close
-        if (mobileMq()){
-          setMobileOpen(false);
-          return;
-        }
-        const next = !sidebar.classList.contains('collapsed');
-        sidebar.classList.toggle('collapsed', next);
-        localStorage.setItem('ADMIN_SIDEBAR_COLLAPSED', next ? '1' : '0');
-        applyCollapseState();
-      });
-    }
-
-    // mobile open/close
-    if (mobileBtn){
-      mobileBtn.addEventListener('click', ()=>{
-        const open = !sidebar?.classList.contains('open');
-        setMobileOpen(open);
-      });
-    }
-    if (backdrop){
-      backdrop.addEventListener('click', ()=> setMobileOpen(false));
-    }
-    document.addEventListener('keydown', (e)=>{
-      if (e.key === 'Escape') setMobileOpen(false);
-    });
-
-    // Re-apply collapse on load & on resize
-    applyCollapseState();
-    window.addEventListener('resize', ()=>{
-      // when leaving mobile, ensure backdrop closed and collapse applied
-      if (!mobileMq()) setMobileOpen(false);
-      applyCollapseState();
     });
   }
-
 
   function bindTopbar(){
     const apiEl = $('#api');
@@ -1247,39 +1157,64 @@ async function loadUsersAnalyticsDuels(){
   initUsersSubtabs();
   setUsersSub('analytics', { silent:true });
 
-  const tbody = $('#tbl-users-analytics-duels tbody');
-  if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+  const tbodyActive = $('#tbl-users-analytics-duels tbody');
+  const tbodyWins   = $('#tbl-users-analytics-duels-wins tbody');
+
+  if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+  if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+
+  const renderRows = (items, valueKey) => (items || []).slice(0,10).map((it, idx)=>{
+    const user_id = it.user_id ?? it.id ?? '';
+    const hum_id = it.hum_id ?? '';
+    const name = [it.first_name, it.last_name].filter(Boolean).join(' ').trim();
+    const avatar = it.avatar || it.avatar_url || '';
+    const u = { id: user_id, hum_id, name, avatar };
+
+    const val = it[valueKey] ?? it.count ?? 0;
+
+    return `<tr>
+      <td class="right muted">${idx + 1}</td>
+      <td>${duelUserHtml(u)}</td>
+      <td class="right"><span class="mono">${escapeHtml(fmtInt(val))}</span></td>
+      <td class="right">${escapeHtml(String(user_id || '—'))}</td>
+      <td class="right">${escapeHtml(String(hum_id || '—'))}</td>
+    </tr>`;
+  }).join('');
 
   try{
-    const j = await jget('/api/admin/analytics/duels/most-active?limit=10');
-    const items = j.items || j.rows || [];
-    if (!items.length){
-      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Пусто</td></tr>`;
-      return;
+    const [ra, rw] = await Promise.allSettled([
+      jget('/api/admin/analytics/duels/most-active?limit=10'),
+      jget('/api/admin/analytics/duels/most-successful?limit=10'),
+    ]);
+
+    if (tbodyActive){
+      if (ra.status === 'fulfilled'){
+        const j = ra.value || {};
+        const items = j.items || j.rows || [];
+        tbodyActive.innerHTML = renderRows(items, 'duels_count') || `<tr><td colspan="5" class="muted">Нет данных</td></tr>`;
+      } else {
+        console.error(ra.reason);
+        tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+      }
     }
 
-    if (tbody){
-      tbody.innerHTML = items.slice(0,10).map((it, idx)=>{
-        const user_id = it.user_id ?? it.id ?? '';
-        const hum_id = it.hum_id ?? '';
-        const name = [it.first_name, it.last_name].filter(Boolean).join(' ').trim();
-        const avatar = it.avatar || it.avatar_url || '';
-        const u = { id: user_id, hum_id, name, avatar };
-
-        return `<tr>
-          <td class="right muted">${idx + 1}</td>
-          <td>${duelUserHtml(u)}</td>
-          <td class="right"><span class="mono">${escapeHtml(fmtInt(it.duels_count ?? it.count ?? 0))}</span></td>
-          <td class="right">${escapeHtml(String(user_id || '—'))}</td>
-          <td class="right">${escapeHtml(String(hum_id || '—'))}</td>
-        </tr>`;
-      }).join('');
+    if (tbodyWins){
+      if (rw.status === 'fulfilled'){
+        const j = rw.value || {};
+        const items = j.items || j.rows || [];
+        tbodyWins.innerHTML = renderRows(items, 'wins_count') || `<tr><td colspan="5" class="muted">Нет данных</td></tr>`;
+      } else {
+        console.error(rw.reason);
+        tbodyWins.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+      }
     }
   }catch(e){
     console.error(e);
-    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+    if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+    if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
   }
 }
+
 
 
   function usersFilters(){
