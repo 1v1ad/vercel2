@@ -328,9 +328,10 @@ body{
 
 /* Tooltip for mini sparkline */
 .spark-tip{
-  position:absolute;
+  /* Render above any sticky bars / transformed cards */
+  position:fixed;
   left:0;
-  top:6px;
+  top:0;
   padding:6px 8px;
   border-radius:10px;
   background:#0b1220;
@@ -341,9 +342,10 @@ body{
   line-height:1.2;
   white-space:nowrap;
   opacity:0;
-  transform: translate(-50%, 0%);
+  transform: translate(-50%, -110%);
   transition: opacity .12s ease;
   pointer-events:none;
+  will-change: left, top, transform;
   /* Above sticky topbar */
   z-index:99999;
 }

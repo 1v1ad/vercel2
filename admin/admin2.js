@@ -164,6 +164,39 @@ let _usersMiniBound = false;
 
 function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 
+// Mini-spark tooltip is rendered in <body> (position:fixed) so it won't be clipped
+// by transformed cards / sticky bars.
+function ensureSparkTipOnBody(tip){
+  try{
+    if (!tip) return;
+    if (tip.parentElement !== document.body){
+      document.body.appendChild(tip);
+    }
+  }catch(_){ }
+}
+
+function placeSparkTip(tip, xClient, yClient){
+  if (!tip) return;
+  ensureSparkTipOnBody(tip);
+
+  // initial
+  tip.style.left = `${xClient}px`;
+  tip.style.top  = `${yClient}px`;
+
+  // clamp into viewport (keeps tooltip visible while still being "above" the dot)
+  const pad = 8;
+  const r = tip.getBoundingClientRect();
+  let x = xClient;
+  let y = yClient;
+  if (r.left < pad) x += (pad - r.left);
+  if (r.right > window.innerWidth - pad) x -= (r.right - (window.innerWidth - pad));
+  if (r.top < pad) y += (pad - r.top);
+  if (r.bottom > window.innerHeight - pad) y -= (r.bottom - (window.innerHeight - pad));
+
+  tip.style.left = `${x}px`;
+  tip.style.top  = `${y}px`;
+}
+
 function ensureUsersMiniInteraction(svg){
   if (_usersMiniBound) return;
   _usersMiniBound = true;
@@ -189,10 +222,12 @@ function ensureUsersMiniInteraction(svg){
     const i = clamp(Math.round((xvb - ctx.pad) / Math.max(1e-6, ctx.step)), 0, ctx.n - 1);
     const xi = ctx.x(i);
 
+    const t = ctx.totals[i] || 0;
+    const denom = (ctx.maxTotal || 1);
+    const yy = ctx.topY0 + (1 - (t / denom)) * ctx.topH;
+
     // hover markers
     if (_usersMiniHover?.line && _usersMiniHover?.dot && _usersMiniHover?.g){
-      const t = ctx.totals[i] || 0;
-      const yy = ctx.topY0 + (1 - (t / ctx.maxTotal)) * ctx.topH;
 
       _usersMiniHover.line.setAttribute('x1', xi);
       _usersMiniHover.line.setAttribute('x2', xi);
@@ -213,8 +248,10 @@ function ensureUsersMiniInteraction(svg){
         `<div class="row"><span class="k">всего</span><span class="v">${fmtInt(total)}</span></div>` +
         `<div class="row"><span class="k">новые</span><span class="v">${fmtInt(neu)}</span></div>`;
 
-      tip.style.left = (xi / ctx.W * 100) + '%';
       tip.classList.add('show');
+      const xClient = rect.left + (xi / ctx.W) * rect.width;
+      const yClient = rect.top  + (yy / ctx.H) * rect.height;
+      placeSparkTip(tip, xClient, yClient);
     }
   };
 
@@ -425,11 +462,12 @@ _usersMiniCtx = {
       const i = clamp(Math.round((xvb - ctx.pad) / Math.max(1e-6, ctx.step)), 0, ctx.n - 1);
       const xi = ctx.x(i);
 
+      const t = ctx.totals[i] || 0;
+      const denom = (ctx.maxTotal || 1);
+      const yy = ctx.topY0 + (1 - (t / denom)) * ctx.topH;
+
       // hover markers
       if (_eventsMiniHover?.line && _eventsMiniHover?.dot && _eventsMiniHover?.g){
-        const t = ctx.totals[i] || 0;
-        const yy = ctx.topY0 + (1 - (t / ctx.maxTotal)) * ctx.topH;
-
         _eventsMiniHover.line.setAttribute('x1', xi);
         _eventsMiniHover.line.setAttribute('x2', xi);
         _eventsMiniHover.dot.setAttribute('cx', xi);
@@ -449,8 +487,10 @@ _usersMiniCtx = {
           `<div class="row"><span class="k">всего</span><span class="v">${fmtInt(total)}</span></div>` +
           `<div class="row"><span class="k">за день</span><span class="v">${fmtInt(neu)}</span></div>`;
 
-        tip.style.left = (xi / ctx.W * 100) + '%';
         tip.classList.add('show');
+        const xClient = rect.left + (xi / ctx.W) * rect.width;
+        const yClient = rect.top  + (yy / ctx.H) * rect.height;
+        placeSparkTip(tip, xClient, yClient);
       }
     };
 
@@ -645,10 +685,11 @@ _usersMiniCtx = {
       const i = clamp(Math.round((xvb - ctx.pad) / Math.max(1e-6, ctx.step)), 0, ctx.n - 1);
       const xi = ctx.x(i);
 
+      const v = ctx.values[i] || 0;
+      const yy = ctx.y(v);
+
       // hover markers
       if (_liabMiniHover?.line && _liabMiniHover?.dot && _liabMiniHover?.g){
-        const v = ctx.values[i] || 0;
-        const yy = ctx.y(v);
 
         _liabMiniHover.line.setAttribute('x1', xi);
         _liabMiniHover.line.setAttribute('x2', xi);
@@ -665,8 +706,10 @@ _usersMiniCtx = {
           `<span class="d">${d}</span>` +
           `<div class="row"><span class="k">на балансах</span><span class="v">${fmtInt(vRaw)}</span></div>`;
 
-        tip.style.left = (xi / ctx.W * 100) + '%';
         tip.classList.add('show');
+        const xClient = rect.left + (xi / ctx.W) * rect.width;
+        const yClient = rect.top  + (yy / ctx.H) * rect.height;
+        placeSparkTip(tip, xClient, yClient);
       }
     };
 
