@@ -344,11 +344,22 @@ body{
 #mini-duels th{padding:8px 10px}
 
 /* mini users (summary): large avatars + flags */
-#mini-users td{vertical-align:middle; padding:6px 10px; line-height:1.15}
-#mini-users th{padding:8px 10px}
+#mini-users{table-layout:fixed; width:100%}
+#mini-users td{vertical-align:middle; padding:6px 10px; line-height:1.15; overflow:hidden; text-overflow:ellipsis}
+#mini-users th{padding:8px 10px; overflow:hidden; text-overflow:ellipsis}
+
+/* Make columns fit without horizontal scroll (summary table is "preview", so ellipsis is OK) */
+#mini-users th:nth-child(1){width:60px}
+#mini-users th:nth-child(2){width:64px}
+#mini-users th:nth-child(3){width:110px}
+#mini-users th:nth-child(6){width:88px}
+#mini-users th:nth-child(7){width:74px}
+#mini-users th:nth-child(8){width:92px}
+#mini-users th:nth-child(9){width:56px}
+#mini-users th:nth-child(10){width:56px}
 .mini-ava-lg{width:28px; height:28px; border-radius:999px; object-fit:cover; border:1px solid var(--border); background:#0e1624}
 .avatar-cell{text-align:center}
-#mini-users .providers{max-width:220px; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:bottom}
+#mini-users .providers{max-width:56px; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:bottom}
 
 .flag-img{width:18px;height:13px;border-radius:3px;vertical-align:middle;box-shadow:0 0 0 1px var(--border);margin-right:6px}
 .flag-emoji{font-size:14px;margin-right:6px}
