@@ -99,6 +99,10 @@ function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String
     };
     $('#page-title').textContent = titleMap[name] || name;
     if (name === 'summary') fireApiChanged();
+    if (name === 'topup') {
+      // lazy-load history (old admin topup.html behavior)
+      loadTopupHistory().catch(()=>{});
+    }
   }
 
   // --- Summary: Users card (всего / новые today), reacts to HUM-toggle ---
@@ -1417,6 +1421,104 @@ async function loadMiniDuels(){
     }
   }
 
+  // --- Topup history (ported from classic /admin/topup.html) ---
+  let _topupSortKey = 'created_at';
+  let _topupSortDir = -1; // desc
+
+  function toBigIntSafe(x){
+    if (x === null || x === undefined) return 0n;
+    if (typeof x === 'bigint') return x;
+    const s = String(x).trim();
+    if (!s) return 0n;
+    if (/^-?\d+$/.test(s)){
+      try{ return BigInt(s); }catch(_){ return 0n; }
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? BigInt(Math.trunc(n)) : 0n;
+  }
+
+  function fmtDT(s){
+    return (s || '').toString().slice(0, 19).replace('T', ' ');
+  }
+
+  function pick(obj, keys, d){
+    for (const k of keys){
+      if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
+    }
+    return d;
+  }
+
+  function tsVal(x){
+    const s = String(x || '').trim();
+    if (!s) return 0;
+    let t = new Date(s).getTime();
+    if (Number.isFinite(t)) return t;
+    t = new Date(s.replace(' ', 'T')).getTime();
+    return Number.isFinite(t) ? t : 0;
+  }
+
+  function renderTopupHistory(list){
+    const tbody = $('#tbl-topup tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!Array.isArray(list) || !list.length){
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">Нет событий…</td></tr>`;
+      return;
+    }
+
+    const rows = list.map(ev=>{
+      const p = ev.payload || {};
+      const created_at = pick(ev, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], ''));
+      const admin      = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
+      const user_id    = pick(ev, ['user_id'], pick(p, ['user_id'], '—'));
+      const hum_id     = pick(ev, ['hum_id','HUMid'], pick(p, ['hum_id','HUMid'], '—'));
+      const amountBI   = toBigIntSafe(pick(ev, ['amount'], pick(p, ['amount','value','sum','delta'], 0)));
+      const comment    = String(pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], '')) || '');
+      return { created_at, admin, user_id, hum_id, amountBI, comment };
+    });
+
+    rows.sort((a,b)=>{
+      if (_topupSortKey === 'created_at') return (tsVal(a.created_at) - tsVal(b.created_at)) * _topupSortDir;
+      if (_topupSortKey === 'amount') return (a.amountBI === b.amountBI ? 0 : (a.amountBI > b.amountBI ? 1 : -1)) * _topupSortDir;
+      if (_topupSortKey === 'user'){
+        const au = Number(a.user_id || 0) || 0;
+        const bu = Number(b.user_id || 0) || 0;
+        return (au - bu) * _topupSortDir;
+      }
+      const ak = String(a[_topupSortKey] ?? '');
+      const bk = String(b[_topupSortKey] ?? '');
+      return ak.localeCompare(bk) * _topupSortDir;
+    });
+
+    tbody.innerHTML = rows.map(r=>{
+      const cls = r.amountBI > 0n ? 'pill pos' : (r.amountBI < 0n ? 'pill neg' : 'pill zero');
+      const amountText = (r.amountBI > 0n ? '+' : '') + fmtInt(r.amountBI.toString());
+      const c = r.comment ? escapeHtml(r.comment) : '—';
+      return `<tr>
+        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
+        <td>${escapeHtml(r.admin || '—')}</td>
+        <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
+        <td class="right"><span class="${cls}">${escapeHtml(amountText)}</span></td>
+        <td class="mono">${c}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function loadTopupHistory(){
+    const tbody = $('#tbl-topup tbody');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+    try{
+      const r = await jget('/api/admin/events?type=admin_topup&take=100&skip=0');
+      const list = r.items || r.events || r.rows || [];
+      renderTopupHistory(list);
+    }catch(e){
+      console.error(e);
+      tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+    }
+  }
+
   function bindActions(){
     $('#refresh-finance')?.addEventListener('click', loadFinance);
     $('#refresh-users')?.addEventListener('click', loadUsers);
@@ -1426,6 +1528,18 @@ async function loadMiniDuels(){
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);
     $('#refresh-users-mini')?.addEventListener('click', loadMiniUsers);
 
+    $('#topup-reload')?.addEventListener('click', ()=>loadTopupHistory().catch(()=>{}));
+    document.querySelectorAll('#tbl-topup th[data-k]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const k = th.getAttribute('data-k');
+        if (!k) return;
+        const key = (k === 'user') ? 'user' : (k === 'amount' ? 'amount' : (k === 'comment' ? 'comment' : (k === 'admin' ? 'admin' : 'created_at')));
+        _topupSortDir = (_topupSortKey === key) ? -_topupSortDir : -1;
+        _topupSortKey = key;
+        loadTopupHistory().catch(()=>{});
+      });
+    });
+
     $('#topup-btn')?.addEventListener('click', async ()=>{
       const out = $('#topup-out');
       out.textContent = '...';
@@ -1433,10 +1547,12 @@ async function loadMiniDuels(){
         const id = String($('#topup-user').value||'').trim();
         const amount = Number(String($('#topup-amount').value||'').trim());
         const comment = String($('#topup-comment').value||'').trim();
-        if (!id || !Number.isFinite(amount)) throw new Error('bad_params');
+        if (!id || !Number.isFinite(amount) || !comment) throw new Error('bad_params');
         const r = await jpost(`/api/admin/users/${encodeURIComponent(id)}/topup`, { amount, comment });
         out.textContent = JSON.stringify(r, null, 2);
         loadSummary().catch(()=>{});
+        loadTopupHistory().catch(()=>{});
+        try{ $('#topup-amount').value = ''; $('#topup-comment').value = ''; }catch(_){ }
       }catch(e){
         out.textContent = 'ERROR: ' + (e?.message || e);
       }

@@ -329,6 +329,7 @@ body{
   padding:10px;
   white-space:nowrap;
 }
+.table th.sortable{cursor:pointer; user-select:none}
 .table td{
   padding:10px;
   border-bottom:1px solid #142033;
@@ -338,6 +339,24 @@ body{
 .table tr:hover td{background:#0e1624}
 .table .right{text-align:right}
 .table .mono{font-family:var(--mono); white-space:normal; max-width:520px}
+
+/* +/- pills (topup history) */
+.pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:54px;
+  height:22px;
+  padding:0 10px;
+  border-radius:999px;
+  font-weight:900;
+  font-family:var(--mono);
+  font-size:12px;
+  border:1px solid rgba(255,255,255,.10);
+}
+.pill.pos{background:rgba(46, 204, 113, .18); color:#c9ffe0; border-color:rgba(46, 204, 113, .35)}
+.pill.neg{background:rgba(231, 76, 60,  .18); color:#ffd0cc; border-color:rgba(231, 76, 60,  .35)}
+.pill.zero{background:rgba(148, 163, 184, .14); color:#d9e2f0; border-color:rgba(148, 163, 184, .25)}
 
 /* mini duels: avatars + compact rows */
 #mini-duels td{vertical-align:middle; padding:6px 10px; line-height:1.15}
