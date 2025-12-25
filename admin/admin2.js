@@ -2031,10 +2031,79 @@ async function loadMiniDuels(){
     return str.length > n ? (str.slice(0, n-1) + '…') : str;
   }
 
-  function init(){
+  function bindMobileNav(){
+  const btn = $('#mobile-menu-btn');
+  const backdrop = $('#sidebar-backdrop');
+  if(!btn || !backdrop) return;
+
+  const mq = window.matchMedia('(max-width: 1100px)');
+  const isOpen = ()=> document.body.classList.contains('mobile-nav-open');
+  const setOpen = (open)=>{
+    if(!mq.matches){ document.body.classList.remove('mobile-nav-open'); return; }
+    document.body.classList.toggle('mobile-nav-open', !!open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+
+  btn.addEventListener('click', ()=> setOpen(!isOpen()));
+  backdrop.addEventListener('click', ()=> setOpen(false));
+
+  // Закрываем меню при клике на пункт навигации (только на мобильном)
+  $$('.sidebar a').forEach(a=>{
+    a.addEventListener('click', ()=>{
+      if(mq.matches) setOpen(false);
+    }, { passive:true });
+  });
+
+  // Escape закрывает
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape') setOpen(false);
+  });
+
+  // Swipe: открыть с левого края / закрыть свайпом влево
+  let sx=0, sy=0, tracking=false, startedInsideSidebar=false;
+
+  window.addEventListener('touchstart', (e)=>{
+    if(!mq.matches) return;
+    if(!e.touches || e.touches.length!==1) return;
+    const t = e.touches[0];
+    sx = t.clientX; sy = t.clientY;
+    startedInsideSidebar = !!(e.target && e.target.closest && e.target.closest('.sidebar'));
+    tracking = (sx < 24) || isOpen() || startedInsideSidebar;
+  }, { passive:true });
+
+  window.addEventListener('touchmove', (e)=>{
+    if(!mq.matches || !tracking) return;
+    if(!e.touches || e.touches.length!==1) return;
+    const t = e.touches[0];
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+
+    // если это вертикальный скролл — не мешаем
+    if(Math.abs(dy) > Math.abs(dx) + 8) return;
+
+    // открыть: свайп вправо от левого края
+    if(!isOpen() && sx < 24 && dx > 70){
+      setOpen(true);
+      tracking=false;
+    }
+
+    // закрыть: свайп влево по открытому меню
+    if(isOpen() && (startedInsideSidebar || sx < 320) && dx < -70){
+      setOpen(false);
+      tracking=false;
+    }
+  }, { passive:true });
+
+  // при ресайзе/смене режима — закрываем
+  if(mq.addEventListener){ mq.addEventListener('change', ()=> setOpen(false)); }
+      else if(mq.addListener){ mq.addListener(()=> setOpen(false)); }
+}
+
+function init(){
     bindNav();
     bindTopbar();
     bindActions();
+    bindMobileNav();
 
     const { view, sub } = parseHash();
     gotoView(view, sub);

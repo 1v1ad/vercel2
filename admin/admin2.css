@@ -125,6 +125,24 @@ body{
   backdrop-filter:saturate(160%) blur(8px);
   position:sticky; top:0; z-index:5;
 }
+
+/* Mobile sidebar toggle */
+.mobile-menu-btn{
+  display:none;
+  height:34px;
+  width:34px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#172233;
+  color:var(--text);
+  cursor:pointer;
+  align-items:center;
+  justify-content:center;
+}
+.mobile-menu-btn svg{width:18px; height:18px}
+
+.sidebar-backdrop{display:none}
+
 .page-title{font-weight:900}
 .topbar-left{display:flex; align-items:center; gap:14px}
 
@@ -242,8 +260,47 @@ body{
 @media (max-width: 1100px){
   .grid.cards{grid-template-columns: repeat(2, minmax(0, 1fr))}
   .grid.two{grid-template-columns: 1fr}
-  .sidebar{display:none}
   .hum-switch{margin-left:0}
+
+  /* Sidebar становится off-canvas (доступна и в "версии для ПК" на телефоне) */
+  .sidebar{
+    display:flex;
+    position:fixed;
+    top:0; left:0; bottom:0;
+    z-index:1000;
+    transform: translateX(-105%);
+    transition: transform .18s ease;
+    box-shadow: 0 18px 46px rgba(0,0,0,.55);
+  }
+  body.mobile-nav-open .sidebar{ transform: translateX(0) }
+
+  .sidebar-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:999;
+    background: rgba(0,0,0,.45);
+  }
+  body.mobile-nav-open .sidebar-backdrop{ display:block }
+
+  /* В мобильном режиме не "ломаем" меню из-за sidebar-collapsed (сворачивание нужно для ПК) */
+  .layout.sidebar-collapsed .sidebar{
+    width:260px;
+    padding:18px 14px;
+  }
+  .layout.sidebar-collapsed .brand{justify-content:flex-start; padding:10px 6px}
+  .layout.sidebar-collapsed .brand-text{display:block}
+  .layout.sidebar-collapsed .nav-item{justify-content:flex-start; gap:10px; padding:10px 12px}
+  .layout.sidebar-collapsed .nav-item span{display:inline}
+  .layout.sidebar-collapsed .nav-sub{display:block}
+  .layout.sidebar-collapsed .sidebar-footer{padding:10px 14px}
+  .layout.sidebar-collapsed .sidebar-footer .muted-link,
+  .layout.sidebar-collapsed .sidebar-footer .muted{display:block}
+  .layout.sidebar-collapsed .sidebar-toggle{justify-content:flex-start; padding:10px 12px; gap:10px}
+  .layout.sidebar-collapsed .sidebar-toggle .toggle-text{display:inline}
+
+  .mobile-menu-btn{display:inline-flex}
+  .content{padding:12px}
 }
 
 .card{
@@ -663,3 +720,16 @@ body{
 }
 .layout.sidebar-collapsed .sidebar-toggle{justify-content:center; padding:10px 8px; gap:0}
 .layout.sidebar-collapsed .sidebar-toggle .toggle-text{display:none}
+
+
+@media (max-width: 520px){
+  .card-value{font-size:22px}
+  .page-title{font-size:16px}
+  .content{padding:10px}
+}
+
+
+@media (max-width: 1000px) and (orientation: landscape){
+  .content{padding:10px 10px}
+  .grid{gap:10px}
+}
