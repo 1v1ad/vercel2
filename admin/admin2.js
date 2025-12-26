@@ -1691,14 +1691,14 @@ async function loadUsersAnalyticsDuels(){
       return `<tr>
         <td>${escapeHtml(String(r.id ?? ''))}</td>
         <td>${escapeHtml(r.mode || '—')}</td>
-        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMsk(r.created_at))}</td>
         <td class="right">${fmtInt(r.stake || 0)}</td>
         <td>${duelStatusHtml(r.status)}</td>
         <td class="right">${escapeHtml(String(r.fee_bps ?? ''))}</td>
         <td>${duelUserHtml(r.creator)}</td>
         <td>${duelUserHtml(r.opponent)}</td>
         <td>${duelUserHtml(r.winner)}</td>
-        <td class="muted">${escapeHtml(fmtDT(r.finished_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMsk(r.finished_at))}</td>
       </tr>`;
     }).join('');
   }
@@ -1882,7 +1882,7 @@ async function loadMiniDuels(){
           </tr>`;
         }
 
-        const time = (it.finished_at||it.updated_at||it.created_at||'').toString().slice(11,19) || '—';
+        const time = fmtTimeMsk(it.finished_at||it.updated_at||it.created_at||'');
 
         const stake = Number(it.stake || 0) || 0;
         const pot = Number(it.pot ?? it.result?.pot ?? (stake*2)) || 0;
@@ -1963,8 +1963,89 @@ async function loadMiniDuels(){
     return Number.isFinite(n) ? BigInt(Math.trunc(n)) : 0n;
   }
 
+  function fmtDateTimeMskFromDate(d){
+    try{
+      const parts = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Moscow',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).formatToParts(d);
+      const get = (t)=> (parts.find(p=>p.type===t)?.value || '');
+      return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
+    }catch(_){
+      // Fallback: ISO (UTC) — лучше чем падение
+      return d.toISOString().slice(0, 19).replace('T', ' ');
+    }
+  }
+
+  function fmtTimeMskFromDate(d){
+    try{
+      const parts = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Moscow',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).formatToParts(d);
+      const get = (t)=> (parts.find(p=>p.type===t)?.value || '');
+      return `${get('hour')}:${get('minute')}:${get('second')}`;
+    }catch(_){
+      return d.toISOString().slice(11, 19);
+    }
+  }
+
   function fmtDT(s){
-    return (s || '').toString().slice(0, 19).replace('T', ' ');
+    const str = (s || '').toString().trim();
+    if (!str) return '—';
+    // Базовый формат: выводим как есть (без сдвига таймзоны)
+    return str.slice(0, 19).replace('T', ' ');
+  }
+
+  // Для дуэлей время иногда приходит как UTC/без TZ.
+  // Нам нужно показать «+3 к МСК» (т.е. привести к Europe/Moscow).
+  // Эти функции используются ТОЛЬКО в таблице "Дуэли" и мини-таблице "Последние дуэли".
+  function parseDuelDateForMsk(input){
+    const s0 = (input || '').toString().trim();
+    if (!s0) return null;
+
+    // Нормализуем в ISO-подобный вид
+    let s = s0;
+    // date time separator
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(s)) s = s.replace(' ', 'T');
+    // +HHMM => +HH:MM
+    s = s.replace(/([+-]\d{2})(\d{2})$/,'$1:$2');
+    // +HH => +HH:00
+    s = s.replace(/([+-]\d{2})$/,'$1:00');
+
+    const hasTZ = /Z$/i.test(s) || /[+-]\d{2}:\d{2}$/.test(s);
+    // Если TZ нет — считаем, что это UTC (и тогда МСК = UTC+3)
+    if (!hasTZ && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s)) s = s + 'Z';
+
+    let d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return d;
+
+    // Фоллбек: попробуем как есть
+    d = new Date(s0);
+    if (!Number.isNaN(d.getTime())) return d;
+    return null;
+  }
+
+  function fmtDTMsk(s){
+    const str = (s || '').toString().trim();
+    if (!str) return '—';
+
+    const d = parseDuelDateForMsk(str);
+    if (d) return fmtDateTimeMskFromDate(d);
+    return fmtDT(str);
+  }
+
+  function fmtTimeMsk(s){
+    const str = (s || '').toString().trim();
+    if (!str) return '—';
+
+    const d = parseDuelDateForMsk(str);
+    if (d) return fmtTimeMskFromDate(d);
+
+    if (str.length >= 19) return str.slice(11, 19);
+    if (/^\d{2}:\d{2}:\d{2}$/.test(str)) return str;
+    return str;
   }
 
   function pick(obj, keys, d){
