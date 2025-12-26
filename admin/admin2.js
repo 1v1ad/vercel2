@@ -1691,14 +1691,14 @@ async function loadUsersAnalyticsDuels(){
       return `<tr>
         <td>${escapeHtml(String(r.id ?? ''))}</td>
         <td>${escapeHtml(r.mode || '—')}</td>
-        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMsk(r.created_at))}</td>
         <td class="right">${fmtInt(r.stake || 0)}</td>
         <td>${duelStatusHtml(r.status)}</td>
         <td class="right">${escapeHtml(String(r.fee_bps ?? ''))}</td>
         <td>${duelUserHtml(r.creator)}</td>
         <td>${duelUserHtml(r.opponent)}</td>
         <td>${duelUserHtml(r.winner)}</td>
-        <td class="muted">${escapeHtml(fmtDT(r.finished_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMsk(r.finished_at))}</td>
       </tr>`;
     }).join('');
   }
@@ -1967,6 +1967,57 @@ async function loadMiniDuels(){
     return (s || '').toString().slice(0, 19).replace('T', ' ');
   }
 
+  // Duel timestamps can come from DB/JSON in UTC (e.g. "...Z").
+  // Format them in Europe/Moscow so Duels tab matches Events/Topups.
+  function parseDateInput(s){
+    if (!s) return null;
+    if (s instanceof Date) return s;
+    if (typeof s === 'number') return new Date(s);
+    const str = String(s).trim();
+    if (!str) return null;
+
+    // ISO with explicit timezone
+    if (/[zZ]$/.test(str) || /[\+\-]\d{2}:\d{2}$/.test(str) || /[\+\-]\d{4}$/.test(str)){
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) return d;
+    }
+
+    // Common DB formats without timezone: treat as UTC
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(str)){
+      const iso = str.replace(' ', 'T');
+      let d = new Date(iso + 'Z');
+      if (!isNaN(d.getTime())) return d;
+      d = new Date(iso);
+      if (!isNaN(d.getTime())) return d;
+    }
+
+    const d = new Date(str);
+    return !isNaN(d.getTime()) ? d : null;
+  }
+
+  function fmtDTMsk(s){
+    const d = parseDateInput(s);
+    if (!d) return fmtDT(s);
+
+    try{
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Moscow',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+      }).formatToParts(d);
+
+      const get = (t)=> (parts.find(p=>p.type===t)?.value || '');
+      return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
+    }catch(_){
+      try{
+        return d.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+      }catch(__){
+        return fmtDT(s);
+      }
+    }
+  }
+
   function pick(obj, keys, d){
     for (const k of keys){
       if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
@@ -2048,7 +2099,7 @@ async function loadMiniDuels(){
       const cls = r.amountBI > 0n ? 'pill pos' : (r.amountBI < 0n ? 'pill neg' : 'pill zero');
       const c = r.comment ? escapeHtml(r.comment) : '—';
       return `<tr>
-        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMsk(r.created_at))}</td>
         <td>${escapeHtml(r.admin || '—')}</td>
         <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
         <td class="right"><span class="${cls}">${escapeHtml(r.amountText)}</span></td>
@@ -2104,7 +2155,7 @@ async function loadMiniDuels(){
       const amountText = r.amountText;
       const c = r.comment ? escapeHtml(r.comment) : '—';
       return `<tr>
-        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMsk(r.created_at))}</td>
         <td>${escapeHtml(r.admin || '—')}</td>
         <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
         <td class="right"><span class="${cls}">${escapeHtml(amountText)}</span></td>
