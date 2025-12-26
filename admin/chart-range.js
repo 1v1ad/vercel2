@@ -179,7 +179,7 @@
 
     // легенда
     const legend = elt('g');
-    const lx = X0, ly = Y1 - 8;
+    const lx = X0, ly = Y1 - 18;
     legend.appendChild(elt('rect',{x:lx,y:ly,width:10,height:10,fill:blue,rx:2}));
     legend.appendChild(elt('text',{x:lx+16,y:ly+9,fill:'#a5c4f1','font-size':12},'Всего авторизаций'));
     legend.appendChild(elt('rect',{x:lx+190,y:ly,width:10,height:10,fill:green,rx:2}));

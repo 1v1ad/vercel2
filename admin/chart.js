@@ -8,12 +8,13 @@
 
   const labelDM = s =>
     (s && s.length >= 10)
-      ? `${s.slice(8,10)}.${s.slice(5,7)}`
+      ? s.slice(0,10)
       : (s || '');
 
   function draw(days){
-    const W = svg.clientWidth  || 900;
-    const H = svg.clientHeight || 300;
+    const box = svg.getBoundingClientRect();
+    const W = Math.max(320, box.width | 0);
+    const H = Math.max(180, (svg.getAttribute('height')|0) || 260);
 
     const padL = 46;
     const padB = 28;
@@ -130,7 +131,7 @@
     });
 
     // --- легенда ---
-    const legendY = padT;
+    const legendY = 0;
     const legendX = padL;
 
     const r1 = document.createElementNS(NS, 'rect');
