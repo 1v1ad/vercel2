@@ -507,23 +507,26 @@ body{
 
 
 /* Summary charts */
-.panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
-.input.input-date{min-width:140px;width:140px}
+.panel-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  white-space:nowrap;
+  -webkit-overflow-scrolling:touch;
+}
+.panel-actions > *{flex:0 0 auto}
+
+.input.input-date{min-width:128px;width:128px;height:32px;font-size:12px;padding:0 8px}
+.panel-actions .chip{height:26px;padding:0 8px;font-size:12px}
+.panel-actions .btn.sm{height:32px;padding:0 10px;font-size:12px}
 .chip{height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-weight:800;cursor:pointer}
 .chip:hover{background:rgba(255,255,255,.09)}
 .chip:active{transform:translateY(1px)}
 .chart-wrap svg{display:block}
 .summary-charts .panel-head{align-items:flex-start}
-/* Summary charts: keep range controls on one row so the chart baselines align */
-.summary-charts .panel-actions{
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  white-space:nowrap;
-  scrollbar-width:thin;
-}
-.summary-charts .panel-actions > *{flex:0 0 auto}
-.summary-charts .input.input-date{min-width:130px;width:130px}
-.summary-charts .panel-actions::-webkit-scrollbar{height:6px}
 
 
 /* Summary: metric cards (Deposited/Withdrawn, Turnover/Rake) — 2 big values in one row */
