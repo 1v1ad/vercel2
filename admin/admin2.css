@@ -507,21 +507,8 @@ body{
 
 
 /* Summary charts */
-.panel-actions{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:6px;
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  white-space:nowrap;
-  -webkit-overflow-scrolling:touch;
-}
-.panel-actions > *{flex:0 0 auto}
-
-.input.input-date{min-width:128px;width:128px;height:32px;font-size:12px;padding:0 8px}
-.panel-actions .chip{height:26px;padding:0 8px;font-size:12px}
-.panel-actions .btn.sm{height:32px;padding:0 10px;font-size:12px}
+.panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.input.input-date{min-width:140px;width:140px}
 .chip{height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-weight:800;cursor:pointer}
 .chip:hover{background:rgba(255,255,255,.09)}
 .chip:active{transform:translateY(1px)}
@@ -696,3 +683,54 @@ body{
   border-top:1px solid rgba(255,255,255,.06);
 }
 
+/* =========================================================
+   Summary charts header fit (range controls) — keep title 1 line,
+   and prevent date input cropping when sidebar is open
+   ========================================================= */
+.summary-charts .panel-head{
+  justify-content:flex-start;
+  gap:10px;
+}
+.summary-charts .panel-title{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:240px;
+  flex:0 1 240px;
+}
+.summary-charts .panel-actions{
+  margin-left:auto;
+  flex:1 1 auto;
+  min-width:0;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  white-space:nowrap;
+  gap:6px;
+}
+.summary-charts .panel-actions > *{flex:0 0 auto}
+.summary-charts .panel-actions .muted.tiny{font-size:11px}
+.summary-charts .panel-actions .input-date{
+  width:140px;
+  min-width:140px;
+  height:32px;
+  font-size:12px;
+  padding:6px 8px;
+}
+.summary-charts .panel-actions .chip{
+  height:26px;
+  padding:0 8px;
+  font-size:11px;
+}
+.summary-charts .panel-actions #range-apply.btn.sm{
+  height:32px;
+  padding:0 10px;
+  font-size:11px;
+}
+
+/* Narrow viewports: squeeze title a bit more to keep controls visible */
+@media (max-width: 1200px){
+  .summary-charts .panel-title{max-width:200px; flex-basis:200px}
+}
+@media (max-width: 1050px){
+  .summary-charts .panel-title{max-width:160px; flex-basis:160px}
+}
