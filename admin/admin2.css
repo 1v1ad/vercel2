@@ -508,7 +508,12 @@ body{
 
 /* Summary charts */
 .panel-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
-.input.input-date{min-width:140px;width:140px}
+
+/* Keep the range filters on one line inside summary charts (avoid the "Показать" button dropping to 2nd row) */
+.summary-charts .panel-actions{flex-wrap:nowrap; overflow-x:auto; white-space:nowrap}
+.summary-charts .panel-actions>*{flex:0 0 auto}
+.summary-charts .panel-actions::-webkit-scrollbar{display:none}
+.input.input-date{min-width:130px;width:130px}
 .chip{height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-weight:800;cursor:pointer}
 .chip:hover{background:rgba(255,255,255,.09)}
 .chip:active{transform:translateY(1px)}
