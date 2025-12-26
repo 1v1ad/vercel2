@@ -1241,7 +1241,9 @@ async function loadUsersAnalyticsDuels(){
   }).join('');
 
   try{
-    const [ra, rw, rm] = await Promise.allSettled([
+    // Важно: тут 4 промиса. Если распаковать только в 3 переменные —
+    // получим ReferenceError и «упадут» все таблицы.
+    const [ra, rw, rm, rp] = await Promise.allSettled([
       jget('/api/admin/analytics/duels/most-active?limit=10'),
       jget('/api/admin/analytics/duels/most-successful?limit=10'),
       jget('/api/admin/analytics/duels/most-money?limit=10'),
