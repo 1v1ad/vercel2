@@ -1216,11 +1216,13 @@ async function loadUsersAnalyticsDuels(){
   const tbodyWins   = $('#tbl-users-analytics-duels-wins tbody');
   const tbodyMoney  = $('#tbl-users-analytics-duels-money tbody');
   const tbodyProfit = $('#tbl-users-analytics-duels-profit tbody');
+  const tbodyRake   = $('#tbl-users-analytics-duels-rake tbody');
 
   if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
   if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
   if (tbodyMoney)  tbodyMoney.innerHTML  = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
   if (tbodyProfit) tbodyProfit.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
+  if (tbodyRake)   tbodyRake.innerHTML   = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
 
   const renderRows = (items, valueKey) => (items || []).slice(0,10).map((it, idx)=>{
     const user_id = it.user_id ?? it.id ?? '';
@@ -1243,11 +1245,12 @@ async function loadUsersAnalyticsDuels(){
   try{
     // Важно: тут 4 промиса. Если распаковать только в 3 переменные —
     // получим ReferenceError и «упадут» все таблицы.
-    const [ra, rw, rm, rp] = await Promise.allSettled([
+    const [ra, rw, rm, rp, rr] = await Promise.allSettled([
       jget('/api/admin/analytics/duels/most-active?limit=10'),
       jget('/api/admin/analytics/duels/most-successful?limit=10'),
       jget('/api/admin/analytics/duels/most-money?limit=10'),
       jget('/api/admin/analytics/duels/most-profit?limit=10'),
+      jget('/api/admin/analytics/duels/most-rake?limit=10'),
     ]);
 
     if (tbodyActive){
@@ -1292,12 +1295,24 @@ async function loadUsersAnalyticsDuels(){
       }
     }
 
+    if (tbodyRake){
+      if (rr.status === 'fulfilled'){
+        const j = rr.value || {};
+        const items = j.items || j.rows || [];
+        tbodyRake.innerHTML = renderRows(items, 'rake') || `<tr><td colspan="5" class="muted">Нет данных</td></tr>`;
+      } else {
+        console.error(rr.reason);
+        tbodyRake.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+      }
+    }
+
   }catch(e){
     console.error(e);
     if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
     if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
     if (tbodyMoney)  tbodyMoney.innerHTML  = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
     if (tbodyProfit) tbodyProfit.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
+    if (tbodyRake)   tbodyRake.innerHTML   = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
   }
 }
 
