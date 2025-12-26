@@ -683,54 +683,40 @@ body{
   border-top:1px solid rgba(255,255,255,.06);
 }
 
-/* =========================================================
-   Summary charts header fit (range controls) — keep title 1 line,
-   and prevent date input cropping when sidebar is open
-   ========================================================= */
-.summary-charts .panel-head{
-  justify-content:flex-start;
-  gap:10px;
-}
-.summary-charts .panel-title{
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  max-width:240px;
-  flex:0 1 240px;
-}
-.summary-charts .panel-actions{
-  margin-left:auto;
-  flex:1 1 auto;
-  min-width:0;
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  white-space:nowrap;
-  gap:6px;
-}
-.summary-charts .panel-actions > *{flex:0 0 auto}
-.summary-charts .panel-actions .muted.tiny{font-size:11px}
-.summary-charts .panel-actions .input-date{
-  width:140px;
-  min-width:140px;
-  height:32px;
-  font-size:12px;
-  padding:6px 8px;
-}
-.summary-charts .panel-actions .chip{
-  height:26px;
-  padding:0 8px;
-  font-size:11px;
-}
-.summary-charts .panel-actions #range-apply.btn.sm{
-  height:32px;
-  padding:0 10px;
-  font-size:11px;
+/* --- PATCH: sidebar-open date inputs + title wrap (2025-12-27) --- */
+/* Когда сайдбар РАСКРЫТ (layout НЕ sidebar-collapsed), даём заголовку уходить на 2 строки,
+   чтобы строка фильтров получила полную ширину и input[type=date] показывал дату полностью. */
+.layout:not(.sidebar-collapsed) .summary-charts > .panel:first-child .panel-head{
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
 
-/* Narrow viewports: squeeze title a bit more to keep controls visible */
-@media (max-width: 1200px){
-  .summary-charts .panel-title{max-width:200px; flex-basis:200px}
+/* Заголовок: разрешаем перенос (если ранее был nowrap) */
+.layout:not(.sidebar-collapsed) .summary-charts > .panel:first-child .panel-title{
+  flex: 1 1 100%;
+  margin: 0 0 6px;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: none !important;
 }
-@media (max-width: 1050px){
-  .summary-charts .panel-title{max-width:160px; flex-basis:160px}
+
+/* Фильтры — на новой строке, во всю ширину */
+.layout:not(.sidebar-collapsed) .summary-charts > .panel:first-child .panel-actions{
+  width: 100%;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Чуть увеличиваем ширину дат, чтобы Chrome не сворачивал "день" */
+.layout:not(.sidebar-collapsed) .summary-charts > .panel:first-child .panel-actions .input-date{
+  width: 160px;
+  min-width: 160px;
+}
+
+/* На всякий — бейдж "7 дней" в карточке посещений прижат вправо */
+.summary-charts > .panel:last-child .panel-head .chip{
+  margin-left: auto;
 }
