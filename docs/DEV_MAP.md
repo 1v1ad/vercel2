@@ -33,3 +33,4 @@
 - `admin/chart-range.js` — дергает `/api/admin/range`, учитывает `analytics=1`, рисует серии.
 - `admin/chart.js` — заполняет summary‑блоки, подхватывает «с учетом аналитики».
 - `admin/admin-auth-headers.js` — подставляет `X-Admin-Password` в /api/admin‑запросы.
+- `admin/index2.html` — новая админка (Admin2): грузит `admin2.css`, `admin2.js`, а также большие графики (`chart-range.js`, `chart.js`).
