@@ -90,7 +90,8 @@ function applyTrend(el, today, yesterday, opts){
   const t = toBigIntSafe(today);
   const y = toBigIntSafe(yesterday);
   const reverse = !!(opts && opts.reverse);
-  const up = reverse ? (t <= y) : (t >= y);
+  const strict = !!(opts && opts.strict);
+  const up = reverse ? (strict ? (t < y) : (t <= y)) : (strict ? (t > y) : (t >= y));
   el.classList.add(up ? 'trend-up' : 'trend-down');
 }
 
@@ -172,7 +173,7 @@ function setView(name){
       const left = document.createTextNode(`${fmtInt(total)} / `);
       const right = document.createElement('span');
       right.textContent = fmtInt(today);
-      applyTrend(right, today, yesterday, { reverse:false });
+      applyTrend(right, today, yesterday, { reverse:false, strict:true });
       valEl.append(left, right);
 
       subEl.textContent = 'всего / новые today';
