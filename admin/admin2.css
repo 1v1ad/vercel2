@@ -280,10 +280,10 @@ body{
 }
 .card-title{font-weight:900; font-size:13px; color:var(--muted)}
 .card-value{font-weight:900; font-size:28px; margin-top:6px}
-.trend-up{color:var(--accent2)}
-.trend-down{color:var(--danger)}
-
 .num-rake{ color: var(--danger); font-weight:900; }
+.trend-up{ color: var(--accent2); font-weight:900; }
+.trend-down{ color: var(--danger); font-weight:900; }
+
 .card-sub{margin-top:6px}
 .card-sub.secondary{margin-top:2px}
 

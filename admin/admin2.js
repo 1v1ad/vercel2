@@ -59,6 +59,42 @@ function ymdInTz(tz){
   return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
 }
 
+function ymdShift(ymd, deltaDays){
+  try{
+    const dt = new Date(String(ymd).slice(0,10) + 'T00:00:00Z');
+    if (Number.isFinite(deltaDays)) dt.setUTCDate(dt.getUTCDate() + deltaDays);
+    const pad = (n)=> (n<10?'0'+n:''+n);
+    return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth()+1)}-${pad(dt.getUTCDate())}`;
+  }catch(_){
+    return String(ymd || '').slice(0,10);
+  }
+}
+
+function toBigIntSafe(x){
+  try{
+    if (typeof x === 'bigint') return x;
+    if (x === null || x === undefined) return 0n;
+    const s = String(x).replace(/[^0-9\-]/g,'');
+    if (!s || s === '-' ) return 0n;
+    return BigInt(s);
+  }catch(_){
+    return 0n;
+  }
+}
+
+// Apply green/red to an element based on today vs yesterday.
+// reverse=true means "lower is better" (e.g. withdrawals)
+function applyTrend(el, today, yesterday, opts){
+  if (!el) return;
+  el.classList.remove('trend-up','trend-down');
+  const t = toBigIntSafe(today);
+  const y = toBigIntSafe(yesterday);
+  const reverse = !!(opts && opts.reverse);
+  const up = reverse ? (t <= y) : (t >= y);
+  el.classList.add(up ? 'trend-up' : 'trend-down');
+}
+
+
 function safeJson(x){ try { return JSON.stringify(x); } catch(_) { return String(x); } }
 
   function fireApiChanged(){
@@ -129,14 +165,16 @@ function setView(name){
     if (_usersCard.mode === 'totals') {
       const total = hum ? _usersCard.totalCluster : _usersCard.totalRaw;
       const today = hum ? _usersCard.todayCluster : _usersCard.todayRaw;
-      const yesterday = hum ? _usersCard.yesterdayCluster : _usersCard.yesterdayRaw;
+      const yesterday = hum ? (_usersCard.yesterdayCluster ?? 0) : (_usersCard.yesterdayRaw ?? 0);
 
-      if (yesterday == null) {
-        valEl.textContent = `${fmtInt(total)} / ${fmtInt(today)}`;
-      } else {
-        const cls = (today < yesterday) ? 'trend-down' : 'trend-up';
-        valEl.innerHTML = `${fmtInt(total)} / <span class="${cls}">${fmtInt(today)}</span>`;
-      }
+      // render with colored "today"
+      valEl.textContent = '';
+      const left = document.createTextNode(`${fmtInt(total)} / `);
+      const right = document.createElement('span');
+      right.textContent = fmtInt(today);
+      applyTrend(right, today, yesterday, { reverse:false });
+      valEl.append(left, right);
+
       subEl.textContent = 'всего / новые today';
       return;
     }
@@ -159,7 +197,15 @@ function setView(name){
     if (!valEl) return;
     const total = _eventsCard.total ?? 0;
     const today = _eventsCard.today ?? 0;
-    valEl.textContent = `${fmtInt(total)} / ${fmtInt(today)}`;
+    const yesterday = _eventsCard.yesterday ?? 0;
+
+    valEl.textContent = '';
+    const left = document.createTextNode(`${fmtInt(total)} / `);
+    const right = document.createElement('span');
+    right.textContent = fmtInt(today);
+    applyTrend(right, today, yesterday, { reverse:false });
+    valEl.append(left, right);
+
     if (subEl) subEl.textContent = 'всего / сегодня';
   }
 
@@ -1037,6 +1083,7 @@ function bindTopbar(){
       _eventsCard = {
         total: t.events_all ?? sum.events ?? 0,
         today: t.events_today ?? sum.events_today ?? 0,
+        yesterday: t.events_yesterday ?? 0,
       };
       renderEventsCard();
 
@@ -1057,6 +1104,7 @@ const rakeAll = duAll.rake ?? fin?.totals?.rake ?? fin?.rake ?? '0';
 // today is calculated in the SAME TZ as backend summary
 const tzName = sum?.tz || 'Europe/Moscow';
 const today = ymdInTz(tzName);
+const yesterday = ymdShift(today, -1);
 
 let finToday = null;
 try{
@@ -1065,12 +1113,26 @@ try{
   finToday = null;
 }
 
+let finYesterday = null;
+try{
+  finYesterday = await jget(`/api/admin/finance?from=${yesterday}&to=${yesterday}`);
+}catch(_){
+  finYesterday = null;
+}
+
 const depToday = finToday?.totals?.deposited ?? finToday?.deposited ?? '0';
 const wdrToday = finToday?.totals?.withdrawn ?? finToday?.withdrawn ?? '0';
 
 const duToday = finToday?.duels || {};
 const turnoverToday = duToday.turnover ?? '0';
 const rakeToday = duToday.rake ?? '0';
+
+
+const depYesterday = finYesterday?.totals?.deposited ?? finYesterday?.deposited ?? '0';
+const wdrYesterday = finYesterday?.totals?.withdrawn ?? finYesterday?.withdrawn ?? '0';
+const duY = finYesterday?.duels || {};
+const turnoverYesterday = duY.turnover ?? '0';
+const rakeYesterday = duY.rake ?? '0';
 
 // Summary cards
 $('#sum-deposited-all').textContent = fmtInt(depAll);
@@ -1092,6 +1154,15 @@ $('#sum-turnover-all').textContent = fmtInt(turnoverAll);
 $('#sum-turnover-today').textContent = fmtInt(turnoverToday);
 $('#sum-rake-all').textContent = fmtInt(rakeAll);
 $('#sum-rake-today').textContent = fmtInt(rakeToday);
+
+// trends vs yesterday
+applyTrend($('#sum-deposited-today'), depToday, depYesterday, { reverse:false });
+applyTrend($('#sum-withdrawn-today'), wdrToday, wdrYesterday, { reverse:true });
+applyTrend($('#sum-turnover-today'), turnoverToday, turnoverYesterday, { reverse:false });
+// rake: total is normal, today is colored by trend
+try{ $('#sum-rake-all')?.classList?.remove('num-rake'); }catch(_){}
+try{ $('#sum-rake-today')?.classList?.remove('num-rake'); }catch(_){}
+applyTrend($('#sum-rake-today'), rakeToday, rakeYesterday, { reverse:false });
 
 // --- Summary metric cards: show 2 big values in one row (left/right) ---
 try{
@@ -1120,8 +1191,7 @@ try{
   const rRow = rAllEl?.closest('.card-sub');
   if (rRow && rAllEl && rTodayEl){
     rRow.classList.remove('muted','tiny');
-    rRow.classList.add('metric-inline-right','num-rake');
-    // make the whole right part red (including the slash)
+    rRow.classList.add('metric-inline-right');
     rAllEl.classList.remove('num-rake');
     rTodayEl.classList.remove('num-rake');
     rRow.textContent = '';
