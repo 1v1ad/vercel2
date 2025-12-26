@@ -129,7 +129,14 @@ function setView(name){
     if (_usersCard.mode === 'totals') {
       const total = hum ? _usersCard.totalCluster : _usersCard.totalRaw;
       const today = hum ? _usersCard.todayCluster : _usersCard.todayRaw;
-      valEl.textContent = `${fmtInt(total)} / ${fmtInt(today)}`;
+      const yesterday = hum ? _usersCard.yesterdayCluster : _usersCard.yesterdayRaw;
+
+      if (yesterday == null) {
+        valEl.textContent = `${fmtInt(total)} / ${fmtInt(today)}`;
+      } else {
+        const cls = (today < yesterday) ? 'trend-down' : 'trend-up';
+        valEl.innerHTML = `${fmtInt(total)} / <span class="${cls}">${fmtInt(today)}</span>`;
+      }
       subEl.textContent = 'всего / новые today';
       return;
     }
@@ -1010,6 +1017,8 @@ function bindTopbar(){
           totalCluster: t.users_total_cluster ?? 0,
           todayRaw: t.users_today_raw ?? 0,
           todayCluster: t.users_today_cluster ?? 0,
+          yesterdayRaw: t.users_yesterday_raw ?? 0,
+          yesterdayCluster: t.users_yesterday_cluster ?? 0,
         };
         renderUsersCard();
       } else {
