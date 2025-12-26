@@ -683,40 +683,17 @@ body{
   border-top:1px solid rgba(255,255,255,.06);
 }
 
-/* --- PATCH: sidebar-open date inputs + title wrap (2025-12-27) --- */
-/* Когда сайдбар РАСКРЫТ (layout НЕ sidebar-collapsed), даём заголовку уходить на 2 строки,
-   чтобы строка фильтров получила полную ширину и input[type=date] показывал дату полностью. */
-.layout:not(.sidebar-collapsed) .summary-charts > .panel:first-child .panel-head{
-  flex-wrap: wrap;
-  align-items: flex-start;
-}
 
-/* Заголовок: разрешаем перенос (если ранее был nowrap) */
-.layout:not(.sidebar-collapsed) .summary-charts > .panel:first-child .panel-title{
-  flex: 1 1 100%;
-  margin: 0 0 6px;
-  white-space: normal !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
-  max-width: none !important;
+/* --- Admin2: Visits panel header layout ---
+   Put the period badge ("7 дней") on the second row under the title.
+*/
+.visits-panel .panel-head{
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:8px;
 }
-
-/* Фильтры — на новой строке, во всю ширину */
-.layout:not(.sidebar-collapsed) .summary-charts > .panel:first-child .panel-actions{
-  width: 100%;
-  justify-content: flex-end;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Чуть увеличиваем ширину дат, чтобы Chrome не сворачивал "день" */
-.layout:not(.sidebar-collapsed) .summary-charts > .panel:first-child .panel-actions .input-date{
-  width: 160px;
-  min-width: 160px;
-}
-
-/* На всякий — бейдж "7 дней" в карточке посещений прижат вправо */
-.summary-charts > .panel:last-child .panel-head .chip{
-  margin-left: auto;
+.visits-panel .panel-head .chip{
+  margin-left:0 !important;
+  align-self:flex-start;
 }
