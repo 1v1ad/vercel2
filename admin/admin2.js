@@ -1691,14 +1691,14 @@ async function loadUsersAnalyticsDuels(){
       return `<tr>
         <td>${escapeHtml(String(r.id ?? ''))}</td>
         <td>${escapeHtml(r.mode || '—')}</td>
-        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMsk(r.created_at))}</td>
         <td class="right">${fmtInt(r.stake || 0)}</td>
         <td>${duelStatusHtml(r.status)}</td>
         <td class="right">${escapeHtml(String(r.fee_bps ?? ''))}</td>
         <td>${duelUserHtml(r.creator)}</td>
         <td>${duelUserHtml(r.opponent)}</td>
         <td>${duelUserHtml(r.winner)}</td>
-        <td class="muted">${escapeHtml(fmtDT(r.finished_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMsk(r.finished_at))}</td>
       </tr>`;
     }).join('');
   }
@@ -1994,17 +1994,27 @@ async function loadMiniDuels(){
   function fmtDT(s){
     const str = (s || '').toString().trim();
     if (!str) return '—';
+    // Базовый формат: выводим как есть (без сдвига таймзоны)
+    return str.slice(0, 19).replace('T', ' ');
+  }
 
-    // Если есть TZ/ISO — парсим и форматируем в МСК
+  function fmtDTMsk(s){
+    const str = (s || '').toString().trim();
+    if (!str) return '—';
+
+    // Если есть явная TZ/ISO (UTC 'Z' или +03:00) — конвертируем и показываем МСК
     const hasTZ = /Z$/i.test(str) || /[+-]\d{2}:?\d{2}$/.test(str);
     if (hasTZ){
       const d = new Date(str);
       if (!Number.isNaN(d.getTime())) return fmtDateTimeMskFromDate(d);
     }
 
-    // Наивный формат из БД (обычно уже МСК): просто нормализуем
-    return str.slice(0, 19).replace('T', ' ');
+    // Иначе считаем, что строка уже в нужной локали (обычно МСК)
+    return fmtDT(str);
   }
+
+  function fmtTimeMsk(s){
+
 
   function fmtTimeMsk(s){
     const str = (s || '').toString().trim();
