@@ -1691,14 +1691,14 @@ async function loadUsersAnalyticsDuels(){
       return `<tr>
         <td>${escapeHtml(String(r.id ?? ''))}</td>
         <td>${escapeHtml(r.mode || '—')}</td>
-        <td class="muted">${escapeHtml(fmtDTMskAuto(r.created_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMskDuels(r.created_at))}</td>
         <td class="right">${fmtInt(r.stake || 0)}</td>
         <td>${duelStatusHtml(r.status)}</td>
         <td class="right">${escapeHtml(String(r.fee_bps ?? ''))}</td>
         <td>${duelUserHtml(r.creator)}</td>
         <td>${duelUserHtml(r.opponent)}</td>
         <td>${duelUserHtml(r.winner)}</td>
-        <td class="muted">${escapeHtml(fmtDT(r.finished_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMskDuels(r.finished_at))}</td>
       </tr>`;
     }).join('');
   }
@@ -1882,7 +1882,7 @@ async function loadMiniDuels(){
           </tr>`;
         }
 
-        const time = fmtTimeMskAuto(it.finished_at||it.updated_at||it.created_at||'');
+        const time = fmtTimeMskDuels(it.finished_at||it.updated_at||it.created_at||'');
 
         const stake = Number(it.stake || 0) || 0;
         const pot = Number(it.pot ?? it.result?.pot ?? (stake*2)) || 0;
@@ -1963,64 +1963,80 @@ async function loadMiniDuels(){
     return Number.isFinite(n) ? BigInt(Math.trunc(n)) : 0n;
   }
 
-  const TZ_MSK = 'Europe/Moscow';
-
-  function hasTZ(str){
-    return /Z$/i.test(str) || /[+-]\d{2}:?\d{2}$/.test(str);
+  function fmtDT(s){
+    return (s || '').toString().slice(0, 19).replace('T', ' ');
   }
 
-  function fmtDateTimeInTz(d, tz){
+  // --- DUELS time helpers ---
+  // Для дуэлей в БД/АПИ часто приходят UTC-таймстампы (иногда без явной TZ).
+  // Показываем их в Europe/Moscow, не трогая другие сущности (events/topup), где время уже “как надо”.
+  function _hasTZMark(s){
+    return /[zZ]$/.test(s) || /[+-]\d{2}:\d{2}$/.test(s) || /[+-]\d{4}$/.test(s);
+  }
+
+  function _parseUtcLikeDate(s){
+    const raw = String(s || '').trim();
+    if (!raw) return null;
+
+    // Если TZ уже есть — пусть Date парсит напрямую
+    if (_hasTZMark(raw)){
+      const d = new Date(raw);
+      return Number.isFinite(d.getTime()) ? d : null;
+    }
+
+    // Если это "YYYY-MM-DD HH:mm:ss" (или с 'T'), то в дуэлях считаем это UTC
+    // (иначе получаем -3 часа на MSK).
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(raw)){
+      const iso = raw.slice(0, 19).replace(' ', 'T') + 'Z';
+      const d = new Date(iso);
+      return Number.isFinite(d.getTime()) ? d : null;
+    }
+
+    // fallback
+    const d = new Date(raw);
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+
+  function fmtDTMskDuels(s){
+    const raw = String(s || '').trim();
+    if (!raw) return '—';
+    const d = _parseUtcLikeDate(raw);
+    if (!d) return fmtDT(raw);
+
     try{
       const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: tz || TZ_MSK,
+        timeZone: 'Europe/Moscow',
         year: 'numeric', month: '2-digit', day: '2-digit',
         hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
       }).formatToParts(d);
       const get = (t)=> (parts.find(p=>p.type===t)?.value || '');
       return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
-    }catch(_){
-      return d.toISOString().slice(0, 19).replace('T',' ');
-    }
+    }catch(_){}
+    return d.toISOString().slice(0,19).replace('T',' ');
   }
 
-  function fmtTimeInTz(d, tz){
+  function fmtTimeMskDuels(s){
+    const raw = String(s || '').trim();
+    if (!raw) return '—';
+    const d = _parseUtcLikeDate(raw);
+    if (!d){
+      // try to keep existing behavior if it's already a string time
+      const t = raw.slice(11,19);
+      return t || '—';
+    }
     try{
       const parts = new Intl.DateTimeFormat('en-GB', {
-        timeZone: tz || TZ_MSK,
+        timeZone: 'Europe/Moscow',
         hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
       }).formatToParts(d);
       const get = (t)=> (parts.find(p=>p.type===t)?.value || '');
       return `${get('hour')}:${get('minute')}:${get('second')}`;
-    }catch(_){
-      return d.toISOString().slice(11, 19);
-    }
+    }catch(_){}
+    return d.toISOString().slice(11,19);
   }
 
-  function fmtDT(s){
-    const str = (s || '').toString().trim();
-    return str ? str.slice(0, 19).replace('T', ' ') : '—';
-  }
-
-  function fmtDTMskAuto(s){
-    const str = (s || '').toString().trim();
-    if (!str) return '—';
-    if (hasTZ(str)){
-      const d = new Date(str);
-      if (!Number.isNaN(d.getTime())) return fmtDateTimeInTz(d, TZ_MSK);
-    }
-    return fmtDT(str);
-  }
-
-  function fmtTimeMskAuto(s){
-    const str = (s || '').toString().trim();
-    if (!str) return '—';
-    if (hasTZ(str)){
-      const d = new Date(str);
-      if (!Number.isNaN(d.getTime())) return fmtTimeInTz(d, TZ_MSK);
-    }
-    if (str.length >= 19) return str.slice(11, 19);
-    return str;
-  }
 
   function pick(obj, keys, d){
     for (const k of keys){
@@ -2103,7 +2119,7 @@ async function loadMiniDuels(){
       const cls = r.amountBI > 0n ? 'pill pos' : (r.amountBI < 0n ? 'pill neg' : 'pill zero');
       const c = r.comment ? escapeHtml(r.comment) : '—';
       return `<tr>
-        <td class="muted">${escapeHtml(fmtDTMskAuto(r.created_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMskDuels(r.created_at))}</td>
         <td>${escapeHtml(r.admin || '—')}</td>
         <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
         <td class="right"><span class="${cls}">${escapeHtml(r.amountText)}</span></td>
@@ -2159,7 +2175,7 @@ async function loadMiniDuels(){
       const amountText = r.amountText;
       const c = r.comment ? escapeHtml(r.comment) : '—';
       return `<tr>
-        <td class="muted">${escapeHtml(fmtDTMskAuto(r.created_at))}</td>
+        <td class="muted">${escapeHtml(fmtDTMskDuels(r.created_at))}</td>
         <td>${escapeHtml(r.admin || '—')}</td>
         <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
         <td class="right"><span class="${cls}">${escapeHtml(amountText)}</span></td>
