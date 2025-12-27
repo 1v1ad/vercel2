@@ -703,8 +703,7 @@ body{
 }
 
 
-/* --- Events search/paging (admin2) --- */
-.events-tools{flex-wrap:wrap}
-.events-tools .grow{flex:1 1 260px; min-width:220px}
-.events-pager{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0}
-.events-pagebtns{display:flex; align-items:center; gap:8px}
+/* --- Events search/paging --- */
+.events-tools #events-term{flex:1; min-width:240px}
+.events-pager{display:flex; align-items:center; gap:8px; margin:8px 0 10px}
+.events-pager .spacer{flex:1}

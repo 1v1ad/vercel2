@@ -3,7 +3,14 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  function api(){
+    function toInt(x, def=0){
+    const s = (x === null || x === undefined) ? '' : String(x).trim();
+    if (!s) return def;
+    const n = parseInt(s, 10);
+    return Number.isFinite(n) ? n : def;
+  }
+
+function api(){
     const raw = (window.API || localStorage.getItem('ADMIN_API') || '').toString().trim();
     return raw ? raw.replace(/\/+$/,'') : location.origin;
   }
@@ -30,14 +37,6 @@
     const n = Number(s);
     if (!Number.isFinite(n)) return s || '—';
     return n.toLocaleString('ru-RU');
-  }
-
-  function toInt(v, def=0){
-    if (v === null || v === undefined) return def;
-    const s = String(v).trim();
-    if (!s) return def;
-    const n = parseInt(s, 10);
-    return Number.isFinite(n) ? n : def;
   }
 
   function fmtPct(x){
@@ -1930,41 +1929,105 @@ async function loadMiniDuels(){
     }
   }
 
-  async function loadEvents(){
+    // --- Events (search + paging) ---
+  let _eventsSkip = 0;
+  const _eventsTake = 100;
+  let _eventsFilters = null;
+
+  function _readEventsFilters(){
+    const f = {};
+    const user = ($('#events-user')?.value || '').toString().trim();
+    const type = ($('#events-type')?.value || '').toString().trim();
+    const term = ($('#events-term')?.value || '').toString().trim();
+    const day  = ($('#events-day')?.value || '').toString().trim();
+
+    const uid = toInt(user, 0);
+    if (uid) f.user_id = uid;
+    if (type) f.type = type;
+    if (term) f.term = term;
+    if (day)  f.day  = day.slice(0,10);
+
+    return f;
+  }
+
+  function _eventsUrl(skip){
+    const f = _eventsFilters || _readEventsFilters();
+    const qs = new URLSearchParams();
+    qs.set('take', String(_eventsTake));
+    qs.set('skip', String(Math.max(0, toInt(skip, 0))));
+    if (f.user_id) qs.set('user_id', String(f.user_id));
+    if (f.type)    qs.set('type', f.type);
+    if (f.term)    qs.set('term', f.term);
+    if (f.day)     qs.set('day', f.day);
+    return '/api/admin/events?' + qs.toString();
+  }
+
+  function _setEventsInfo(text){
+    const el = $('#events-info');
+    if (el) el.textContent = text;
+  }
+
+  function _filtersHint(){
+    const f = _eventsFilters || _readEventsFilters();
+    const parts = [];
+    if (f.user_id) parts.push(`user:${f.user_id}`);
+    if (f.type)    parts.push(`type:${f.type}`);
+    if (f.term)    parts.push(`term:${f.term}`);
+    if (f.day)     parts.push(`day:${f.day}`);
+    return parts.length ? (' • ' + parts.join(' ')) : '';
+  }
+
+  async function loadEvents(opts){
     const tbody = $('#tbl-events tbody');
+    if (!tbody) return;
+
+    const nextSkip = (opts && typeof opts.skip === 'number') ? opts.skip : _eventsSkip;
+    if (opts && opts.filters) _eventsFilters = opts.filters;
+
     tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
     try{
-      const r = await jget('/api/admin/events?take=100');
+      const r = await jget(_eventsUrl(nextSkip));
       const items = r.items || r.events || r.rows || [];
+
       if (!items.length){
         tbody.innerHTML = `<tr><td colspan="7" class="muted">Пусто</td></tr>`;
-        return;
+        _eventsSkip = Math.max(0, nextSkip);
+        _setEventsInfo(`Пусто • skip=${_eventsSkip}${_filtersHint()}`);
+      } else {
+        tbody.innerHTML = items.map(it=>{
+          const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
+          const ip = it.ip ?? '';
+          const uaFull = it.ua ?? '';
+          const uaShort = uaFull ? shorten(uaFull, 64) : '';
+          const et = (it.event_type || it.type || '—');
+
+          return `<tr>
+            <td>${it.id ?? ''}</td>
+            <td>${it.hum_id ?? ''}</td>
+            <td>${it.user_id ?? ''}</td>
+            <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(et)}</span></td>
+            <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(ip)}</span></td>
+            <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
+            <td class="muted">${escapeHtml(createdFull)}</td>
+          </tr>`;
+        }).join('');
+
+        _eventsSkip = Math.max(0, nextSkip);
+        _setEventsInfo(`Показаны ${items.length} • skip=${_eventsSkip}${_filtersHint()}`);
       }
 
-      tbody.innerHTML = items.map(it=>{
-        const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
-        const ip = it.ip ?? '';
-        const uaFull = it.ua ?? '';
-        const uaShort = uaFull ? shorten(uaFull, 64) : '';
-        const et = (it.event_type || it.type || '—');
-
-        return `<tr>
-          <td>${it.id ?? ''}</td>
-          <td>${it.hum_id ?? ''}</td>
-          <td>${it.user_id ?? ''}</td>
-          <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(et)}</span></td>
-          <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(ip)}</span></td>
-          <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
-          <td class="muted">${escapeHtml(createdFull)}</td>
-        </tr>`;
-      }).join('');
+      const prevBtn = $('#events-prev');
+      const nextBtn = $('#events-next');
+      if (prevBtn) prevBtn.disabled = (_eventsSkip <= 0);
+      if (nextBtn) nextBtn.disabled = (items.length < _eventsTake);
     }catch(e){
       console.error(e);
       tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка загрузки</td></tr>`;
+      _setEventsInfo(`Ошибка • skip=${Math.max(0,nextSkip)}${_filtersHint()}`);
     }
   }
 
-  // --- Topup history (ported from classic /admin/topup.html) ---
+// --- Topup history (ported from classic /admin/topup.html) ---
   let _topupSortKey = 'created_at';
   let _topupSortDir = -1; // desc
 
@@ -2371,6 +2434,40 @@ async function applyUnmergeSelected(){
     $('#refresh-users')?.addEventListener('click', loadUsers);
     $('#refresh-users-analytics')?.addEventListener('click', loadUsersAnalyticsDuels);
     $('#refresh-events')?.addEventListener('click', loadEvents);
+    // Events search/paging
+    $('#events-find')?.addEventListener('click', ()=>{
+      _eventsSkip = 0;
+      _eventsFilters = _readEventsFilters();
+      loadEvents({ skip: 0, filters: _eventsFilters });
+    });
+    $('#events-clear')?.addEventListener('click', ()=>{
+      const u = $('#events-user'); if (u) u.value = '';
+      const t = $('#events-type'); if (t) t.value = '';
+      const s = $('#events-term'); if (s) s.value = '';
+      const d = $('#events-day');  if (d) d.value = '';
+      _eventsSkip = 0;
+      _eventsFilters = null;
+      loadEvents({ skip: 0 });
+    });
+    $('#events-prev')?.addEventListener('click', ()=>{
+      const next = Math.max(0, _eventsSkip - _eventsTake);
+      loadEvents({ skip: next });
+    });
+    $('#events-next')?.addEventListener('click', ()=>{
+      const next = _eventsSkip + _eventsTake;
+      loadEvents({ skip: next });
+    });
+    ['#events-user','#events-type','#events-term','#events-day'].forEach(sel=>{
+      $(sel)?.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter'){
+          e.preventDefault();
+          _eventsSkip = 0;
+          _eventsFilters = _readEventsFilters();
+          loadEvents({ skip: 0, filters: _eventsFilters });
+        }
+      });
+    });
+
     $('#refresh-duels')?.addEventListener('click', loadDuels);
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);

@@ -7,7 +7,7 @@
 
   <link rel="icon" type="image/svg+xml"
         href='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="%231a73e8"/><stop offset="1" stop-color="%234ed1a9"/></linearGradient></defs><rect rx="12" width="64" height="64" fill="%23f5f7fa"/><path d="M14 44l8-24h6l8 24h-6l-1.6-5H21.6L20 44h-6z" fill="url(%23g)"/></svg>' />
-  <link rel="stylesheet" href="/admin/admin2.css?v=20251227b" />
+  <link rel="stylesheet" href="/admin/admin2.css?v=20251227e" />
   <script defer src="/admin/flags.js?v=20251225g"></script>
 </head>
 
@@ -569,6 +569,21 @@
               <button class="btn sm" id="refresh-events">Обновить</button>
             </div>
             <div class="note muted tiny">Это “сырой” лог — очень полезно для отладки платёжек и спорных кейсов.</div>
+
+            <div class="tools events-tools" style="margin:10px 0 8px">
+              <input class="input sm" id="events-user" placeholder="user_id (например 97)" />
+              <input class="input sm" id="events-type" placeholder="type (например duel_finished)" />
+              <input class="input sm" id="events-term" placeholder="поиск: id/user/hum/type/ip/ua/payload (текст)" />
+              <input class="input sm input-date" type="date" id="events-day" />
+              <button class="btn ghost sm" id="events-clear" title="Сброс">✕</button>
+              <button class="btn sm" id="events-find">Найти</button>
+            </div>
+            <div class="events-pager">
+              <div class="muted tiny" id="events-info">Показаны последние 100</div>
+              <div class="spacer"></div>
+              <button class="btn ghost sm" id="events-prev" disabled>← Предыдущие</button>
+              <button class="btn ghost sm" id="events-next">Следующие →</button>
+            </div>
             <div class="table-wrap">
               <table class="table" id="tbl-events">
                 <thead><tr><th>ID</th><th>HUMid</th><th>user_id</th><th>event_type</th><th>IP</th><th>UA</th><th>Создано</th></tr></thead>
@@ -716,7 +731,7 @@
   <!-- auth shim / hum toggle -->
   <script src="/admin/admin-auth-headers.js?v=20251224c"></script>
 
-  <script src="/admin/admin2.js?v=20251227d"></script>
+  <script src="/admin/admin2.js?v=20251227e"></script>
   <script src="/admin/chart-range.js?v=20251224c"></script>
   <script src="/admin/chart.js?v=20251224c"></script>
 </body>
