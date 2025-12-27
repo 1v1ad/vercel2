@@ -266,24 +266,53 @@
   }
 
   // ===== wiring =====
-  document.querySelectorAll('[data-duels-preset]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const p = btn.getAttribute('data-duels-preset');
-      if (p === 'all') {
-        fromEl.value = '';
-        toEl.value   = '';
-        run();
-      } else {
-        const days = Number(p) || 7;
-        const t = todayIso();
-        fromEl.value = addDays(t, -days);
-        toEl.value   = t;
-        run();
+  function applyPreset(p, btn){
+    // keep UI "active" state inside this panel only
+    if (btn){
+      const panel = btn.closest('.panel');
+      if (panel){
+        panel.querySelectorAll('[data-duels-preset].active').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
       }
-    });
-  });
+    }
+    if (!fromEl || !toEl) return;
 
-  applyBtn?.addEventListener('click', run);
+    if (p === 'all') {
+      fromEl.value = '';
+      toEl.value   = '';
+      run();
+      return;
+    }
+
+    let days = Number(p);
+    if (!Number.isFinite(days) || days < 1) days = 7;
+
+    const t = todayIso();
+    // inclusive range: today + (days-1) previous
+    fromEl.value = addDays(t, -(days - 1));
+    toEl.value   = t;
+
+    run();
+  }
+
+  // Robust click handling: works even if DOM is re-rendered or buttons are inside <form>.
+  // Also shields from accidental submit/reload.
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target?.closest?.('[data-duels-preset]');
+    if (!btn) return;
+
+    // make sure it's OUR duels chart panel
+    const panel = btn.closest('.panel');
+    if (!panel || !panel.querySelector('#chart-duels')) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    const p = (btn.getAttribute('data-duels-preset') || '').trim();
+    applyPreset(p, btn);
+  }, true);
+
+applyBtn?.addEventListener('click', run);
 
   fromEl?.addEventListener('change', () => {
     if (toEl.value && fromEl.value > toEl.value) toEl.value = fromEl.value;
