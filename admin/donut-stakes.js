@@ -115,7 +115,7 @@
     clearSvg(svg);
     legendEl.innerHTML = '';
 
-    const R = 42;
+    const R = 40;
     const C = 2 * Math.PI * R;
 
     // track
@@ -123,7 +123,7 @@
       cx: 50, cy: 50, r: R,
       fill: 'none',
       stroke: 'rgba(255,255,255,0.08)',
-      'stroke-width': 14
+      'stroke-width': 18
     });
     svg.appendChild(track);
 
@@ -145,7 +145,7 @@
         cx: 50, cy: 50, r: R,
         fill: 'none',
         stroke: colors[idx],
-        'stroke-width': 14,
+        'stroke-width': 18,
         'stroke-dasharray': `${seg} ${C}`,
         'stroke-dashoffset': String(-offset),
         'transform': 'rotate(-90 50 50)',

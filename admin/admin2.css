@@ -639,7 +639,7 @@ body{
 
 /* Flags (flags.js) */
 .flag-img{width:18px;height:13px;border-radius:3px;vertical-align:middle;box-shadow:0 0 0 1px var(--border);margin-right:6px}
-.flag-emoji{font-size:14px;margin-right:6px}
+.flag-emoji{font-size: 15px;margin-right:6px}
 .cc{color:var(--muted);font-weight:800;font-size:12px}
 
 /* Empty placeholder panel */
@@ -755,19 +755,24 @@ body{
 .donut-grid{
   padding: 14px;
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 18px 22px;
+  align-items: start;
+}
+
+@media (max-width: 920px){
+  .donut-grid{ grid-template-columns: 1fr; }
 }
 
 .donut-block{ display:flex; flex-direction:column; gap:10px; }
 .donut-title{ font-weight:800; font-size:13px; color: var(--text); opacity:.92; }
-.donut-row{ display:flex; align-items:center; gap:14px; }
+.donut-row{ display:flex; align-items:center; gap:16px; }
 
 .donut-chart{
   position: relative;
-  width: 122px;
-  height: 122px;
-  flex: 0 0 122px;
+  width: 168px;
+  height: 168px;
+  flex: 0 0 168px;
 }
 .donut-svg{
   width: 122px;
@@ -783,7 +788,7 @@ body{
   justify-content:center;
   text-align:center;
   font-weight:900;
-  font-size:14px;
+  font-size: 15px;
   letter-spacing:.2px;
   color: var(--text);
   pointer-events:none;
