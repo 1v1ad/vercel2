@@ -922,11 +922,6 @@ _usersMiniCtx = {
     if (view === 'events') return loadEvents();
     if (view === 'duels') return loadDuels();
 
-    if (view === 'unmerge'){
-      loadUnmergeHistory(true).catch(()=>{});
-      return;
-    }
-
     if (view === 'topup'){
       _topupRawList = null;
       loadTopupHistory(true).catch(()=>{});
@@ -1590,14 +1585,16 @@ async function loadUsersAnalyticsDuels(){
       };
     });
   }
-
-  function duelUserHtml(u){
+  function duelUserHtml(u, state){
     const uid = (u && u.id !== undefined && u.id !== null && u.id !== '') ? String(u.id) : '—';
     const name = (u && u.name) ? String(u.name) : '';
     const hum = (u && u.hum_id !== undefined && u.hum_id !== null && u.hum_id !== '') ? String(u.hum_id) : '';
     const title = name
       ? `${name} (id ${uid}${hum ? ', HUM ' + hum : ''})`
       : (uid !== '—' ? `id ${uid}${hum ? ', HUM ' + hum : ''}` : '—');
+
+    const st = String(state || '').toLowerCase().trim();
+    const stateCls = (st === 'win') ? ' duel-win' : (st === 'lose') ? ' duel-lose' : '';
 
     const ava = (u && u.avatar) ? String(u.avatar) : '';
     const avaTag = ava
@@ -1606,7 +1603,7 @@ async function loadUsersAnalyticsDuels(){
 
     const label = name ? name : '—';
 
-    return `<span class="duel-user" title="${escapeHtml(title)}">${avaTag}<span class="duel-user-txt"><span class="duel-user-id">#${escapeHtml(uid)}</span><span class="duel-user-name">${escapeHtml(label)}</span></span></span>`;
+    return `<span class="duel-user${stateCls}" title="${escapeHtml(title)}">${avaTag}<span class="duel-user-txt"><span class="duel-user-id">#${escapeHtml(uid)}<\/span><span class="duel-user-name">${escapeHtml(label)}<\/span><\/span><\/span>`;
   }
 
   function duelStatusHtml(s){
@@ -1694,15 +1691,24 @@ async function loadUsersAnalyticsDuels(){
     }
 
     tbody.innerHTML = rows.map(r=>{
-      return `<tr>
+      const wid = (r.winner && r.winner.id !== undefined && r.winner.id !== null) ? String(r.winner.id) : '';
+      const cid = (r.creator && r.creator.id !== undefined && r.creator.id !== null) ? String(r.creator.id) : '';
+      const oid = (r.opponent && r.opponent.id !== undefined && r.opponent.id !== null) ? String(r.opponent.id) : '';
+      let cs = '';
+      let os = '';
+      if (wid && cid && wid === cid){ cs = 'win'; if (oid) os = 'lose'; }
+      else if (wid && oid && wid === oid){ os = 'win'; if (cid) cs = 'lose'; }
+      r.__creator_state = cs;
+      r.__opponent_state = os;
+      return `<tr>`
         <td>${escapeHtml(String(r.id ?? ''))}</td>
         <td>${escapeHtml(r.mode || '—')}</td>
         <td class="muted">${escapeHtml(fmtDTMsk(r.created_at))}</td>
         <td class="right">${fmtInt(r.stake || 0)}</td>
         <td>${duelStatusHtml(r.status)}</td>
         <td class="right">${escapeHtml(String(r.fee_bps ?? ''))}</td>
-        <td>${duelUserHtml(r.creator)}</td>
-        <td>${duelUserHtml(r.opponent)}</td>
+        <td>${duelUserHtml(r.creator, r.__creator_state)}<\/td>
+        <td>${duelUserHtml(r.opponent, r.__opponent_state)}<\/td>
         <td>${duelUserHtml(r.winner)}</td>
         <td class="muted">${escapeHtml(fmtDTMsk(r.finished_at))}</td>
       </tr>`;
@@ -1843,7 +1849,7 @@ async function loadMiniDuels(){
     const tbody = $('#mini-duels tbody');
     tbody.innerHTML = `<tr><td colspan="8" class="muted">Загрузка…</td></tr>`;
 
-    const playerHtml = (id, avatar, firstName, lastName)=>{
+    const playerHtml = (id, avatar, firstName, lastName, state)=>{
       const uidNum = Number(id||0) || 0;
       const uid = uidNum ? String(uidNum) : '—';
       const fn = (firstName||'').toString().trim();
@@ -1854,7 +1860,9 @@ async function loadMiniDuels(){
       const avaTag = ava
         ? `<img class="mini-ava" src="${escapeHtml(ava)}" alt="" referrerpolicy="no-referrer" />`
         : `<span class="mini-ava" aria-hidden="true"></span>`;
-      return `<span class="mini-user" title="${escapeHtml(title)}">${avaTag}<span class="mini-id">${escapeHtml(uid)}</span></span>`;
+      const st = String(state || "").toLowerCase().trim();
+      const cls = (st === "win") ? " duel-win" : (st === "lose") ? " duel-lose" : "";
+      return `<span class="mini-user" title="${escapeHtml(title)}">${avaTag}<span class="mini-id${cls}">${escapeHtml(uid)}</span></span>`;
     };
 
     try{
@@ -1895,8 +1903,16 @@ async function loadMiniDuels(){
         const feeBps = Number(it.fee_bps ?? 0) || 0;
         const rake = Number(it.rake ?? it.result?.rake ?? Math.round(pot * feeBps / 10000)) || 0;
 
-        const left = playerHtml(it.creator_user_id, it.creator_avatar, it.creator_first_name, it.creator_last_name);
-        const right = playerHtml(it.opponent_user_id, it.opponent_avatar, it.opponent_first_name, it.opponent_last_name);
+        const wid = Number(it.winner_user_id || 0) || 0;
+        const cid = Number(it.creator_user_id || 0) || 0;
+        const oid = Number(it.opponent_user_id || 0) || 0;
+        let cs = '';
+        let os = '';
+        if (wid && cid && wid === cid){ cs = 'win'; if (oid) os = 'lose'; }
+        else if (wid && oid && wid === oid){ os = 'win'; if (cid) cs = 'lose'; }
+
+        const left = playerHtml(it.creator_user_id, it.creator_avatar, it.creator_first_name, it.creator_last_name, cs);
+        const right = playerHtml(it.opponent_user_id, it.opponent_avatar, it.opponent_first_name, it.opponent_last_name, os);
 
         return `<tr>
           <td class="muted">${escapeHtml(time)}</td>
@@ -2215,140 +2231,7 @@ async function loadMiniDuels(){
     }
   }
 
-  
-
-  // --- Расклейка (manual unmerge) ---
-  let _unmergeCluster = null;
-
-  function renderUnmergeCluster(data){
-    const box = $('#unmerge-cluster');
-    const title = $('#unmerge-hum-title');
-    const tbl = $('#unmerge-users-table');
-    if (!box || !tbl) return;
-
-    box.style.display = '';
-    if (title) title.textContent = String(data?.hum_id ?? '');
-
-    const users = Array.isArray(data?.users) ? data.users : [];
-    const tbody = tbl.querySelector('tbody');
-    if (!tbody) return;
-
-    if (!users.length){
-      tbody.innerHTML = '<tr><td class="muted" colspan="6">В кластере нет пользователей…</td></tr>';
-      return;
-    }
-
-    const rows = users.map(u=>{
-      const name = [u?.first_name, u?.last_name].filter(Boolean).join(' ');
-      const acc = (u?.accounts || []).map(a=>`${a?.provider}:${a?.provider_user_id}`).join(', ');
-      const country = (u?.country_code || u?.country_name || '').toString();
-      const bal = fmtInt(u?.balance ?? 0);
-
-      return `
-        <tr>
-          <td><input type="checkbox" class="unmerge-chk" value="${escapeHtml(u?.id)}" /></td>
-          <td class="mono">${escapeHtml(u?.id)}</td>
-          <td>${escapeHtml(name)}</td>
-          <td class="mono">${escapeHtml(acc)}</td>
-          <td>${escapeHtml(country)}</td>
-          <td class="right mono">${escapeHtml(bal)}</td>
-        </tr>
-      `;
-    }).join('');
-
-    tbody.innerHTML = rows;
-  }
-
-  async function loadUnmergeCluster(){
-    const out = $('#unmerge-out');
-    if (out) out.textContent = '...';
-    const hum_id = Number(String($('#unmerge-hum')?.value || '').trim());
-    if (!Number.isFinite(hum_id) || hum_id <= 0) throw new Error('bad_hum_id');
-
-    const data = await jget(`/api/admin/cluster?hum_id=${encodeURIComponent(hum_id)}`);
-    _unmergeCluster = data;
-    renderUnmergeCluster(data);
-    if (out) out.textContent = '';
-    return data;
-  }
-
-  async function doUnmergeSelected(){
-    const out = $('#unmerge-out');
-    if (out) out.textContent = '...';
-
-    const hum_id = Number(String($('#unmerge-hum')?.value || '').trim());
-    const reason = String($('#unmerge-reason')?.value || '').trim();
-    const ids = $$('.unmerge-chk:checked').map(x=>Number(String(x.value||'').trim()))
-      .filter(n=>Number.isFinite(n) && n>0);
-
-    if (!Number.isFinite(hum_id) || hum_id <= 0) throw new Error('bad_hum_id');
-    if (!ids.length) throw new Error('no_selected_users');
-
-    const r = await jpost(`/api/admin/unmerge`, { hum_id, user_ids: ids, reason });
-
-    if (out) out.textContent = JSON.stringify(r, null, 2);
-
-    // refresh cluster + history
-    try{ await loadUnmergeCluster(); }catch(_){}
-    try{ await loadUnmergeHistory(true); }catch(_){}
-    return r;
-  }
-
-  async function fetchUnmergeHistory(){
-    const data = await jget('/api/admin/events?type=admin_unmerge_manual&take=100&skip=0');
-    const list = data?.events || data?.rows || data?.list || [];
-    return Array.isArray(list) ? list : [];
-  }
-
-  function renderUnmergeHistory(list){
-    const tbl = $('#unmerge-hist');
-    if (!tbl) return;
-    const tbody = tbl.querySelector('tbody');
-    if (!tbody) return;
-
-    if (!list.length){
-      tbody.innerHTML = '<tr><td class="muted" colspan="4">Нет расклеек…</td></tr>';
-      return;
-    }
-
-    const rows = list.slice().sort((a,b)=>{
-      const ta = new Date(a?.created_at || a?.ts || 0).getTime();
-      const tb = new Date(b?.created_at || b?.ts || 0).getTime();
-      return tb - ta;
-    });
-
-    tbody.innerHTML = rows.map(ev=>{
-      const p = ev?.payload || {};
-      const hum = (ev?.hum_id ?? p?.hum_id ?? '') || '—';
-      const ids = p?.user_ids || p?.requested_ids || [];
-      const reason = p?.reason || p?.note || '';
-      const ts = new Date(ev?.created_at || ev?.ts || Date.now()).toLocaleString();
-      return `
-        <tr>
-          <td class="muted">${escapeHtml(ts)}</td>
-          <td class="mono">${escapeHtml(hum)}</td>
-          <td class="mono">${escapeHtml(Array.isArray(ids) && ids.length ? ids.join(', ') : '—')}</td>
-          <td class="mono">${escapeHtml(reason || '—')}</td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  async function loadUnmergeHistory(force){
-    const tbl = $('#unmerge-hist');
-    const tbody = tbl?.querySelector('tbody');
-    if (tbody) tbody.innerHTML = '<tr><td class="muted" colspan="4">Загрузка…</td></tr>';
-    try{
-      const list = await fetchUnmergeHistory();
-      renderUnmergeHistory(list);
-      return list;
-    }catch(e){
-      if (tbody) tbody.innerHTML = `<tr><td class="muted" colspan="4">Ошибка: ${escapeHtml(e?.message || e)}</td></tr>`;
-      throw e;
-    }
-  }
-
-function bindActions(){
+  function bindActions(){
     $('#refresh-finance')?.addEventListener('click', loadFinance);
     $('#refresh-users')?.addEventListener('click', loadUsers);
     $('#refresh-users-analytics')?.addEventListener('click', loadUsersAnalyticsDuels);
@@ -2425,28 +2308,21 @@ function bindActions(){
       }
     });
 
-    $('#unmerge-load')?.addEventListener('click', async ()=>{
+    $('#unmerge-btn')?.addEventListener('click', async ()=>{
+      const out = $('#unmerge-out');
+      out.textContent = '...';
       try{
-        await loadUnmergeCluster();
+        const hum_id = Number(String($('#unmerge-hum').value||'').trim());
+        const raw = String($('#unmerge-users').value||'').trim();
+        const reason = String($('#unmerge-reason').value||'').trim();
+        const user_ids = raw.split(',').map(s=>Number(s.trim())).filter(n=>Number.isFinite(n) && n>0);
+        if (!Number.isFinite(hum_id) || !user_ids.length) throw new Error('bad_params');
+        const r = await jpost(`/api/admin/unmerge`, { hum_id, user_ids, reason });
+        out.textContent = JSON.stringify(r, null, 2);
       }catch(e){
-        const out = $('#unmerge-out');
-        if (out) out.textContent = 'ERROR: ' + (e?.message || e);
+        out.textContent = 'ERROR: ' + (e?.message || e);
       }
     });
-
-    $('#unmerge-do')?.addEventListener('click', async ()=>{
-      try{
-        await doUnmergeSelected();
-      }catch(e){
-        const out = $('#unmerge-out');
-        if (out) out.textContent = 'ERROR: ' + (e?.message || e);
-      }
-    });
-
-    $('#unmerge-history-reload')?.addEventListener('click', ()=>{
-      loadUnmergeHistory(true).catch(()=>{});
-    });
-
   }
 
   function escapeHtml(s){

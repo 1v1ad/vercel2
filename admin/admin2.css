@@ -284,6 +284,17 @@ body{
 .trend-up{ color: var(--accent2); font-weight:900; }
 .trend-down{ color: var(--danger); font-weight:900; }
 
+/* duel win/lose */
+.duel-win{ color: var(--accent2) !important; font-weight:900; }
+.duel-lose{ color: var(--danger) !important; font-weight:900; }
+.duel-user.duel-win .duel-user-id,
+.duel-user.duel-win .duel-user-name{ color: var(--accent2) !important; }
+.duel-user.duel-lose .duel-user-id,
+.duel-user.duel-lose .duel-user-name{ color: var(--danger) !important; }
+.mini-id.duel-win{ color: var(--accent2) !important; font-weight:900; }
+.mini-id.duel-lose{ color: var(--danger) !important; font-weight:900; }
+
+
 .card-sub{margin-top:6px}
 .card-sub.secondary{margin-top:2px}
 
