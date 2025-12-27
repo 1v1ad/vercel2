@@ -911,7 +911,26 @@ _usersMiniCtx = {
   } catch (_) {}
 
   
-  function parseHash(){
+  
+  function openUserCard(userId){
+    const uid = (userId !== undefined && userId !== null) ? String(userId).trim() : '';
+    if (!uid) return;
+    // отдельная страница (шаг 1): дальше на шаге 2 начнём грузить данные через API-комбайн
+    location.href = '/admin/user-card.html?user_id=' + encodeURIComponent(uid);
+  }
+
+  function bindUserRowClicks(tbody){
+    if (!tbody || tbody.dataset.userRowClickBound === '1') return;
+    tbody.dataset.userRowClickBound = '1';
+    tbody.addEventListener('click', (e)=>{
+      const tr = e.target && e.target.closest ? e.target.closest('tr[data-user-id]') : null;
+      if (!tr) return;
+      const uid = tr.getAttribute('data-user-id') || '';
+      if (uid) openUserCard(uid);
+    });
+  }
+
+function parseHash(){
     const raw = (location.hash || '#summary').slice(1);
     const parts = raw.split('/').filter(Boolean);
     return { view: (parts[0] || 'summary'), sub: (parts[1] || '') };
@@ -1311,6 +1330,13 @@ async function loadUsersAnalyticsDuels(){
   const tbodyProfit = $('#tbl-users-analytics-duels-profit tbody');
   const tbodyRake   = $('#tbl-users-analytics-duels-rake tbody');
 
+  // клик по строке -> карточка пользователя
+  bindUserRowClicks(tbodyActive);
+  bindUserRowClicks(tbodyWins);
+  bindUserRowClicks(tbodyMoney);
+  bindUserRowClicks(tbodyProfit);
+  bindUserRowClicks(tbodyRake);
+
   if (tbodyActive) tbodyActive.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
   if (tbodyWins)   tbodyWins.innerHTML   = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
   if (tbodyMoney)  tbodyMoney.innerHTML  = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
@@ -1326,7 +1352,7 @@ async function loadUsersAnalyticsDuels(){
 
     const val = it[valueKey] ?? it.count ?? 0;
 
-    return `<tr>
+    return `<tr data-user-id="${escapeHtml(String(user_id))}" data-hum-id="${escapeHtml(String(hum_id))}">
       <td class="right muted">${idx + 1}</td>
       <td>${duelUserHtml(u)}</td>
       <td class="right"><span class="mono">${escapeHtml(fmtInt(val))}</span></td>
@@ -1509,6 +1535,7 @@ async function loadUsersAnalyticsDuels(){
     usersSetSortUI();
 
     const tbody = $('#tbl-users tbody');
+    bindUserRowClicks(tbody);
     tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
     try{
       const u = await jget(usersBuildUrl());
@@ -1543,7 +1570,7 @@ async function loadUsersAnalyticsDuels(){
           ? `<img class="ava big" src="${escapeHtml(avatarUrl)}" alt="" title="${escapeHtml(fullName || ('user '+userId))}">`
           : `<span class="ava big" title="${escapeHtml(fullName || ('user '+userId))}"></span>`;
 
-        return `<tr>
+        return `<tr data-user-id="${escapeHtml(String(userId))}" data-hum-id="${escapeHtml(String(humId))}">
           <td title="HUMid">${escapeHtml(String(humId))}</td>
           <td title="${escapeHtml(fullName || ('user '+userId))}">${escapeHtml(String(userId))}</td>
           <td>${escapeHtml(String(vktg))}</td>

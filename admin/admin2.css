@@ -848,3 +848,7 @@ body{
 /* stakes donuts: scale typography with larger size */
 .stake-panel .donut-center{ font-size: 17px; }
 .stake-panel .donut-center .sub{ font-size: 12px; }
+
+
+/* Users: row -> user card */
+.table tr[data-user-id]{cursor:pointer}
