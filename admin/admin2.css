@@ -1063,3 +1063,99 @@ body{
   .uc-meta{ width: 100%; }
   .uc-avatar{ width:92px; height:92px; }
 }
+
+
+/* --- User Card Step 4 charts --- */
+.uc-charts{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:12px;
+  margin: 10px 0 12px;
+}
+@media (max-width: 980px){
+  .uc-charts{ grid-template-columns: 1fr; }
+}
+
+.uc-activity-wrap{ position:relative; }
+.uc-activity{
+  width:100%;
+  height:80px;
+  display:block;
+  border-radius:14px;
+  background: rgba(255,255,255,.02);
+}
+.uc-activity-grid{ stroke: rgba(255,255,255,.10); stroke-width:1; }
+.uc-activity-bar{ fill: rgba(255,255,255,.16); }
+.uc-activity-bar:hover{ fill: rgba(255,255,255,.24); }
+.uc-activity-tip{
+  position:absolute;
+  pointer-events:none;
+  opacity:0;
+  transform: translateY(-4px);
+  background: rgba(0,0,0,.55);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;
+  padding:6px 8px;
+  font-size:12px;
+  white-space:nowrap;
+}
+.uc-activity-tip.show{ opacity:1; }
+
+.uc-donut-row{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
+.uc-donut{
+  width:168px;
+  height:168px;
+  position:relative;
+  flex:0 0 auto;
+}
+.uc-donut-svg{ width:100%; height:100%; display:block; }
+.uc-donut-bg{ fill:none; stroke: rgba(255,255,255,.08); }
+.uc-donut-seg{ fill:none; stroke-linecap: butt; }
+
+.uc-donut-center{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  pointer-events:none;
+}
+.uc-donut-center-val{ font-weight:900; font-variant-numeric: tabular-nums; }
+.uc-donut-center-sub{ font-size:12px; opacity:.7; margin-top:2px; }
+
+.uc-donut-legend{
+  flex:1 1 auto;
+  min-width: 220px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.uc-leg-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-variant-numeric: tabular-nums;
+}
+.uc-leg-dot{
+  width:10px; height:10px; border-radius:50%;
+  background: rgba(255,255,255,.2);
+  flex:0 0 auto;
+}
+.uc-leg-name{ opacity:.9; }
+.uc-leg-val{ margin-left:auto; opacity:.8; }
+
+.uc-dc-1{ stroke: var(--accent); background: var(--accent); }
+.uc-dc-2{ stroke: var(--accent2); background: var(--accent2); }
+.uc-dc-3{ stroke: rgba(255, 210, 92, .95); background: rgba(255, 210, 92, .95); }
+.uc-dc-4{ stroke: rgba(255, 99, 132, .95); background: rgba(255, 99, 132, .95); }
+.uc-dc-5{ stroke: rgba(155, 89, 182, .95); background: rgba(155, 89, 182, .95); }
+.uc-dc-6{ stroke: rgba(52, 152, 219, .95); background: rgba(52, 152, 219, .95); }
+.uc-dc-7{ stroke: rgba(46, 204, 113, .95); background: rgba(46, 204, 113, .95); }
+
+.uc-donut-hint{ margin-top:8px; }
