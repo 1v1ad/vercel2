@@ -1585,16 +1585,14 @@ async function loadUsersAnalyticsDuels(){
       };
     });
   }
-  function duelUserHtml(u, state){
+
+  function duelUserHtml(u, cls){
     const uid = (u && u.id !== undefined && u.id !== null && u.id !== '') ? String(u.id) : '—';
     const name = (u && u.name) ? String(u.name) : '';
     const hum = (u && u.hum_id !== undefined && u.hum_id !== null && u.hum_id !== '') ? String(u.hum_id) : '';
     const title = name
       ? `${name} (id ${uid}${hum ? ', HUM ' + hum : ''})`
       : (uid !== '—' ? `id ${uid}${hum ? ', HUM ' + hum : ''}` : '—');
-
-    const st = String(state || '').toLowerCase().trim();
-    const stateCls = (st === 'win') ? ' duel-win' : (st === 'lose') ? ' duel-lose' : '';
 
     const ava = (u && u.avatar) ? String(u.avatar) : '';
     const avaTag = ava
@@ -1603,7 +1601,7 @@ async function loadUsersAnalyticsDuels(){
 
     const label = name ? name : '—';
 
-    return `<span class="duel-user${stateCls}" title="${escapeHtml(title)}">${avaTag}<span class="duel-user-txt"><span class="duel-user-id">#${escapeHtml(uid)}<\/span><span class="duel-user-name">${escapeHtml(label)}<\/span><\/span><\/span>`;
+    return `<span class="duel-user" title="${escapeHtml(title)}">${avaTag}<span class="duel-user-txt"><span class="duel-user-id${cls ? " " + cls : ""}">#${escapeHtml(uid)}</span><span class="duel-user-name${cls ? " " + cls : ""}">${escapeHtml(label)}</span></span></span>`;
   }
 
   function duelStatusHtml(s){
@@ -1691,24 +1689,15 @@ async function loadUsersAnalyticsDuels(){
     }
 
     tbody.innerHTML = rows.map(r=>{
-      const wid = (r.winner && r.winner.id !== undefined && r.winner.id !== null) ? String(r.winner.id) : '';
-      const cid = (r.creator && r.creator.id !== undefined && r.creator.id !== null) ? String(r.creator.id) : '';
-      const oid = (r.opponent && r.opponent.id !== undefined && r.opponent.id !== null) ? String(r.opponent.id) : '';
-      let cs = '';
-      let os = '';
-      if (wid && cid && wid === cid){ cs = 'win'; if (oid) os = 'lose'; }
-      else if (wid && oid && wid === oid){ os = 'win'; if (cid) cs = 'lose'; }
-      r.__creator_state = cs;
-      r.__opponent_state = os;
-      return `<tr>`
+      return `<tr>
         <td>${escapeHtml(String(r.id ?? ''))}</td>
         <td>${escapeHtml(r.mode || '—')}</td>
         <td class="muted">${escapeHtml(fmtDTMsk(r.created_at))}</td>
         <td class="right">${fmtInt(r.stake || 0)}</td>
         <td>${duelStatusHtml(r.status)}</td>
         <td class="right">${escapeHtml(String(r.fee_bps ?? ''))}</td>
-        <td>${duelUserHtml(r.creator, r.__creator_state)}<\/td>
-        <td>${duelUserHtml(r.opponent, r.__opponent_state)}<\/td>
+        <td>${duelUserHtml(r.creator, (r.winner?.id && r.creator?.id && String(r.winner.id) === String(r.creator.id)) ? 'trend-up' : (r.winner?.id ? 'trend-down' : ''))}</td>
+        <td>${duelUserHtml(r.opponent, (r.winner?.id && r.opponent?.id && String(r.winner.id) === String(r.opponent.id)) ? 'trend-up' : (r.winner?.id ? 'trend-down' : ''))}</td>
         <td>${duelUserHtml(r.winner)}</td>
         <td class="muted">${escapeHtml(fmtDTMsk(r.finished_at))}</td>
       </tr>`;
@@ -1849,7 +1838,7 @@ async function loadMiniDuels(){
     const tbody = $('#mini-duels tbody');
     tbody.innerHTML = `<tr><td colspan="8" class="muted">Загрузка…</td></tr>`;
 
-    const playerHtml = (id, avatar, firstName, lastName, state)=>{
+    const playerHtml = (id, avatar, firstName, lastName, cls)=>{
       const uidNum = Number(id||0) || 0;
       const uid = uidNum ? String(uidNum) : '—';
       const fn = (firstName||'').toString().trim();
@@ -1860,9 +1849,7 @@ async function loadMiniDuels(){
       const avaTag = ava
         ? `<img class="mini-ava" src="${escapeHtml(ava)}" alt="" referrerpolicy="no-referrer" />`
         : `<span class="mini-ava" aria-hidden="true"></span>`;
-      const st = String(state || "").toLowerCase().trim();
-      const cls = (st === "win") ? " duel-win" : (st === "lose") ? " duel-lose" : "";
-      return `<span class="mini-user" title="${escapeHtml(title)}">${avaTag}<span class="mini-id${cls}">${escapeHtml(uid)}</span></span>`;
+      return `<span class="mini-user" title="${escapeHtml(title)}">${avaTag}<span class="mini-id${cls ? " " + cls : ""}">${escapeHtml(uid)}</span></span>`;
     };
 
     try{
@@ -1903,16 +1890,13 @@ async function loadMiniDuels(){
         const feeBps = Number(it.fee_bps ?? 0) || 0;
         const rake = Number(it.rake ?? it.result?.rake ?? Math.round(pot * feeBps / 10000)) || 0;
 
-        const wid = Number(it.winner_user_id || 0) || 0;
-        const cid = Number(it.creator_user_id || 0) || 0;
-        const oid = Number(it.opponent_user_id || 0) || 0;
-        let cs = '';
-        let os = '';
-        if (wid && cid && wid === cid){ cs = 'win'; if (oid) os = 'lose'; }
-        else if (wid && oid && wid === oid){ os = 'win'; if (cid) cs = 'lose'; }
-
-        const left = playerHtml(it.creator_user_id, it.creator_avatar, it.creator_first_name, it.creator_last_name, cs);
-        const right = playerHtml(it.opponent_user_id, it.opponent_avatar, it.opponent_first_name, it.opponent_last_name, os);
+        const win = (it.winner_user_id ?? it.winnerUserId ?? '') !== null ? String(it.winner_user_id ?? it.winnerUserId ?? '') : '';
+        const cid = (it.creator_user_id ?? it.creatorUserId ?? '') !== null ? String(it.creator_user_id ?? it.creatorUserId ?? '') : '';
+        const oid = (it.opponent_user_id ?? it.opponentUserId ?? '') !== null ? String(it.opponent_user_id ?? it.opponentUserId ?? '') : '';
+        const leftCls  = (win && cid && win === cid) ? 'trend-up' : (win && cid ? 'trend-down' : '');
+        const rightCls = (win && oid && win === oid) ? 'trend-up' : (win && oid ? 'trend-down' : '');
+        const left = playerHtml(it.creator_user_id, it.creator_avatar, it.creator_first_name, it.creator_last_name, leftCls);
+        const right = playerHtml(it.opponent_user_id, it.opponent_avatar, it.opponent_first_name, it.opponent_last_name, rightCls);
 
         return `<tr>
           <td class="muted">${escapeHtml(time)}</td>
