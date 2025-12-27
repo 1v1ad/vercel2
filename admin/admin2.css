@@ -682,7 +682,6 @@ body{
   padding-top:14px;
   border-top:1px solid rgba(255,255,255,.06);
 }
-/* --- tweaks: Visits chart spacing (keep "7 дней" in first row) --- */
-.visits-panel .panel-head{
-  margin-bottom:20px; /* default is 10px; add "empty line" under header to push chart down */
-}
+
+/* Visits chart: add extra vertical space under the header */
+.visits-panel .panel-head{ margin-bottom:30px; }
