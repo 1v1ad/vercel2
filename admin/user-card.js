@@ -143,6 +143,14 @@
     clearSvg(svg);
     legendEl.innerHTML = '';
 
+    const valEl = centerEl.querySelector?.('.uc-donut-center-val');
+    const subEl = centerEl.querySelector?.('.uc-donut-center-sub');
+    const setCenter = (mainHtml, subText) => {
+      if (valEl) valEl.innerHTML = mainHtml;
+      else centerEl.innerHTML = mainHtml;
+      if (subEl) subEl.textContent = subText || '';
+    };
+
     const R = 40;
     const C = 2 * Math.PI * R;
 
@@ -151,7 +159,7 @@
 
     const nonZero = (items||[]).filter(x => (x.valueNum > 0));
     if (!nonZero.length || !totalNum){
-      centerEl.innerHTML = `—<span class="sub">${esc(subLabel||'')}</span>`;
+      setCenter('—', subLabel||'');
       return;
     }
 
@@ -513,10 +521,11 @@
   }
 
   function renderMiniStakes(data){
-    const svg = $('#uc-stakes-donut');
-    const center = $('#uc-stakes-center');
+    const wrap = $('#uc-stakes-donut');
+    const svg = $('#uc-stakes-svg') || wrap?.querySelector('svg');
+    const center = $('#uc-stakes-center') || wrap?.querySelector('.uc-donut-center');
     const legend = $('#uc-stakes-legend');
-    if (!svg || !center || !legend) return;
+    if (!wrap || !svg || !center || !legend) return;
 
     const raw = data?.stakes?.items || [];
     const itemsN = normalizeStakes(raw);
@@ -550,39 +559,72 @@
   }
 
   function renderMiniActivity(data){
-    const box = $('#uc-activity');
-    const note = $('#uc-activity-note');
-    if (!box) return;
+    const svg = $('#uc-activity-chart');
+    const tip = $('#uc-activity-tip');
+    if (!svg) return;
 
     const series = (data && data.activity_90 && Array.isArray(data.activity_90.points))
       ? data.activity_90
       : (data?.activity_series || {});
 
-    const bucket = series.bucket || null;
     const pts = Array.isArray(series.points) ? series.points : [];
 
-    if (note){
-      if (bucket === 'day') note.textContent = '(по дням)';
-      else if (bucket === 'week') note.textContent = '(по неделям)';
-      else if (bucket === 'month') note.textContent = '(по месяцам)';
-      else note.textContent = '';
-    }
+    // clear
+    clearSvg(svg);
+    if (!pts.length) return;
 
-    if (!pts.length){
-      box.innerHTML = '<div class="muted">Нет данных</div>';
-      return;
-    }
-
+    const W = 300, H = 80, pad = 6;
     const max = Math.max(1, ...pts.map(p=>Number(p.c||0)));
-    box.innerHTML = pts.map(p=>{
-      const c = Number(p.c||0);
-      const h = Math.max(3, Math.round((c/max)*100));
-      const cls = c ? 'uc-bar' : 'uc-bar zero';
-      const t = dateOnly(p.t) + ': ' + c;
-      return `<div class="${cls}" style="height:${h}%" title="${esc(t)}"></div>`;
-    }).join('');
-  }
 
+    // grid (3 lines)
+    for (let i=1;i<=3;i++){
+      const y = pad + ((H - pad*2) * i / 4);
+      svg.appendChild(svgElt('line', { x1:0, y1:y, x2:W, y2:y, class:'uc-activity-grid' }));
+    }
+
+    const n = pts.length;
+    const step = (W - pad*2) / n;
+    const barW = Math.max(1, step * 0.85);
+
+    for (let i=0;i<n;i++){
+      const p = pts[i];
+      const c = Number(p.c||0);
+      const bh = (H - pad*2) * (c / max);
+      const x = pad + i*step + (step - barW)/2;
+      const y = H - pad - bh;
+      const r = svgElt('rect', { x, y, width:barW, height:Math.max(1,bh), rx:1, class:'uc-activity-bar' });
+      r.dataset.t = dateOnly(p.t);
+      r.dataset.c = String(c);
+      svg.appendChild(r);
+    }
+
+    // tooltip
+    if (tip && !svg.dataset.ucTipInit){
+      svg.dataset.ucTipInit = '1';
+      const wrap = svg.parentElement || svg;
+
+      const show = (e)=>{
+        const t = e.target;
+        if (!(t && t.tagName && t.tagName.toLowerCase() === 'rect')) return hide();
+        const dt = t.dataset.t || '';
+        const c  = t.dataset.c || '0';
+        tip.textContent = `${dt}: ${c}`;
+        const br = wrap.getBoundingClientRect();
+        const x = e.clientX - br.left;
+        const y = e.clientY - br.top;
+        tip.style.left = Math.min(br.width - 10, Math.max(10, x + 10)) + 'px';
+        tip.style.top  = Math.max(6, y - 10) + 'px';
+        tip.classList.add('show');
+      };
+
+      const hide = ()=>{
+        tip.classList.remove('show');
+      };
+
+      svg.addEventListener('mousemove', show);
+      svg.addEventListener('mouseleave', hide);
+    }
+  }
 
   document.addEventListener('DOMContentLoaded', load);
 })();
