@@ -684,4 +684,4 @@ body{
 }
 
 /* Visits chart: add extra vertical space under the header */
-.visits-panel .panel-head{ margin-bottom:30px; }
+.visits-panel .panel-head{ margin-bottom: 40px; }
