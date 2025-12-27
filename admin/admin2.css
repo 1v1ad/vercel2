@@ -752,6 +752,10 @@ body{
   gap: 10px;
 }
 
+.stake-panel{ --donut-size: 252px; }
+.stake-panel .donut-grid{ padding: 34px 14px 14px; }
+
+
 .donut-grid{
   padding: 14px;
   display: grid;
@@ -770,13 +774,13 @@ body{
 
 .donut-chart{
   position: relative;
-  width: 168px;
-  height: 168px;
-  flex: 0 0 168px;
+  width: var(--donut-size);
+  height: var(--donut-size);
+  flex: 0 0 var(--donut-size);
 }
 .donut-svg{
-  width: 122px;
-  height: 122px;
+  width: 100%;
+  height: 100%;
   display:block;
   overflow: visible;
 }
@@ -802,7 +806,8 @@ body{
 }
 
 .donut-legend{
-  flex: 1;
+  flex: 0 0 auto;
+  width: max-content;
   min-width: 0;
   display:flex;
   flex-direction:column;
@@ -810,9 +815,9 @@ body{
 }
 .donut-leg-row{
   display:grid;
-  grid-template-columns: 12px 1fr auto;
+  grid-template-columns: 12px max-content max-content;
   align-items:center;
-  gap:8px;
+  gap:6px;
   font-size:12px;
   color: var(--muted);
 }
@@ -826,6 +831,7 @@ body{
 .donut-leg-row .val{
   font-variant-numeric: tabular-nums;
   color: var(--muted);
+  justify-self: start;
 }
 .donut-dot{
   width:10px; height:10px;
@@ -835,6 +841,10 @@ body{
 
 @media (max-width: 980px){
   .donut-row{ flex-direction:column; align-items:flex-start; }
-  .donut-chart{ width: 132px; height: 132px; }
-  .donut-svg{ width: 132px; height: 132px; }
+  .stake-panel{ --donut-size: 196px; }
 }
+
+
+/* stakes donuts: scale typography with larger size */
+.stake-panel .donut-center{ font-size: 17px; }
+.stake-panel .donut-center .sub{ font-size: 12px; }
