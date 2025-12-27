@@ -34,6 +34,13 @@ body{
   display:flex;
   flex-direction:column;
   gap:16px;
+
+  /* keep sidebar controls always visible */
+  position:sticky;
+  top:0;
+  height:100vh;
+  max-height:100vh;
+  overflow:hidden;
 }
 .brand{display:flex; align-items:center; gap:10px; padding:8px 10px}
 .logo{
@@ -48,7 +55,17 @@ body{
 .brand-title{font-weight:900}
 .brand-sub{color:var(--muted); font-size:12px; margin-top:2px}
 
-.nav{display:flex; flex-direction:column; gap:4px}
+.nav{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+
+  /* scroll inside sidebar when content is tall */
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding-right:4px;
+}
 
 .nav-sub{
   display:flex;
@@ -105,7 +122,11 @@ body{
 
 .nav-sep{height:1px; background:var(--border); margin:6px 10px}
 
-.sidebar-footer{margin-top:auto; padding:10px}
+.sidebar-footer{
+  margin-top:auto;
+  padding:10px;
+  flex:0 0 auto;
+}
 .muted-link{color:var(--muted); text-decoration:none}
 .muted-link:hover{color:#cfe0f2}
 .muted{color:var(--muted)}
