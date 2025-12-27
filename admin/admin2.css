@@ -684,16 +684,6 @@ body{
 }
 
 
-/* --- Admin2: Visits panel header layout ---
-   Put the period badge ("7 дней") on the second row under the title.
-*/
-.visits-panel .panel-head{
-  flex-direction:column;
-  align-items:flex-start;
-  justify-content:flex-start;
-  gap:8px;
-}
-.visits-panel .panel-head .chip{
-  margin-left:0 !important;
-  align-self:flex-start;
-}
+
+/* tweak: move visits '7 дней' badge a bit lower */
+.visits-panel .panel-head .chip{ margin-top:10px; }
