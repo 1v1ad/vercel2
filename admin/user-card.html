@@ -4,40 +4,41 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>GGRoom — Карточка пользователя</title>
-  <link rel="stylesheet" href="/admin/admin2.css?v=20251227_uc1" />
+  <link rel="stylesheet" href="/admin/admin2.css" />
+  <script defer src="/admin/admin-auth-headers.js"></script>
+  <script defer src="/admin/flags.js"></script>
+  <script defer src="/admin/user-card.js"></script>
 </head>
 <body>
-  <div class="layout">
-    <main class="main">
-      <div class="topbar">
-        <div class="topbar-left">
-          <a class="btn small" href="/admin/index2.html#users/list" title="Назад к пользователям">← Пользователи</a>
-          <div class="page-title">Карточка пользователя</div>
+  <div class="uc-page">
+    <div class="uc-topbar">
+      <a class="uc-back" href="/admin/index2.html">← Назад</a>
+      <div class="uc-topbar-title">Карточка пользователя</div>
+      <div class="uc-topbar-right" id="uc-top-right"></div>
+    </div>
+
+    <div class="uc-wrap">
+      <div class="card uc-header" id="uc-header">
+        <div class="uc-avatar">
+          <div class="uc-avatar-skel"></div>
         </div>
-        <div class="topbar-right">
-          <span class="muted mono" id="uc-id">user_id: —</span>
+        <div class="uc-main">
+          <div class="uc-name skel skel-line"></div>
+          <div class="uc-ids skel skel-line"></div>
+          <div class="uc-badges skel skel-line"></div>
+        </div>
+        <div class="uc-meta">
+          <div class="uc-chip skel skel-line"></div>
+          <div class="uc-chip skel skel-line"></div>
+          <div class="uc-chip skel skel-line"></div>
+          <div class="uc-chip skel skel-line"></div>
         </div>
       </div>
 
-      <div class="content">
-        <div class="card">
-          <div class="row" style="align-items:center; gap:14px;">
-            <span class="ava big" id="uc-ava" aria-hidden="true"></span>
-            <div style="min-width:0">
-              <div style="font-size:20px; font-weight:900; line-height:1.2;" id="uc-name">Загрузка…</div>
-              <div class="muted" id="uc-sub">Подготавливаем карточку пользователя</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:14px;">
-          <div class="muted" id="uc-loading">Загрузка данных профиля будет добавлена на следующем шаге (API-комбайн).</div>
-        </div>
+      <div class="card uc-body">
+        <div class="uc-note" id="uc-note">Загрузка…</div>
       </div>
-    </main>
+    </div>
   </div>
-
-  <script src="/admin/admin-auth-headers.js?v=20251227_uc1"></script>
-  <script src="/admin/user-card.js?v=20251227_uc1"></script>
 </body>
 </html>
