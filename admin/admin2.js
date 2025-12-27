@@ -1564,7 +1564,114 @@ async function loadUsersAnalyticsDuels(){
   }
 
 
-  // --- Duels table (admin) ---
+  
+  // --- Events table (admin) ---
+  let _eventsSkip = 0;
+  let _eventsFilters = null;
+  let _eventsRaw = [];
+
+  function _eventsUrl(skip){
+    const take = 100;
+    const qs = [`take=${take}`, `skip=${Math.max(0, (skip|0))}`];
+    const f = _eventsFilters || {};
+    if (f.user) qs.push(`user_id=${encodeURIComponent(String(f.user))}`);
+    if (f.type) qs.push(`type=${encodeURIComponent(String(f.type))}`);
+    if (f.term) qs.push(`term=${encodeURIComponent(String(f.term))}`);
+    if (f.day)  qs.push(`day=${encodeURIComponent(String(f.day))}`);
+    return '/api/admin/events?' + qs.join('&');
+  }
+
+  function _readEventsFilters(){
+    const out = {};
+    const user = toInt(($('#events-user')?.value || '').trim(), 0);
+    const type = String($('#events-type')?.value || '').trim();
+    const term = String($('#events-term')?.value || '').trim();
+    const day  = String($('#events-day')?.value || '').trim();
+
+    if (user > 0) out.user = user;
+    if (type) out.type = type;
+    if (term) out.term = term;
+    if (day)  out.day  = day;
+    return out;
+  }
+
+  function _eventsFiltersHint(){
+    const f = _eventsFilters || {};
+    const parts = [];
+    if (f.user) parts.push(`user=${f.user}`);
+    if (f.type) parts.push(`type=${f.type}`);
+    if (f.day)  parts.push(`day=${f.day}`);
+    if (f.term) parts.push('term');
+    return parts.length ? (' • фильтр: ' + parts.join(', ')) : '';
+  }
+
+  function _setEventsInfo(s){
+    const el = $('#events-info');
+    if (el) el.textContent = s;
+  }
+
+  function renderEventsTable(list){
+    const tbody = document.querySelector('#tbl-events tbody');
+    if (!tbody) return;
+
+    const arr = Array.isArray(list) ? list : [];
+    if (!arr.length){
+      tbody.innerHTML = '<tr><td colspan="7" class="muted">Нет событий…</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = arr.map(ev=>{
+      const id = ev.id ?? '';
+      const hum = ev.hum_id ?? ev.hum ?? '';
+      const uid = ev.user_id ?? ev.user ?? '';
+      const type = ev.event_type ?? ev.type ?? '';
+      const ip = ev.ip ?? '';
+      const ua = ev.ua ?? ev.user_agent ?? '';
+      const created = ev.created_at ?? ev.created ?? ev.ts ?? '';
+
+      const uaFull = String(ua || '');
+      const uaShow = uaFull.length > 80 ? (uaFull.slice(0, 80) + '…') : uaFull;
+
+      return `<tr>
+        <td class="tight">${escapeHtml(String(id))}</td>
+        <td class="tight">${escapeHtml(String(hum))}</td>
+        <td class="tight">${escapeHtml(String(uid))}</td>
+        <td class="tight">${escapeHtml(String(type))}</td>
+        <td class="tight">${escapeHtml(String(ip))}</td>
+        <td class="muted" title="${escapeHtml(uaFull)}">${escapeHtml(uaShow)}</td>
+        <td class="muted">${escapeHtml(fmtMsk(created))}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function loadEvents(opts){
+    const tbody = document.querySelector('#tbl-events tbody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="muted">Загрузка…</td></tr>';
+
+    const nextSkip = (opts && typeof opts.skip === 'number') ? opts.skip : _eventsSkip;
+    if (opts && opts.filters) _eventsFilters = opts.filters;
+
+    try{
+      const r = await jget(_eventsUrl(nextSkip));
+      const items = r.events || r.items || r.rows || r.list || [];
+      _eventsRaw = Array.isArray(items) ? items : [];
+      renderEventsTable(_eventsRaw);
+
+      _eventsSkip = Math.max(0, nextSkip|0);
+      _setEventsInfo(`Показаны ${_eventsRaw.length} • skip=${_eventsSkip}${_eventsFiltersHint()}`);
+
+      const prevBtn = $('#events-prev');
+      const nextBtn = $('#events-next');
+      if (prevBtn) prevBtn.disabled = (_eventsSkip <= 0);
+      if (nextBtn) nextBtn.disabled = (_eventsRaw.length < 100);
+    }catch(e){
+      console.error(e);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="muted">Ошибка загрузки</td></tr>';
+      _setEventsInfo('Ошибка загрузки');
+    }
+  }
+
+// --- Duels table (admin) ---
   let _duelsSortKey = 'created_at';
   let _duelsSortDir = -1; // desc
   let _duelsRaw = null;
