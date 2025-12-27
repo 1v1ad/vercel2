@@ -1,319 +1,378 @@
-// admin/chart-duels.js — big chart: finished duels per day (bars) + turnover (line)
-// Tooltip shows: date, duels_count, turnover, rake.
+// admin/chart-duels.js — big duels chart (games + turnover + rake)
+// Reads: GET /api/admin/duels_range?from=YYYY-MM-DD&to=YYYY-MM-DD&tz=Europe/Moscow
+// Draws: bars = number of finished duels; line = turnover (pot sum). Tooltip also shows rake.
 
-(function(){
-  const SVG = document.getElementById('chart-duels');
-  if (!SVG) return;
+(() => {
+  const svg = document.getElementById('chart-duels');
+  const note = document.getElementById('duels-note');
+  const inpFrom = document.getElementById('duels-from');
+  const inpTo = document.getElementById('duels-to');
+  const btnApply = document.getElementById('duels-apply');
 
-  const fromEl   = document.getElementById('duels-from');
-  const toEl     = document.getElementById('duels-to');
-  const noteEl   = document.getElementById('duels-note');
-  const applyBtn = document.getElementById('duels-apply');
+  if (!svg || !note || !inpFrom || !inpTo || !btnApply) return;
 
-  const NS = 'http://www.w3.org/2000/svg';
-  const TZ_FALLBACK = 'Europe/Moscow';
+  const pad2 = (n) => (n < 10 ? '0' + n : '' + n);
+  const ymd = (d) => `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 
-  // ===== helpers =====
-  function apiBase(){
-    return (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
+  function fmtInt(v) {
+    const n = Number(v || 0);
+    if (!Number.isFinite(n)) return '0';
+    return Math.round(n).toLocaleString('ru-RU');
   }
-  function headers(){
-    return window.adminHeaders ? window.adminHeaders() : {};
+  function fmtMoney(v) {
+    const n = Number(v || 0);
+    if (!Number.isFinite(n)) return '0';
+    return Math.round(n).toLocaleString('ru-RU');
   }
-  function tz(){
-    return (localStorage.getItem('ADMIN_TZ') || TZ_FALLBACK);
+
+  function clearSvg() {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
   }
-  function todayIso(){
-    const d = new Date();
-    const fmt = new Intl.DateTimeFormat('sv-SE', {
-      timeZone: tz(),
-      year:'numeric', month:'2-digit', day:'2-digit'
-    });
-    return fmt.format(d); // YYYY-MM-DD
-  }
-  function addDays(iso, delta){
-    const d = new Date(iso + 'T00:00:00Z');
-    d.setUTCDate(d.getUTCDate() + delta);
-    return d.toISOString().slice(0,10);
-  }
-  function clearSvg(){
-    while (SVG.firstChild) SVG.removeChild(SVG.firstChild);
-  }
-  function elt(tag, attrs, text){
-    const e = document.createElementNS(NS, tag);
-    if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
-    if (text != null) e.appendChild(document.createTextNode(text));
+
+  function el(name, attrs = {}, children = []) {
+    const e = document.createElementNS('http://www.w3.org/2000/svg', name);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v === undefined || v === null) continue;
+      e.setAttribute(k, String(v));
+    }
+    for (const c of children) e.appendChild(c);
     return e;
   }
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const fmtInt = (n) => (Number(n)||0).toLocaleString('ru-RU');
-  const fmtRub = (n) => (Number(n)||0).toLocaleString('ru-RU') + ' ₽';
 
-  // ===== fetch =====
-  async function run(){
-    const API = apiBase();
-    if (!API) return;
+  // Tooltip (div over svg)
+  const tip = document.createElement('div');
+  tip.style.position = 'absolute';
+  tip.style.pointerEvents = 'none';
+  tip.style.zIndex = '50';
+  tip.style.display = 'none';
+  tip.style.padding = '8px 10px';
+  tip.style.border = '1px solid rgba(255,255,255,0.14)';
+  tip.style.borderRadius = '10px';
+  tip.style.background = 'rgba(8, 12, 18, 0.92)';
+  tip.style.backdropFilter = 'blur(6px)';
+  tip.style.color = 'rgba(255,255,255,0.92)';
+  tip.style.fontSize = '12px';
+  tip.style.lineHeight = '1.25';
+  tip.style.whiteSpace = 'nowrap';
 
-    // normalize dates
-    let fromV = (fromEl?.value || '').trim();
-    let toV   = (toEl?.value || '').trim();
-    if (fromV && toV && fromV > toV) {
-      const t = fromV; fromV = toV; toV = t;
-      fromEl.value = fromV;
-      toEl.value = toV;
-    }
+  const wrap = svg.parentElement;
+  wrap.style.position = 'relative';
+  wrap.appendChild(tip);
 
-    const qs = new URLSearchParams({ tz: tz() });
-    if (fromV) qs.set('from', fromV);
-    if (toV)   qs.set('to', toV);
+  function setTip(x, y, html) {
+    tip.innerHTML = html;
+    tip.style.display = 'block';
 
-    let j;
-    try{
-      const r = await fetch(API + '/api/admin/analytics/duels/daily?' + qs.toString(), {
-        headers: headers(),
-        cache: 'no-store'
-      });
-      j = await r.json();
-    }catch(e){
-      console.error(e);
-      clearSvg();
-      if (noteEl) noteEl.textContent = 'Ошибка загрузки';
-      return;
-    }
+    const rect = wrap.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
 
-    const days = Array.isArray(j?.days) ? j.days : [];
-    if (!days.length){
-      draw([], [], [], []);
-      if (noteEl) noteEl.textContent = 'Нет данных';
-      return;
-    }
+    let left = x + 12;
+    let top = y - 12;
+    if (left + tipRect.width > rect.width - 6) left = x - tipRect.width - 12;
+    if (top + tipRect.height > rect.height - 6) top = rect.height - tipRect.height - 6;
+    if (top < 6) top = 6;
 
-    if (j.from && fromEl) fromEl.value = String(j.from).slice(0,10);
-    if (j.to && toEl)     toEl.value   = String(j.to).slice(0,10);
-
-    const xs  = days.map(d => d.day || d.date);
-    const cnt = days.map(d => Number(d.duels_count ?? d.duels ?? d.count ?? 0));
-    const turn= days.map(d => Number(d.turnover ?? d.pot ?? 0));
-    const rake= days.map(d => Number(d.rake ?? d.fee ?? 0));
-
-    draw(xs, cnt, turn, rake);
-
-    const sumCnt  = cnt.reduce((a,b)=>a+(Number(b)||0),0);
-    const sumTurn = turn.reduce((a,b)=>a+(Number(b)||0),0);
-    const sumRake = rake.reduce((a,b)=>a+(Number(b)||0),0);
-    const trunc = j?.truncated ? ' • (период укорочен)' : '';
-    if (noteEl) noteEl.textContent = `Период: ${j.from} – ${j.to} • дуэлей: ${fmtInt(sumCnt)} • оборот: ${fmtRub(sumTurn)} • рейк: ${fmtRub(sumRake)}${trunc}`;
+    tip.style.left = `${Math.max(6, left)}px`;
+    tip.style.top = `${Math.max(6, top)}px`;
   }
 
-  // ===== draw =====
-  function draw(xDates, duelsCount, turnover, rake){
+  function hideTip() {
+    tip.style.display = 'none';
+  }
+
+  function niceMax(n) {
+    const v = Number(n || 0);
+    if (!Number.isFinite(v) || v <= 0) return 1;
+    const pow = Math.pow(10, Math.floor(Math.log10(v)));
+    const x = v / pow;
+    const m = x <= 1 ? 1 : x <= 2 ? 2 : x <= 5 ? 5 : 10;
+    return m * pow;
+  }
+
+  function draw(days) {
     clearSvg();
+    hideTip();
 
-    const n = xDates.length;
-    const box = SVG.getBoundingClientRect();
-    const W = Math.max(320, box.width | 0);
-    const H = Math.max(180, (SVG.getAttribute('height')|0) || 260);
-    SVG.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    const w = svg.clientWidth || 900;
+    const h = svg.clientHeight || 260;
 
-    const padL = 56, padR = 62, padT = 20, padB = 28;
-    const X0 = padL, X1 = W - padR;
-    const Y0 = H - padB, Y1 = padT;
+    const L = 44;
+    const R = 64;
+    const T = 28;
+    const B = 34;
+    const X0 = L;
+    const X1 = w - R;
+    const Y0 = h - B;
+    const Y1 = T;
+    const PW = Math.max(1, X1 - X0);
+    const PH = Math.max(1, Y0 - Y1);
 
-    const maxCntRaw  = duelsCount.map(v=>Number(v)||0);
-    const maxTurnRaw = turnover.map(v=>Number(v)||0);
-    let maxCnt  = Math.max(1, ...(maxCntRaw.length?maxCntRaw:[1]));
-    let maxTurn = Math.max(1, ...(maxTurnRaw.length?maxTurnRaw:[1]));
-    maxCnt  = Math.max(1, Math.ceil(maxCnt * 1.15));
-    maxTurn = Math.max(1, Math.ceil(maxTurn * 1.12));
+    const games = days.map((d) => Number(d.games || 0));
+    const turnover = days.map((d) => Number(d.turnover || 0));
+    const rake = days.map((d) => Number(d.rake || 0));
 
-    const scaleX = i => (n <= 1 ? (X0 + X1) / 2 : X0 + (i * (X1 - X0) / (n - 1)));
-    const yCnt   = v => Y0 - ((Number(v)||0) * (Y0 - Y1) / maxCnt);
-    const yTurn  = v => Y0 - ((Number(v)||0) * (Y0 - Y1) / maxTurn);
+    const maxGames = niceMax(Math.max(1, ...games));
+    const maxTurn = niceMax(Math.max(1, ...turnover));
 
-    // grid (4 lines)
-    for (let g = 0; g <= 4; g++){
-      const frac = g / 4;
-      const y = Y0 - frac * (Y0 - Y1);
+    const sx = (i) => {
+      if (days.length <= 1) return X0 + PW / 2;
+      return X0 + (i * PW) / (days.length - 1);
+    };
+    const syGames = (v) => Y0 - (Math.max(0, v) * PH) / maxGames;
+    const syTurn = (v) => Y0 - (Math.max(0, v) * PH) / maxTurn;
 
-      SVG.appendChild(elt('line', { x1:X0, y1:y, x2:X1, y2:y, stroke:'#1b2737', 'stroke-width':1 }));
+    const grid = el('g');
+    svg.appendChild(grid);
 
-      const vL = Math.round(maxCnt * frac);
-      SVG.appendChild(elt('text', { x:X0-6, y:y+4, fill:'#8fa4c6', 'font-size':11, 'text-anchor':'end' }, String(vL)));
+    // grid lines + dual labels
+    for (let k = 0; k <= 4; k++) {
+      const y = Y0 - (k * PH) / 4;
+      grid.appendChild(
+        el('line', {
+          x1: X0,
+          y1: y,
+          x2: X1,
+          y2: y,
+          stroke: 'rgba(255,255,255,0.08)',
+          'stroke-width': 1,
+        })
+      );
 
-      // right axis (turnover)
-      const vR = Math.round(maxTurn * frac);
-      SVG.appendChild(elt('text', { x:X1+6, y:y+4, fill:'#8fa4c6', 'font-size':11, 'text-anchor':'start' }, String(vR)));
+      const vg = Math.round((maxGames * k) / 4);
+      const vt = Math.round((maxTurn * k) / 4);
+
+      grid.appendChild(
+        el(
+          'text',
+          { x: X0 - 8, y: y + 4, 'text-anchor': 'end', fill: 'rgba(255,255,255,0.55)', 'font-size': 11 },
+          [document.createTextNode(String(vg))]
+        )
+      );
+      grid.appendChild(
+        el(
+          'text',
+          { x: X1 + 8, y: y + 4, 'text-anchor': 'start', fill: 'rgba(255,255,255,0.55)', 'font-size': 11 },
+          [document.createTextNode(fmtMoney(vt))]
+        )
+      );
     }
 
-    // x labels (<=6)
-    const ticks = Math.min(6, Math.max(2, n || 0));
-    for (let i = 0; i < ticks && n > 0; i++){
-      const idx = Math.round(i * (n - 1) / (ticks - 1));
-      const x = scaleX(idx);
-      const label = (xDates[idx] || '').slice(0,10);
-      const anchor = (i === 0) ? 'start' : (i === ticks - 1 ? 'end' : 'middle');
-      SVG.appendChild(elt('text', { x, y: H - 6, fill:'#8fa4c6', 'font-size':11, 'text-anchor': anchor }, label));
+    // x labels (sparse)
+    const every = days.length <= 8 ? 1 : days.length <= 31 ? 4 : 7;
+    for (let i = 0; i < days.length; i++) {
+      if (i % every !== 0 && i !== days.length - 1) continue;
+      const x = sx(i);
+      grid.appendChild(
+        el('text', { x, y: h - 10, 'text-anchor': 'middle', fill: 'rgba(255,255,255,0.55)', 'font-size': 11 }, [
+          document.createTextNode(days[i].date),
+        ])
+      );
     }
-
-    const blue  = '#0a84ff';
-    const green = '#4ed1a9';
-
-    // bars (duels count)
-    if (n > 0) {
-      const step = (n <= 1) ? (X1 - X0) : (X1 - X0) / (n - 1);
-      const bw = Math.max(3, Math.min(22, step * 0.55));
-      for (let i=0;i<n;i++){
-        const x = scaleX(i) - bw/2;
-        const v = duelsCount[i] || 0;
-        const y = yCnt(v);
-        const h = Math.max(0, Y0 - y);
-        SVG.appendChild(elt('rect', { x, y, width:bw, height:h, fill:green, rx:2 }));
-      }
-    }
-
-    // turnover line
-    function pathFor(arr){
-      if (!n) return `M${X0} ${Y0}`;
-      let d = '';
-      for (let i=0;i<n;i++){
-        const x = scaleX(i);
-        const y = yTurn(arr[i]||0);
-        d += (i ? 'L' : 'M') + x + ' ' + y;
-      }
-      return d;
-    }
-    SVG.appendChild(elt('path', { d: pathFor(turnover), fill:'none', stroke:blue, 'stroke-width':2 }));
 
     // legend
-    const lx = X0, ly = Y1 - 16;
-    SVG.appendChild(elt('rect',{x:lx,y:ly,width:10,height:10,fill:green,rx:2}));
-    SVG.appendChild(elt('text',{x:lx+16,y:ly+9,fill:'#a5c4f1','font-size':12},'Дуэлей'));
-    // line sample
-    SVG.appendChild(elt('line',{x1:lx+90,y1:ly+5,x2:lx+110,y2:ly+5,stroke:blue,'stroke-width':2}));
-    SVG.appendChild(elt('text',{x:lx+118,y:ly+9,fill:'#a5c4f1','font-size':12},'Оборот'));
+    const legend = el('g', { transform: `translate(${X0},${Y1 - 12})` });
+    legend.appendChild(el('rect', { x: 0, y: 0, width: 8, height: 8, rx: 2, fill: 'rgba(78, 209, 169, 0.95)' }));
+    legend.appendChild(
+      el('text', { x: 12, y: 8, fill: 'rgba(255,255,255,0.8)', 'font-size': 12 }, [document.createTextNode('Дуэлей')])
+    );
+    legend.appendChild(
+      el('line', { x1: 74, y1: 4, x2: 86, y2: 4, stroke: 'rgba(10, 132, 255, 0.95)', 'stroke-width': 2 })
+    );
+    legend.appendChild(
+      el('text', { x: 92, y: 8, fill: 'rgba(255,255,255,0.8)', 'font-size': 12 }, [document.createTextNode('Оборот')])
+    );
+    svg.appendChild(legend);
 
-    if (!n) return;
+    // bars (games)
+    const barW = Math.max(6, Math.min(18, (PW / Math.max(1, days.length)) * 0.8));
+    const bars = el('g');
+    for (let i = 0; i < days.length; i++) {
+      const x = sx(i);
+      const v = games[i] || 0;
+      const y = syGames(v);
+      bars.appendChild(
+        el('rect', {
+          x: x - barW / 2,
+          y,
+          width: barW,
+          height: Math.max(0, Y0 - y),
+          rx: 3,
+          fill: 'rgba(78, 209, 169, 0.42)',
+          stroke: 'rgba(78, 209, 169, 0.75)',
+          'stroke-width': 1,
+        })
+      );
+    }
+    svg.appendChild(bars);
 
-    // hover / tooltip
-    const hover = elt('g', { style:'pointer-events:none' });
-    const vline = elt('line', { x1:X0, y1:Y1, x2:X0, y2:Y0, stroke:'#8fa4c6', 'stroke-width':1, 'stroke-opacity':'0.5' });
-    const dot   = elt('circle', { r:4, fill:blue, stroke:'#0b1a2b', 'stroke-width':1 });
-    hover.appendChild(vline);
-    hover.appendChild(dot);
+    // line (turnover)
+    let dPath = '';
+    for (let i = 0; i < days.length; i++) {
+      const x = sx(i);
+      const y = syTurn(turnover[i] || 0);
+      dPath += (i === 0 ? 'M' : 'L') + `${x.toFixed(2)},${y.toFixed(2)}`;
+    }
+    svg.appendChild(el('path', { d: dPath, fill: 'none', stroke: 'rgba(10, 132, 255, 0.95)', 'stroke-width': 2 }));
 
-    const tip = elt('g');
-    const tipBg = elt('rect',{x:0,y:0,rx:6,ry:6,fill:'#0b1a2b',stroke:'#213047','stroke-width':1,opacity:'0.95'});
-    const l1 = elt('text',{x:10,y:16,fill:'#a5c4f1','font-size':12});
-    const l2 = elt('text',{x:10,y:34,fill:'#a5c4f1','font-size':12});
-    const l3 = elt('text',{x:10,y:52,fill:'#a5c4f1','font-size':12});
-    const l4 = elt('text',{x:10,y:70,fill:'#a5c4f1','font-size':12});
-    tip.appendChild(tipBg);
-    tip.appendChild(l1);
-    tip.appendChild(l2);
-    tip.appendChild(l3);
-    tip.appendChild(l4);
-    hover.appendChild(tip);
-    SVG.appendChild(hover);
+    // hover helpers
+    const vLine = el('line', {
+      x1: X0,
+      y1: Y1,
+      x2: X0,
+      y2: Y0,
+      stroke: 'rgba(255,255,255,0.16)',
+      'stroke-width': 1,
+      opacity: 0,
+    });
+    const dot = el('circle', { cx: X0, cy: Y0, r: 4, fill: 'rgba(10, 132, 255, 0.95)', opacity: 0 });
+    svg.appendChild(vLine);
+    svg.appendChild(dot);
 
-    const overlay = elt('rect', { x:X0, y:Y1, width:(X1-X0), height:(Y0-Y1), fill:'transparent', style:'cursor:crosshair' });
-    SVG.appendChild(overlay);
+    const hit = el('rect', { x: X0, y: Y1, width: PW, height: PH, fill: 'transparent' });
+    svg.appendChild(hit);
 
-    function update(px){
-      const box = SVG.getBoundingClientRect();
-      const localX = clamp(px - box.left, X0, X1);
-      const rel = (localX - X0) / (X1 - X0);
-      const idx = clamp(Math.round(rel * (n - 1)), 0, n - 1);
+    function onMove(ev) {
+      const rect = svg.getBoundingClientRect();
+      const mx = ev.clientX - rect.left;
+      const my = ev.clientY - rect.top;
 
-      const x = scaleX(idx);
-      const tv = turnover[idx] || 0;
-      const cv = duelsCount[idx] || 0;
-      const rv = rake[idx] || 0;
-      const y = yTurn(tv);
-      const label = (xDates[idx] || '').slice(0,10);
+      let idx = 0;
+      if (days.length > 1) {
+        const t = (mx - X0) / PW;
+        idx = Math.round(t * (days.length - 1));
+        idx = Math.max(0, Math.min(days.length - 1, idx));
+      }
 
-      vline.setAttribute('x1', x);
-      vline.setAttribute('x2', x);
+      const x = sx(idx);
+      const y = syTurn(turnover[idx] || 0);
+
+      vLine.setAttribute('x1', x);
+      vLine.setAttribute('x2', x);
+      vLine.setAttribute('opacity', '1');
+
       dot.setAttribute('cx', x);
       dot.setAttribute('cy', y);
+      dot.setAttribute('opacity', '1');
 
-      l1.textContent = label;
-      l2.textContent = `Дуэлей: ${fmtInt(cv)}`;
-      l3.textContent = `Оборот: ${fmtRub(tv)}`;
-      l4.textContent = `Рейк: ${fmtRub(rv)}`;
-
-      // tooltip size
-      const w = Math.max(l1.getComputedTextLength(), l2.getComputedTextLength(), l3.getComputedTextLength(), l4.getComputedTextLength()) + 20;
-      const h = 82;
-
-      let tx = x + 12;
-      let ty = Y1 + 8;
-      if (tx + w > W - 4) tx = x - w - 12;
-      if (ty + h > H - 4) ty = H - h - 4;
-
-      tip.setAttribute('transform', `translate(${tx} ${ty})`);
-      tipBg.setAttribute('width', w);
-      tipBg.setAttribute('height', h);
+      const html = `
+        <div style="font-weight:600;margin-bottom:4px;">${days[idx].date}</div>
+        <div>Дуэлей: <b>${fmtInt(games[idx] || 0)}</b></div>
+        <div>Оборот: <b>${fmtMoney(turnover[idx] || 0)}</b></div>
+        <div style="opacity:.85;">Рейк: <b>${fmtMoney(rake[idx] || 0)}</b></div>
+      `;
+      setTip(mx, my, html);
     }
 
-    function onMove(ev){
-      const px = ev.touches ? ev.touches[0].clientX : ev.clientX;
-      update(px);
+    function onLeave() {
+      vLine.setAttribute('opacity', '0');
+      dot.setAttribute('opacity', '0');
+      hideTip();
     }
 
-    overlay.addEventListener('mousemove', onMove, { passive:true });
-    overlay.addEventListener('touchmove', onMove, { passive:true });
-    overlay.addEventListener('mouseenter', onMove, { passive:true });
+    hit.addEventListener('mousemove', onMove);
+    hit.addEventListener('mouseleave', onLeave);
   }
 
-  // ===== wiring =====
-// scope chips to this panel so we don't accidentally bind buttons from other charts
-const panel = SVG.closest('.panel') || document;
-panel.querySelectorAll('.panel-actions .chip').forEach(btn => {
-  btn.addEventListener('click', () => {
-    // preset can be in data attribute or (as a fallback) in button text
-    let p = (btn.getAttribute('data-duels-preset') || '').trim().toLowerCase();
-    const txt = (btn.textContent || '').trim().toLowerCase();
+  async function load() {
+    try {
+      note.textContent = 'Загрузка…';
 
-    if (!p) {
-      if (txt.includes('вс')) p = 'all';
-      else if (txt.includes('год')) p = '365';
-      else if (txt.includes('3')) p = '90';
-      else if (txt.includes('30')) p = '30';
-      else if (txt.includes('7')) p = '7';
+      const API = (localStorage.getItem('admin_api') || '').trim();
+      const urlBase = (API || '').replace(/\/$/, '');
+      if (!urlBase) {
+        note.textContent = 'API не задан';
+        return;
+      }
+
+      const tz = 'Europe/Moscow';
+      const qs = new URLSearchParams();
+      qs.set('tz', tz);
+      if (inpFrom.value) qs.set('from', inpFrom.value);
+      if (inpTo.value) qs.set('to', inpTo.value);
+
+      const r = await fetch(urlBase + '/api/admin/duels_range?' + qs.toString(), {
+        headers: window.adminHeaders ? window.adminHeaders() : {},
+      });
+      const j = await r.json().catch(() => null);
+      if (!j || !j.ok) {
+        note.textContent = 'Ошибка загрузки';
+        return;
+      }
+
+      // If user clicked "Всё" we clear inputs; server can respond with actual bounds.
+      // Fill them back so it is visually obvious that "Всё" worked and so Apply reuses the full range.
+      if ((!inpFrom.value || !inpTo.value) && (j.from || j.to)) {
+        if (!inpFrom.value && j.from) inpFrom.value = String(j.from).slice(0, 10);
+        if (!inpTo.value && j.to) inpTo.value = String(j.to).slice(0, 10);
+      }
+
+      const days = Array.isArray(j.days) ? j.days : [];
+      draw(days);
+
+      const from = j.from || inpFrom.value || '';
+      const to = j.to || inpTo.value || '';
+      note.textContent = `Период: ${from} – ${to} • дней: ${days.length || 0}`;
+    } catch (e) {
+      console.error(e);
+      note.textContent = 'Ошибка загрузки';
+    }
+  }
+
+  function normPreset(p, btnText) {
+    const raw = (p || '').toString().trim().toLowerCase();
+    if (raw === 'all' || raw === 'alltime' || raw === '*' || raw === '0') return 'all';
+    if (!raw) {
+      const t = (btnText || '').toString().trim().toLowerCase();
+      if (t === 'всё' || t === 'все' || t.startsWith('вс')) return 'all';
+      return '';
+    }
+    return raw;
+  }
+
+  function setPreset(days) {
+    // Use today's local date; backend applies TZ.
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+
+    const p = (days || '').toString().trim().toLowerCase();
+    if (p === 'all' || p === 'alltime' || p === '*' || p === '0' || p === 'всё' || p === 'все') {
+      inpFrom.value = '';
+      inpTo.value = '';
+      return;
     }
 
-    if (p === 'all' || p === 'все' || p === 'всё') {
-      if (fromEl) fromEl.value = '';
-      if (toEl)   toEl.value   = '';
-      run();
-    } else {
-      const days = Number(p) || 7;
-      const t = todayIso();
-      if (fromEl) fromEl.value = addDays(t, -days);
-      if (toEl)   toEl.value   = t;
-      run();
-    }
-  });
-});
+    const n = Number(p);
+    const to = today;
+    const from = new Date(to.getTime() - (Math.max(1, n) - 1) * 24 * 60 * 60 * 1000);
+    inpFrom.value = ymd(from);
+    inpTo.value = ymd(to);
+  }
 
-applyBtn?.addEventListener('click', run);
-
-  fromEl?.addEventListener('change', () => {
-    if (toEl.value && fromEl.value > toEl.value) toEl.value = fromEl.value;
+  // Be tolerant: sometimes the "Всё" button gets a different data-attribute after merges.
+  document.querySelectorAll('[data-duel-preset],[data-duels-preset]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const p = normPreset(b.getAttribute('data-duel-preset') || b.getAttribute('data-duels-preset'), b.textContent);
+      if (!p) return;
+      setPreset(p);
+      load();
+    });
   });
-  toEl?.addEventListener('change', () => {
-    if (fromEl.value && toEl.value < fromEl.value) fromEl.value = toEl.value;
+  btnApply.addEventListener('click', () => load());
+
+  // keep date order sane
+  inpFrom.addEventListener('change', () => {
+    if (inpTo.value && inpFrom.value > inpTo.value) inpTo.value = inpFrom.value;
+  });
+  inpTo.addEventListener('change', () => {
+    if (inpFrom.value && inpTo.value < inpFrom.value) inpFrom.value = inpTo.value;
   });
 
+  // reload when API saved (admin2 fires this)
   try {
-    window.addEventListener('adminApiChanged', run);
+    window.addEventListener('adminApiChanged', load);
   } catch (_) {}
 
-  // старт — последние 30 дней
-  (function init(){
-    const t = todayIso();
-    if (fromEl) fromEl.value = addDays(t, -30);
-    if (toEl)   toEl.value   = t;
-    run();
-  })();
+  // default: 30 days
+  setPreset('30');
+  load();
 })();
