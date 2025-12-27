@@ -685,5 +685,16 @@ body{
 
 
 
-/* tweak: move visits '7 дней' badge a bit lower */
-.visits-panel .panel-head .chip{ margin-top:10px; }
+/* Visits panel: put period badge on second row (and nudge 10px down) */
+.visits-panel .panel-head{
+  display:flex;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:0 !important;
+}
+.visits-panel .panel-head .chip{
+  margin-left:0 !important;
+  margin-top:10px !important;
+  align-self:flex-start;
+}
