@@ -126,7 +126,13 @@
     maxCnt  = Math.max(1, Math.ceil(maxCnt * 1.15));
     maxTurn = Math.max(1, Math.ceil(maxTurn * 1.12));
 
-    const scaleX = i => (n <= 1 ? (X0 + X1) / 2 : X0 + (i * (X1 - X0) / (n - 1)));
+    // x-scale with edge padding so the first/last bars don't overlap y-axis labels
+    const baseStep = (n <= 1 ? (X1 - X0) : ((X1 - X0) / (n - 1)));
+    const bw = n > 0 ? Math.max(3, Math.min(22, baseStep * 0.55)) : 0;
+    const edgePad = Math.max(8, (bw / 2) + 6);
+    const IX0 = X0 + edgePad;
+    const IX1 = X1 - edgePad;
+    const scaleX = i => (n <= 1 ? (IX0 + IX1) / 2 : IX0 + (i * (IX1 - IX0) / (n - 1)));
     const yCnt   = v => Y0 - ((Number(v)||0) * (Y0 - Y1) / maxCnt);
     const yTurn  = v => Y0 - ((Number(v)||0) * (Y0 - Y1) / maxTurn);
 
@@ -160,8 +166,6 @@
 
     // bars (duels count)
     if (n > 0) {
-      const step = (n <= 1) ? (X1 - X0) : (X1 - X0) / (n - 1);
-      const bw = Math.max(3, Math.min(22, step * 0.55));
       for (let i=0;i<n;i++){
         const x = scaleX(i) - bw/2;
         const v = duelsCount[i] || 0;
@@ -215,13 +219,13 @@
     hover.appendChild(tip);
     SVG.appendChild(hover);
 
-    const overlay = elt('rect', { x:X0, y:Y1, width:(X1-X0), height:(Y0-Y1), fill:'transparent', style:'cursor:crosshair' });
+    const overlay = elt('rect', { x:IX0, y:Y1, width:(IX1-IX0), height:(Y0-Y1), fill:'transparent', style:'cursor:crosshair' });
     SVG.appendChild(overlay);
 
     function update(px){
       const box = SVG.getBoundingClientRect();
-      const localX = clamp(px - box.left, X0, X1);
-      const rel = (localX - X0) / (X1 - X0);
+      const localX = clamp(px - box.left, IX0, IX1);
+      const rel = (localX - IX0) / (IX1 - IX0);
       const idx = clamp(Math.round(rel * (n - 1)), 0, n - 1);
 
       const x = scaleX(idx);
