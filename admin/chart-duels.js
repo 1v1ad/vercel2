@@ -271,7 +271,7 @@
     if (btn){
       const panel = btn.closest('.panel');
       if (panel){
-        panel.querySelectorAll('[data-duels-preset].active').forEach(b => b.classList.remove('active'));
+        panel.querySelectorAll('[data-duels-preset].active,[data-preset].active,.duels-preset.active').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
       }
     }
@@ -296,21 +296,43 @@
   }
 
   // Robust click handling: works even if DOM is re-rendered or buttons are inside <form>.
-  // Also shields from accidental submit/reload.
-  document.addEventListener('click', (ev) => {
-    const btn = ev.target?.closest?.('[data-duels-preset]');
-    if (!btn) return;
+// We also support both attributes: data-duels-preset (preferred) and data-preset (like chart-range.js).
+// Capture-phase interception avoids conflicts with chart-range preset buttons.
+document.addEventListener('click', (ev) => {
+  const rawBtn = ev.target?.closest?.('[data-duels-preset],[data-preset],.chip');
+  if (!rawBtn) return;
 
-    // make sure it's OUR duels chart panel
-    const panel = btn.closest('.panel');
-    if (!panel || !panel.querySelector('#chart-duels')) return;
+  // make sure it's OUR duels chart panel
+  const panel = rawBtn.closest?.('.panel');
+  if (!panel || !panel.querySelector?.('#chart-duels')) return;
 
-    ev.preventDefault();
-    ev.stopPropagation();
+  // Only react to our preset buttons (avoid случайные .chip внутри панели)
+  const txt = (rawBtn.textContent || '').trim().toLowerCase();
+  const attr = (rawBtn.getAttribute?.('data-duels-preset') || rawBtn.getAttribute?.('data-preset') || '').trim();
+  const looksLikePreset = !!attr || /^(7д|30д|90д|год|вс[её])/.test(txt) || /\b(7|30|90|365)\b/.test(txt);
+  if (!looksLikePreset) return;
 
-    const p = (btn.getAttribute('data-duels-preset') || '').trim();
-    applyPreset(p, btn);
-  }, true);
+  ev.preventDefault();
+  ev.stopPropagation();
+  if (typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
+
+  // Normalize preset value
+  let p = attr;
+  if (!p){
+    if (txt.includes('всё') || txt === 'все' || txt === 'всё') p = 'all';
+    else if (txt.includes('год')) p = '365';
+    else {
+      const mm = txt.match(/\d+/);
+      if (mm) p = mm[0];
+    }
+  }
+
+  // mark for styling even if it's a plain .chip without data-attr
+  try { rawBtn.classList.add('duels-preset'); } catch(_) {}
+
+  applyPreset(p, rawBtn);
+}, true);
+
 
 applyBtn?.addEventListener('click', run);
 
