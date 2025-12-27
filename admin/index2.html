@@ -267,11 +267,35 @@
               </div>
             </div>
 
-            <div class="panel">
+            <div class="panel stake-panel">
               <div class="panel-head">
-                <div class="panel-title">Диаграмма</div>
+                <div class="panel-title">Ставки</div>
+                <div class="muted tiny" id="stakes-note">—</div>
               </div>
-              <div class="muted" style="padding:14px;">Здесь будет диаграмма (следующим шагом).</div>
+
+              <div class="donut-grid">
+                <div class="donut-block">
+                  <div class="donut-title">Дуэли по ставкам</div>
+                  <div class="donut-row">
+                    <div class="donut-chart" aria-label="Дуэли по ставкам (количество)">
+                      <svg id="donut-stakes-count" class="donut-svg" viewBox="0 0 100 100" role="img"></svg>
+                      <div class="donut-center" id="donut-stakes-count-center">—</div>
+                    </div>
+                    <div class="donut-legend" id="donut-stakes-count-legend"></div>
+                  </div>
+                </div>
+
+                <div class="donut-block">
+                  <div class="donut-title">Оборот по ставкам</div>
+                  <div class="donut-row">
+                    <div class="donut-chart" aria-label="Оборот по ставкам (₽)">
+                      <svg id="donut-stakes-turnover" class="donut-svg" viewBox="0 0 100 100" role="img"></svg>
+                      <div class="donut-center" id="donut-stakes-turnover-center">—</div>
+                    </div>
+                    <div class="donut-legend" id="donut-stakes-turnover-legend"></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -770,6 +794,7 @@
   <script src="/admin/admin2.js?v=20251227121551e"></script>
   <script src="/admin/chart-range.js?v=20251224c"></script>
   <script src="/admin/chart-duels.js?v=20251227d"></script>
+  <script src="/admin/donut-stakes.js?v=20251227a"></script>
   <script src="/admin/chart.js?v=20251224c"></script>
 </body>
 </html>
