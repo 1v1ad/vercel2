@@ -685,3 +685,19 @@ body{
 
 /* Visits chart: add extra vertical space under the header */
 .visits-panel .panel-head{ margin-bottom: 40px; }
+
+/* --- Unmerge cosmetics (admin2) --- */
+#view-unmerge #unmerge-load,
+#view-unmerge #unmerge-btn{
+  height:40px;
+  padding:0 14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+}
+
+/* hide technical output box under unmerge buttons (kept for JS but not shown) */
+#view-unmerge #unmerge-out{
+  display:none;
+}
