@@ -1570,6 +1570,108 @@ async function loadUsersAnalyticsDuels(){
   let _duelsRaw = null;
   let _duelsFilter = '';
 
+let _duelsSkip = 0;
+let _duelsTake = 100;
+let _duelsServerFilters = null;
+
+function _setDuelsInfo(txt){
+  const el = $('#duels-info');
+  if (el) el.textContent = String(txt || '');
+}
+
+function _duelsFiltersHint(){
+  const f = _duelsServerFilters || {};
+  const bits = [];
+  if (f.day) bits.push(`day=${f.day}`);
+  if (f.id) bits.push(`id=${f.id}`);
+  if (f.user) bits.push(`user=${f.user}`);
+  if (f.hum) bits.push(`hum=${f.hum}`);
+  if (f.status) bits.push(`status=${f.status}`);
+  if (f.mode) bits.push(`mode=${f.mode}`);
+  if (f.creator) bits.push(`creator=${f.creator}`);
+  if (f.opponent) bits.push(`opponent=${f.opponent}`);
+  if (f.winner) bits.push(`winner=${f.winner}`);
+  if (f.stake) bits.push(`stake=${f.stake}`);
+  if (f.term) bits.push(`term=${shorten(String(f.term), 24)}`);
+  return bits.length ? ` • ${bits.join(' ')}` : '';
+}
+
+function _readDuelsServerFilters(){
+  const q = String($('#duels-filter')?.value || '').trim();
+  const dayUi = String($('#duels-day')?.value || '').trim();
+  const f = {};
+  let termParts = [];
+
+  const tokens = q ? q.split(/\s+/).filter(Boolean) : [];
+  tokens.forEach(tok=>{
+    const t = String(tok || '').trim();
+    const idx = t.indexOf(':');
+    if (idx > 0){
+      const k = t.slice(0, idx).toLowerCase();
+      const v = t.slice(idx+1);
+      if (!v) return;
+
+      const asInt = ()=> {
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.trunc(n) : 0;
+      };
+
+      if (k === 'id') { const n=asInt(); if (n) f.id = n; return; }
+      if (k === 'stake' || k === 'sum') { const n=asInt(); if (n) f.stake = n; return; }
+      if (k === 'creator') { const n=asInt(); if (n) f.creator = n; return; }
+      if (k === 'opponent') { const n=asInt(); if (n) f.opponent = n; return; }
+      if (k === 'winner') { const n=asInt(); if (n) f.winner = n; return; }
+      if (k === 'user') { const n=asInt(); if (n) f.user = n; return; }
+      if (k === 'hum' || k === 'hum_id' || k === 'humid') { const n=asInt(); if (n) f.hum = n; return; }
+      if (k === 'status') { f.status = String(v).trim(); return; }
+      if (k === 'mode') { f.mode = String(v).trim(); return; }
+      if (k === 'day' || k === 'date' || k === 'created') {
+        const s = String(v).slice(0,10);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) f.day = s;
+        return;
+      }
+      // unknown k:v => part of term
+      termParts.push(t);
+      return;
+    }
+    termParts.push(t);
+  });
+
+  if (dayUi) f.day = dayUi;
+
+  const term = termParts.join(' ').trim();
+  if (term) f.term = term;
+
+  return f;
+}
+
+function _duelsUrl(skip){
+  const f = _duelsServerFilters || _readDuelsServerFilters();
+  const qs = [];
+  qs.push(`take=${encodeURIComponent(String(_duelsTake))}`);
+  qs.push(`skip=${encodeURIComponent(String(Math.max(0, skip|0)))}`);
+
+  const add = (k, v)=>{
+    if (v === undefined || v === null || v === '') return;
+    qs.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  };
+
+  add('id', f.id);
+  add('status', f.status);
+  add('mode', f.mode);
+  add('stake', f.stake);
+  add('creator', f.creator);
+  add('opponent', f.opponent);
+  add('winner', f.winner);
+  add('user', f.user);
+  add('hum', f.hum);
+  add('day', f.day);
+  add('term', f.term);
+
+  return '/api/admin/duels?' + qs.join('&');
+}
+
+
   function normDuelRows(list){
     if (!Array.isArray(list)) return [];
     const userFrom = (it, pref)=>{
@@ -1717,623 +1819,36 @@ async function loadUsersAnalyticsDuels(){
     }).join('');
   }
 
-  async function loadDuels(){
-    const tbody = $('#tbl-duels tbody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
-    try{
-      const r = await jget('/api/admin/duels?take=200&skip=0');
-      const items = r.items || r.rows || r.duels || [];
-      _duelsRaw = items;
-      renderDuelsTable(_duelsRaw);
-    }catch(e){
-      console.error(e);
-      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
-    }
+  async function loadDuels(opts){
+  const tbody = $('#tbl-duels tbody');
+  if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
+
+  const nextSkip = (opts && typeof opts.skip === 'number') ? opts.skip : _duelsSkip;
+  if (opts && opts.filters) _duelsServerFilters = opts.filters;
+
+  try{
+    const r = await jget(_duelsUrl(nextSkip));
+    const items = r.items || r.rows || r.duels || [];
+    _duelsRaw = items;
+    renderDuelsTable(_duelsRaw);
+
+    _duelsSkip = Math.max(0, nextSkip|0);
+    _setDuelsInfo(`Показаны ${items.length} • skip=${_duelsSkip}${_duelsFiltersHint()}`);
+
+    const prevBtn = $('#duels-prev');
+    const nextBtn = $('#duels-next');
+    if (prevBtn) prevBtn.disabled = (_duelsSkip <= 0);
+    if (nextBtn) nextBtn.disabled = (items.length < _duelsTake);
+  }catch(e){
+    console.error(e);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
+    _setDuelsInfo(`Ошибка • skip=${Math.max(0, nextSkip|0)}${_duelsFiltersHint()}`);
+
+    const prevBtn = $('#duels-prev');
+    const nextBtn = $('#duels-next');
+    if (prevBtn) prevBtn.disabled = (_duelsSkip <= 0);
+    if (nextBtn) nextBtn.disabled = false;
   }
-
-  async function loadMiniEvents(){
-    const tbody = $('#mini-events tbody');
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
-    try{
-      // backend отдаёт { events: [...] } и использует параметры take/skip
-      const r = await jget('/api/admin/events?take=8');
-      const items = r.items || r.events || r.rows || [];
-
-      // Чтобы высота карточки была стабильной — всегда рисуем 8 строк (пустые дополняем).
-      const norm = (items || []).slice(0, 8);
-      while (norm.length < 8) norm.push(null);
-
-      tbody.innerHTML = norm.map(it=>{
-        if (!it){
-          return `<tr>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-          </tr>`;
-        }
-
-        const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
-        const createdMini = createdFull ? createdFull.slice(5,16) : '';
-        const ip = it.ip ?? '';
-        const uaFull = it.ua ?? '';
-        const uaShort = uaFull ? shorten(uaFull, 42) : '';
-        const et = (it.event_type || it.type || '—');
-
-        return `<tr>
-          <td>${it.id ?? ''}</td>
-          <td>${it.hum_id ?? ''}</td>
-          <td>${it.user_id ?? ''}</td>
-          <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(shorten(et, 22))}</span></td>
-          <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(shorten(ip, 18))}</span></td>
-          <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
-          <td class="muted" title="${escapeHtml(createdFull)}">${escapeHtml(createdMini)}</td>
-        </tr>`;
-      }).join('');
-      if (window.decorateFlags) window.decorateFlags(tbody);
-    }catch(e){
-      console.error(e);
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка</td></tr>`;
-    }
-  }
-
-
-  async function loadMiniUsers(){
-    const tbody = $('#mini-users tbody');
-    if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
-    try{
-      const r = await jget('/api/admin/users?take=6');
-      const items = r.items || r.users || r.rows || [];
-      const norm = (items || []).slice(0, 6);
-      while (norm.length < 6) norm.push(null);
-
-      const fmtDT = (s)=> (s||'').toString().slice(0,19).replace('T',' ');
-      const fmtMini = (s)=> (s||'').toString().slice(5,16).replace('T',' ');
-
-      tbody.innerHTML = norm.map(u=>{
-        if (!u){
-          return `<tr>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted right">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-          </tr>`;
-        }
-
-        const humId = u.hum_id ?? u.id ?? '';
-        const userId = u.id ?? '';
-        const pid = u.provider_ids || {};
-        let vktg = '—';
-        if (pid.tg) vktg = `tg:${pid.tg}`;
-        else if (pid.vk) vktg = String(pid.vk);
-
-        const providers = (u.providers || []).join(',');
-        const createdFull = fmtDT(u.created_at);
-        const createdMini = fmtMini(u.created_at);
-        const cc = (u.country_code || '').toString().toUpperCase();
-
-        const avatar = u.avatar_url || u.avatar || '';
-        const title = [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || `user ${userId}`;
-
-        return `<tr>
-          <td title="HUMid">${escapeHtml(String(humId))}</td>
-          <td title="${escapeHtml(title)}">${escapeHtml(String(userId))}</td>
-          <td>${escapeHtml(String(vktg))}</td>
-          <td>${escapeHtml(u.first_name || '—')}</td>
-          <td>${escapeHtml(u.last_name || '—')}</td>
-          <td class="right">${fmtInt(u.balance ?? 0)}</td>
-          <td data-cc="${escapeHtml(cc)}"></td>
-          <td class="muted" title="${escapeHtml(createdFull)}">${escapeHtml(createdMini)}</td>
-          <td class="tight"><span class="providers" title="${escapeHtml(providers)}">${escapeHtml(providers)}</span></td>
-          <td class="tight right avatar-cell">${avatar ? `<img class="mini-ava-lg" src="${escapeHtml(avatar)}" alt="" loading="lazy" title="${escapeHtml(title)}">` : ''}</td>
-        </tr>`;
-      }).join('');
-      if (window.decorateFlags) window.decorateFlags(tbody);
-
-      if (window.decorateFlags) window.decorateFlags(tbody);
-    }catch(e){
-      console.error(e);
-      tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
-    }
-  }
-
-async function loadMiniDuels(){
-    const tbody = $('#mini-duels tbody');
-    tbody.innerHTML = `<tr><td colspan="8" class="muted">Загрузка…</td></tr>`;
-
-    const playerHtml = (id, avatar, firstName, lastName, cls)=>{
-      const uidNum = Number(id||0) || 0;
-      const uid = uidNum ? String(uidNum) : '—';
-      const fn = (firstName||'').toString().trim();
-      const ln = (lastName||'').toString().trim();
-      const name = [fn, ln].filter(Boolean).join(' ').trim();
-      const title = name ? `${name} (id ${uid})` : (uid !== '—' ? `id ${uid}` : '—');
-      const ava = (avatar||'').toString().trim();
-      const avaTag = ava
-        ? `<img class="mini-ava" src="${escapeHtml(ava)}" alt="" referrerpolicy="no-referrer" />`
-        : `<span class="mini-ava" aria-hidden="true"></span>`;
-      return `<span class="mini-user" title="${escapeHtml(title)}">${avaTag}<span class="mini-id${cls ? " " + cls : ""}">${escapeHtml(uid)}</span></span>`;
-    };
-
-    try{
-      // Важно: /api/duels/history требует user-cookie, а админка живёт на admin-auth заголовках.
-      // Поэтому для Summary берём “общую” ленту finished-дуэлей.
-      const r = await jget(`/api/duels?status=finished&limit=30&order=newest`);
-      let items = (r.items || []).filter(Boolean);
-
-      // Надёжная сортировка по времени завершения (на случай если бэкенд отдаёт по created_at)
-      items.sort((a,b)=>{
-        const ta = new Date(a.finished_at || a.updated_at || a.created_at || 0).getTime() || 0;
-        const tb = new Date(b.finished_at || b.updated_at || b.created_at || 0).getTime() || 0;
-        return tb - ta;
-      });
-
-      items = items.slice(0, 8);
-      const norm = items.slice(0,8);
-      while (norm.length < 8) norm.push(null);
-
-      tbody.innerHTML = norm.map(it=>{
-        if (!it){
-          return `<tr>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="muted">—</td>
-            <td class="right muted">—</td>
-            <td class="muted">—</td>
-            <td class="right muted">—</td>
-            <td class="right muted">—</td>
-          </tr>`;
-        }
-
-        const time = fmtTimeMsk(it.finished_at||it.updated_at||it.created_at||'');
-
-        const stake = Number(it.stake || 0) || 0;
-        const pot = Number(it.pot ?? it.result?.pot ?? (stake*2)) || 0;
-        const feeBps = Number(it.fee_bps ?? 0) || 0;
-        const rake = Number(it.rake ?? it.result?.rake ?? Math.round(pot * feeBps / 10000)) || 0;
-
-        const win = (it.winner_user_id ?? it.winnerUserId ?? '') !== null ? String(it.winner_user_id ?? it.winnerUserId ?? '') : '';
-        const cid = (it.creator_user_id ?? it.creatorUserId ?? '') !== null ? String(it.creator_user_id ?? it.creatorUserId ?? '') : '';
-        const oid = (it.opponent_user_id ?? it.opponentUserId ?? '') !== null ? String(it.opponent_user_id ?? it.opponentUserId ?? '') : '';
-        const leftCls  = (win && cid && win === cid) ? 'trend-up' : (win && cid ? 'trend-down' : '');
-        const rightCls = (win && oid && win === oid) ? 'trend-up' : (win && oid ? 'trend-down' : '');
-        const left = playerHtml(it.creator_user_id, it.creator_avatar, it.creator_first_name, it.creator_last_name, leftCls);
-        const right = playerHtml(it.opponent_user_id, it.opponent_avatar, it.opponent_first_name, it.opponent_last_name, rightCls);
-
-        return `<tr>
-          <td class="muted">${escapeHtml(time)}</td>
-          <td>${left}</td>
-          <td class="mini-vs">VS</td>
-          <td>${right}</td>
-          <td class="right">${fmtInt(stake)}</td>
-          <td>${escapeHtml(it.status || '—')}</td>
-          <td class="right">${fmtInt(pot)}</td>
-          <td class="right num-rake">${fmtInt(rake)}</td>
-        </tr>`;
-      }).join('');
-      if (window.decorateFlags) window.decorateFlags(tbody);
-    }catch(e){
-      console.error(e);
-      tbody.innerHTML = `<tr><td colspan="8" class="muted">Ошибка</td></tr>`;
-    }
-  }
-
-    // --- Events (search + paging) ---
-  let _eventsSkip = 0;
-  const _eventsTake = 100;
-  let _eventsFilters = null;
-
-  function _readEventsFilters(){
-    const f = {};
-    const user = ($('#events-user')?.value || '').toString().trim();
-    const type = ($('#events-type')?.value || '').toString().trim();
-    const term = ($('#events-term')?.value || '').toString().trim();
-    const day  = ($('#events-day')?.value || '').toString().trim();
-
-    const uid = toInt(user, 0);
-    if (uid) f.user_id = uid;
-    if (type) f.type = type;
-    if (term) f.term = term;
-    if (day)  f.day  = day.slice(0,10);
-
-    return f;
-  }
-
-  function _eventsUrl(skip){
-    const f = _eventsFilters || _readEventsFilters();
-    const qs = new URLSearchParams();
-    qs.set('take', String(_eventsTake));
-    qs.set('skip', String(Math.max(0, toInt(skip, 0))));
-    if (f.user_id) qs.set('user_id', String(f.user_id));
-    if (f.type)    qs.set('type', f.type);
-    if (f.term)    qs.set('term', f.term);
-    if (f.day)     qs.set('day', f.day);
-    return '/api/admin/events?' + qs.toString();
-  }
-
-  function _setEventsInfo(text){
-    const el = $('#events-info');
-    if (el) el.textContent = text;
-  }
-
-  function _filtersHint(){
-    const f = _eventsFilters || _readEventsFilters();
-    const parts = [];
-    if (f.user_id) parts.push(`user:${f.user_id}`);
-    if (f.type)    parts.push(`type:${f.type}`);
-    if (f.term)    parts.push(`term:${f.term}`);
-    if (f.day)     parts.push(`day:${f.day}`);
-    return parts.length ? (' • ' + parts.join(' ')) : '';
-  }
-
-  async function loadEvents(opts){
-    const tbody = $('#tbl-events tbody');
-    if (!tbody) return;
-
-    const nextSkip = (opts && typeof opts.skip === 'number') ? opts.skip : _eventsSkip;
-    if (opts && opts.filters) _eventsFilters = opts.filters;
-
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
-    try{
-      const r = await jget(_eventsUrl(nextSkip));
-      const items = r.items || r.events || r.rows || [];
-
-      if (!items.length){
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">Пусто</td></tr>`;
-        _eventsSkip = Math.max(0, nextSkip);
-        _setEventsInfo(`Пусто • skip=${_eventsSkip}${_filtersHint()}`);
-      } else {
-        tbody.innerHTML = items.map(it=>{
-          const createdFull = (it.created_at||'').toString().slice(0,19).replace('T',' ');
-          const ip = it.ip ?? '';
-          const uaFull = it.ua ?? '';
-          const uaShort = uaFull ? shorten(uaFull, 64) : '';
-          const et = (it.event_type || it.type || '—');
-
-          return `<tr>
-            <td>${it.id ?? ''}</td>
-            <td>${it.hum_id ?? ''}</td>
-            <td>${it.user_id ?? ''}</td>
-            <td><span class="etype" title="${escapeHtml(et)}">${escapeHtml(et)}</span></td>
-            <td><span class="ip" title="${escapeHtml(ip)}">${escapeHtml(ip)}</span></td>
-            <td><span class="ua" title="${escapeHtml(uaFull)}">${escapeHtml(uaShort)}</span></td>
-            <td class="muted">${escapeHtml(createdFull)}</td>
-          </tr>`;
-        }).join('');
-
-        _eventsSkip = Math.max(0, nextSkip);
-        _setEventsInfo(`Показаны ${items.length} • skip=${_eventsSkip}${_filtersHint()}`);
-      }
-
-      const prevBtn = $('#events-prev');
-      const nextBtn = $('#events-next');
-      if (prevBtn) prevBtn.disabled = (_eventsSkip <= 0);
-      if (nextBtn) nextBtn.disabled = (items.length < _eventsTake);
-    }catch(e){
-      console.error(e);
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка загрузки</td></tr>`;
-      _setEventsInfo(`Ошибка • skip=${Math.max(0,nextSkip)}${_filtersHint()}`);
-    }
-  }
-
-// --- Topup history (ported from classic /admin/topup.html) ---
-  let _topupSortKey = 'created_at';
-  let _topupSortDir = -1; // desc
-
-  let _topupRawList = null;
-  let _topupFilter = '';
-
-  function toBigIntSafe(x){
-    if (x === null || x === undefined) return 0n;
-    if (typeof x === 'bigint') return x;
-    const s = String(x).trim();
-    if (!s) return 0n;
-    if (/^-?\d+$/.test(s)){
-      try{ return BigInt(s); }catch(_){ return 0n; }
-    }
-    const n = Number(s);
-    return Number.isFinite(n) ? BigInt(Math.trunc(n)) : 0n;
-  }
-
-  function fmtDateTimeMskFromDate(d){
-    try{
-      const parts = new Intl.DateTimeFormat('ru-RU', {
-        timeZone: 'Europe/Moscow',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      }).formatToParts(d);
-      const get = (t)=> (parts.find(p=>p.type===t)?.value || '');
-      return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
-    }catch(_){
-      // Fallback: ISO (UTC) — лучше чем падение
-      return d.toISOString().slice(0, 19).replace('T', ' ');
-    }
-  }
-
-  function fmtTimeMskFromDate(d){
-    try{
-      const parts = new Intl.DateTimeFormat('ru-RU', {
-        timeZone: 'Europe/Moscow',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      }).formatToParts(d);
-      const get = (t)=> (parts.find(p=>p.type===t)?.value || '');
-      return `${get('hour')}:${get('minute')}:${get('second')}`;
-    }catch(_){
-      return d.toISOString().slice(11, 19);
-    }
-  }
-
-  function fmtDT(s){
-    const str = (s || '').toString().trim();
-    if (!str) return '—';
-    // Базовый формат: выводим как есть (без сдвига таймзоны)
-    return str.slice(0, 19).replace('T', ' ');
-  }
-
-  // Для дуэлей время иногда приходит как UTC/без TZ.
-  // Нам нужно показать «+3 к МСК» (т.е. привести к Europe/Moscow).
-  // Эти функции используются ТОЛЬКО в таблице "Дуэли" и мини-таблице "Последние дуэли".
-  function parseDuelDateForMsk(input){
-    const s0 = (input || '').toString().trim();
-    if (!s0) return null;
-
-    // Нормализуем в ISO-подобный вид
-    let s = s0;
-    // date time separator
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(s)) s = s.replace(' ', 'T');
-    // +HHMM => +HH:MM
-    s = s.replace(/([+-]\d{2})(\d{2})$/,'$1:$2');
-    // +HH => +HH:00
-    s = s.replace(/([+-]\d{2})$/,'$1:00');
-
-    const hasTZ = /Z$/i.test(s) || /[+-]\d{2}:\d{2}$/.test(s);
-    // Если TZ нет — считаем, что это UTC (и тогда МСК = UTC+3)
-    if (!hasTZ && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(s)) s = s + 'Z';
-
-    let d = new Date(s);
-    if (!Number.isNaN(d.getTime())) return d;
-
-    // Фоллбек: попробуем как есть
-    d = new Date(s0);
-    if (!Number.isNaN(d.getTime())) return d;
-    return null;
-  }
-
-  function fmtDTMsk(s){
-    const str = (s || '').toString().trim();
-    if (!str) return '—';
-
-    const d = parseDuelDateForMsk(str);
-    if (d) return fmtDateTimeMskFromDate(d);
-    return fmtDT(str);
-  }
-
-  function fmtTimeMsk(s){
-    const str = (s || '').toString().trim();
-    if (!str) return '—';
-
-    const d = parseDuelDateForMsk(str);
-    if (d) return fmtTimeMskFromDate(d);
-
-    if (str.length >= 19) return str.slice(11, 19);
-    if (/^\d{2}:\d{2}:\d{2}$/.test(str)) return str;
-    return str;
-  }
-
-  function pick(obj, keys, d){
-    for (const k of keys){
-      if (obj && obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
-    }
-    return d;
-  }
-
-  function tsVal(x){
-    const s = String(x || '').trim();
-    if (!s) return 0;
-    let t = new Date(s).getTime();
-    if (Number.isFinite(t)) return t;
-    t = new Date(s.replace(' ', 'T')).getTime();
-    return Number.isFinite(t) ? t : 0;
-  }
-
-  
-  async function ensureTopupEvents(force=false){
-    if (!force && Array.isArray(_topupRawList) && _topupRawList.length) return _topupRawList;
-    const r = await jget('/api/admin/events?type=admin_topup&take=200&skip=0');
-    _topupRawList = r.items || r.events || r.rows || [];
-    return _topupRawList;
-  }
-
-  function normTopupRows(list){
-    if (!Array.isArray(list)) return [];
-    return list.map(ev=>{
-      const p = ev.payload || {};
-      const created_at = pick(ev, ['created_at','ts','time'], pick(p, ['created_at','ts','time'], ''));
-      const admin      = pick(ev, ['admin','admin_id','actor'], pick(p, ['admin','admin_id','actor'], '—'));
-      const user_id    = pick(ev, ['user_id'], pick(p, ['user_id'], '—'));
-      const hum_id     = pick(ev, ['hum_id','HUMid'], pick(p, ['hum_id','HUMid'], '—'));
-      const amountBI   = toBigIntSafe(pick(ev, ['amount'], pick(p, ['amount','value','sum','delta'], 0)));
-      const comment    = String(pick(ev, ['comment'], pick(p, ['comment','note','reason','description'], '')) || '');
-      const amountText = (amountBI > 0n ? '+' : '') + fmtInt(amountBI.toString());
-      const amountSigned = (amountBI > 0n ? '+' : '') + amountBI.toString();
-      return { created_at, admin: String(admin ?? ''), user_id, hum_id, amountBI, amountText, amountSigned, comment };
-    });
-  }
-
-  function matchTopupRow(row, q){
-    const query = String(q || '').trim().toLowerCase();
-    if (!query) return true;
-
-    const hayAll = `${row.admin} ${row.user_id} ${row.hum_id} ${row.amountSigned} ${row.amountText} ${row.comment}`.toLowerCase();
-
-    const tokens = query.split(/\s+/).filter(Boolean);
-    return tokens.every(tok=>{
-      const t = tok.trim();
-      const idx = t.indexOf(':');
-      if (idx > 0){
-        const k = t.slice(0, idx);
-        const v = t.slice(idx+1);
-        if (!v) return true;
-        if (k === 'hum' || k === 'hum_id' || k === 'humid') return String(row.hum_id ?? '').toLowerCase().includes(v);
-        if (k === 'user' || k === 'user_id' || k === 'uid') return String(row.user_id ?? '').toLowerCase().includes(v);
-        if (k === 'admin') return String(row.admin ?? '').toLowerCase().includes(v);
-        if (k === 'sum' || k === 'amount') return (`${row.amountSigned} ${row.amountText}`).toLowerCase().includes(v);
-        if (k === 'comment' || k === 'c') return String(row.comment ?? '').toLowerCase().includes(v);
-        return hayAll.includes(v);
-      }
-      return hayAll.includes(t);
-    });
-  }
-
-  function renderMiniTopupsFromList(list){
-    const tbody = $('#mini-topups tbody');
-    if (!tbody) return;
-    const rows = normTopupRows(list)
-      .sort((a,b)=> tsVal(b.created_at) - tsVal(a.created_at))
-      .slice(0, 6);
-
-    if (!rows.length){
-      tbody.innerHTML = `<tr><td colspan="5" class="muted">Нет событий…</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = rows.map(r=>{
-      const cls = r.amountBI > 0n ? 'pill pos' : (r.amountBI < 0n ? 'pill neg' : 'pill zero');
-      const c = r.comment ? escapeHtml(r.comment) : '—';
-      return `<tr>
-        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
-        <td>${escapeHtml(r.admin || '—')}</td>
-        <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
-        <td class="right"><span class="${cls}">${escapeHtml(r.amountText)}</span></td>
-        <td class="truncate" title="${escapeHtml(r.comment || '')}">${c}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  async function loadMiniTopups(force=false){
-    try{
-      const list = await ensureTopupEvents(force);
-      renderMiniTopupsFromList(list);
-    }catch(e){
-      console.error(e);
-      const tbody = $('#mini-topups tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
-    }
-  }
-
-  function renderTopupHistory(list){
-    const tbody = $('#tbl-topup tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    if (!Array.isArray(list) || !list.length){
-      tbody.innerHTML = `<tr><td colspan="5" class="muted">Нет событий…</td></tr>`;
-      return;
-    }
-
-    let rows = normTopupRows(list);
-
-    // filter
-    if (_topupFilter){
-      rows = rows.filter(r=>matchTopupRow(r, _topupFilter));
-    }
-
-
-    rows.sort((a,b)=>{
-      if (_topupSortKey === 'created_at') return (tsVal(a.created_at) - tsVal(b.created_at)) * _topupSortDir;
-      if (_topupSortKey === 'amount') return (a.amountBI === b.amountBI ? 0 : (a.amountBI > b.amountBI ? 1 : -1)) * _topupSortDir;
-      if (_topupSortKey === 'user'){
-        const au = Number(a.user_id || 0) || 0;
-        const bu = Number(b.user_id || 0) || 0;
-        return (au - bu) * _topupSortDir;
-      }
-      const ak = String(a[_topupSortKey] ?? '');
-      const bk = String(b[_topupSortKey] ?? '');
-      return ak.localeCompare(bk) * _topupSortDir;
-    });
-
-    tbody.innerHTML = rows.map(r=>{
-      const cls = r.amountBI > 0n ? 'pill pos' : (r.amountBI < 0n ? 'pill neg' : 'pill zero');
-      const amountText = r.amountText;
-      const c = r.comment ? escapeHtml(r.comment) : '—';
-      return `<tr>
-        <td class="muted">${escapeHtml(fmtDT(r.created_at))}</td>
-        <td>${escapeHtml(r.admin || '—')}</td>
-        <td>${escapeHtml(String(r.user_id ?? '—'))} / ${escapeHtml(String(r.hum_id ?? '—'))}</td>
-        <td class="right"><span class="${cls}">${escapeHtml(amountText)}</span></td>
-        <td class="truncate" title="${escapeHtml(r.comment || '')}">${c}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  async function loadTopupHistory(force=false){
-    const tbody = $('#tbl-topup tbody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Загрузка…</td></tr>`;
-    try{
-      const list = await ensureTopupEvents(!!force);
-      if (tbody) renderTopupHistory(list);
-      renderMiniTopupsFromList(list);
-    }catch(e){
-      console.error(e);
-      if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
-      const mini = $('#mini-topups tbody');
-      if (mini) mini.innerHTML = `<tr><td colspan="5" class="muted">Ошибка загрузки</td></tr>`;
-    }
-  }
-
-
-
-// --- Расклейка (ручная): портировано из /admin/split ---
-function renderUnmergeCluster(data){
-  const box = $('#unmerge-cluster');
-  if (box) box.style.display = '';
-
-  const tbody = $('#unmerge-users-body');
-  if (!tbody) return;
-
-  const users = (data && (data.users || data.cluster || data.list)) || [];
-  if (!Array.isArray(users) || users.length === 0){
-    tbody.innerHTML = '<tr><td class="muted" colspan="6">Пусто…</td></tr>';
-    return;
-  }
-
-  const rows = users.map(u=>{
-    const acc = (u.accounts||[]).map(a=>{
-      const prov = escapeHtml(a.provider ?? '');
-      const pid  = escapeHtml(a.provider_user_id ?? '');
-      return prov && pid ? (prov + ':' + pid) : (prov || pid);
-    }).filter(Boolean).join(', ');
-
-    const name = (`${escapeHtml(u.first_name||'')} ${escapeHtml(u.last_name||'')}`).trim() || '—';
-    const cc = escapeHtml(u.country_code||'') || '—';
-    const bal = fmtInt(u.balance);
-
-    return `
-      <tr>
-        <td><input type="checkbox" class="unmerge-chk" value="${escapeHtml(u.id)}"></td>
-        <td class="mono">${escapeHtml(u.id)}</td>
-        <td>${name}</td>
-        <td class="mono">${acc || '—'}</td>
-        <td>${cc}</td>
-        <td class="right mono">${bal}</td>
-      </tr>`;
-  }).join('');
-
-  tbody.innerHTML = rows;
-
-  const all = $('#unmerge-all');
-  if (all) all.checked = false;
 }
 
 async function loadUnmergeCluster(opts){
@@ -2468,7 +1983,19 @@ async function applyUnmergeSelected(){
       });
     });
 
-    $('#refresh-duels')?.addEventListener('click', loadDuels);
+    $('#refresh-duels')?.addEventListener('click', ()=>{
+  _duelsSkip = 0;
+  _duelsServerFilters = _readDuelsServerFilters();
+  loadDuels({ skip: 0, filters: _duelsServerFilters });
+});
+$('#duels-prev')?.addEventListener('click', ()=>{
+  const next = Math.max(0, _duelsSkip - _duelsTake);
+  loadDuels({ skip: next });
+});
+$('#duels-next')?.addEventListener('click', ()=>{
+  const next = _duelsSkip + _duelsTake;
+  loadDuels({ skip: next });
+});
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);
     $('#refresh-users-mini')?.addEventListener('click', loadMiniUsers);
@@ -2476,16 +2003,35 @@ async function applyUnmergeSelected(){
 
     $('#topup-reload')?.addEventListener('click', ()=>loadTopupHistory(true).catch(()=>{}));
 
+    // duels filter/sort (client-side + server-side paging)
+['#duels-filter','#duels-day'].forEach(sel=>{
+  $(sel)?.addEventListener('keydown', (e)=>{
+    if (e.key === 'Enter'){
+      e.preventDefault();
+      _duelsSkip = 0;
+      _duelsServerFilters = _readDuelsServerFilters();
+      loadDuels({ skip: 0, filters: _duelsServerFilters });
+    }
+  });
+});
+
     // duels filter/sort (client-side)
     $('#duels-filter')?.addEventListener('input', (e)=>{
       _duelsFilter = String(e?.target?.value || '');
       renderDuelsTable(_duelsRaw || []);
     });
     $('#duels-filter-clear')?.addEventListener('click', ()=>{
-      _duelsFilter = '';
-      try{ $('#duels-filter').value = ''; }catch(_){}
-      renderDuelsTable(_duelsRaw || []);
-    });
+  _duelsFilter = '';
+  try{ $('#duels-filter').value = ''; }catch(_){}
+  try{ $('#duels-day').value = ''; }catch(_){}
+
+  _duelsSkip = 0;
+  _duelsServerFilters = null;
+  loadDuels({ skip: 0 });
+
+  // сразу перерисуем (на всякий случай)
+  renderDuelsTable(_duelsRaw || []);
+});
     document.querySelectorAll('#tbl-duels th[data-k]').forEach(th=>{
       th.addEventListener('click', ()=>{
         const k = th.getAttribute('data-k');
