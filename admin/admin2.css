@@ -753,7 +753,7 @@ body{
 }
 
 .stake-panel{ --donut-size: 252px; }
-.stake-panel .donut-grid{ padding: 34px 14px 14px; }
+.stake-panel .donut-grid{ padding: 24px 14px 14px; }
 
 
 .donut-grid{
