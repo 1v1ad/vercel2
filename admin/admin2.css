@@ -752,8 +752,8 @@ body{
   gap: 10px;
 }
 
-.stake-panel{ --donut-size: 252px; }
-.stake-panel .donut-grid{ padding: 34px 14px 14px; }
+.stake-panel{ --donut-size: 378px; }
+.stake-panel .donut-grid{ padding: 24px 14px 14px; }
 
 
 .donut-grid{
@@ -817,7 +817,7 @@ body{
   display:grid;
   grid-template-columns: 12px max-content max-content;
   align-items:center;
-  gap:6px;
+  gap:3px;
   font-size:12px;
   color: var(--muted);
 }
@@ -846,5 +846,5 @@ body{
 
 
 /* stakes donuts: scale typography with larger size */
-.stake-panel .donut-center{ font-size: 17px; }
-.stake-panel .donut-center .sub{ font-size: 12px; }
+.stake-panel .donut-center{ font-size: 20px; }
+.stake-panel .donut-center .sub{ font-size: 13px; }
