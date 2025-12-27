@@ -244,6 +244,39 @@
             </div>
           </div>
 
+          <div class="grid two summary-charts">
+            <div class="panel" id="panel-duels-big">
+              <div class="panel-head">
+                <div class="panel-title">Дуэли: оборот / рейк</div>
+                <div class="panel-actions">
+                  <span class="muted tiny">c</span>
+                  <input class="input input-date" id="duels-from" type="date" />
+                  <span class="muted tiny">по</span>
+                  <input class="input input-date" id="duels-to" type="date" />
+                  <button class="chip" data-duels-preset="7">7д</button>
+                  <button class="chip" data-duels-preset="30">30д</button>
+                  <button class="chip" data-duels-preset="90">3м</button>
+                  <button class="chip" data-duels-preset="365">Год</button>
+                  <button class="chip" data-duels-preset="all">Всё</button>
+                  <button class="btn sm" id="duels-apply">Показать</button>
+                </div>
+              </div>
+              <div class="chart-wrap">
+                <svg id="chart-duels" width="100%" height="260" aria-label="Duels turnover chart"></svg>
+                <div class="muted tiny" id="duels-note" style="margin-top:6px;"></div>
+              </div>
+            </div>
+
+            <div class="panel" id="panel-diagram-placeholder">
+              <div class="panel-head">
+                <div class="panel-title">Диаграмма</div>
+              </div>
+              <div class="chart-wrap">
+                <div class="muted" style="padding:16px;">Заглушка — диаграмму добавим следующим шагом.</div>
+              </div>
+            </div>
+          </div>
+
           <div class="grid two">
             <div class="panel">
               <div class="panel-head">
@@ -739,5 +772,6 @@
   <script src="/admin/admin2.js?v=20251227121551e"></script>
   <script src="/admin/chart-range.js?v=20251224c"></script>
   <script src="/admin/chart.js?v=20251224c"></script>
+  <script src="/admin/chart-duels.js?v=20251227a"></script>
 </body>
 </html>
