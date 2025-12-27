@@ -266,24 +266,37 @@
   }
 
   // ===== wiring =====
-  document.querySelectorAll('[data-duels-preset]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const p = btn.getAttribute('data-duels-preset');
-      if (p === 'all') {
-        fromEl.value = '';
-        toEl.value   = '';
-        run();
-      } else {
-        const days = Number(p) || 7;
-        const t = todayIso();
-        fromEl.value = addDays(t, -days);
-        toEl.value   = t;
-        run();
-      }
-    });
-  });
+// scope chips to this panel so we don't accidentally bind buttons from other charts
+const panel = SVG.closest('.panel') || document;
+panel.querySelectorAll('.panel-actions .chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // preset can be in data attribute or (as a fallback) in button text
+    let p = (btn.getAttribute('data-duels-preset') || '').trim().toLowerCase();
+    const txt = (btn.textContent || '').trim().toLowerCase();
 
-  applyBtn?.addEventListener('click', run);
+    if (!p) {
+      if (txt.includes('вс')) p = 'all';
+      else if (txt.includes('год')) p = '365';
+      else if (txt.includes('3')) p = '90';
+      else if (txt.includes('30')) p = '30';
+      else if (txt.includes('7')) p = '7';
+    }
+
+    if (p === 'all' || p === 'все' || p === 'всё') {
+      if (fromEl) fromEl.value = '';
+      if (toEl)   toEl.value   = '';
+      run();
+    } else {
+      const days = Number(p) || 7;
+      const t = todayIso();
+      if (fromEl) fromEl.value = addDays(t, -days);
+      if (toEl)   toEl.value   = t;
+      run();
+    }
+  });
+});
+
+applyBtn?.addEventListener('click', run);
 
   fromEl?.addEventListener('change', () => {
     if (toEl.value && fromEl.value > toEl.value) toEl.value = fromEl.value;
