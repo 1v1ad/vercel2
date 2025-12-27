@@ -752,8 +752,8 @@ body{
   gap: 10px;
 }
 
-.stake-panel{ --donut-size: 252px; }
-.stake-panel .donut-grid{ padding: 24px 14px 14px; }
+.stake-panel{ --donut-size: 227px; }
+.stake-panel .donut-grid{ padding: 34px 14px 14px; }
 
 
 .donut-grid{
@@ -841,7 +841,7 @@ body{
 
 @media (max-width: 980px){
   .donut-row{ flex-direction:column; align-items:flex-start; }
-  .stake-panel{ --donut-size: 196px; }
+  .stake-panel{ --donut-size: 176px; }
 }
 
 
