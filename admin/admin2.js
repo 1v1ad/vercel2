@@ -1569,6 +1569,9 @@ async function loadUsersAnalyticsDuels(){
   let _duelsSortDir = -1; // desc
   let _duelsRaw = null;
   let _duelsFilter = '';
+  let _duelsTake = 100;
+  let _duelsSkip = 0;
+  let _duelsHasNext = false;
 
   function normDuelRows(list){
     if (!Array.isArray(list)) return [];
@@ -1716,15 +1719,40 @@ async function loadUsersAnalyticsDuels(){
       </tr>`;
     }).join('');
   }
+  async function loadDuels(reset){
+    if (reset) _duelsSkip = 0;
 
-  async function loadDuels(){
     const tbody = $('#tbl-duels tbody');
     if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
+
+    const q = String($('#duels-filter')?.value || '').trim();
+    const day = String($('#duels-day')?.value || '').trim(); // YYYY-MM-DD (если пусто — не фильтруем)
+
     try{
-      const r = await jget('/api/admin/duels?take=200&skip=0');
+      const params = new URLSearchParams();
+      params.set('take', String(_duelsTake || 100));
+      params.set('skip', String(_duelsSkip || 0));
+      if (q) params.set('q', q);
+      if (day) params.set('day', day);
+
+      const r = await jget('/api/admin/duels?' + params.toString());
       const items = r.items || r.rows || r.duels || [];
       _duelsRaw = items;
+      _duelsHasNext = Array.isArray(items) && items.length >= (_duelsTake || 100);
+
+      // ВАЖНО: не меняем текущую клиентскую фильтрацию/сортировку — она остаётся
       renderDuelsTable(_duelsRaw);
+
+      // pager
+      const elPage = $('#duels-page');
+      if (elPage){
+        const page = Math.floor((_duelsSkip||0)/(_duelsTake||100)) + 1;
+        elPage.textContent = `стр. ${page}`;
+      }
+      const btnPrev = $('#duels-prev');
+      const btnNext = $('#duels-next');
+      if (btnPrev) btnPrev.disabled = (_duelsSkip||0) <= 0;
+      if (btnNext) btnNext.disabled = !_duelsHasNext;
     }catch(e){
       console.error(e);
       if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Ошибка загрузки</td></tr>`;
@@ -2468,7 +2496,24 @@ async function applyUnmergeSelected(){
       });
     });
 
-    $('#refresh-duels')?.addEventListener('click', loadDuels);
+    $('#refresh-duels')?.addEventListener('click', ()=>loadDuels(true));
+    // duels paging (server-side) + date filter
+    $('#duels-prev')?.addEventListener('click', ()=>{
+      _duelsSkip = Math.max(0, (_duelsSkip||0) - (_duelsTake||100));
+      loadDuels(false);
+    });
+    $('#duels-next')?.addEventListener('click', ()=>{
+      _duelsSkip = (_duelsSkip||0) + (_duelsTake||100);
+      loadDuels(false);
+    });
+    $('#duels-day')?.addEventListener('change', ()=>loadDuels(true));
+    $('#duels-filter')?.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter'){ e.preventDefault(); loadDuels(true); }
+    });
+    $('#duels-day')?.addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter'){ e.preventDefault(); loadDuels(true); }
+    });
+
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);
     $('#refresh-users-mini')?.addEventListener('click', loadMiniUsers);
@@ -2480,6 +2525,7 @@ async function applyUnmergeSelected(){
     $('#duels-filter')?.addEventListener('input', (e)=>{
       _duelsFilter = String(e?.target?.value || '');
       renderDuelsTable(_duelsRaw || []);
+      loadDuels(true).catch(()=>{});
     });
     $('#duels-filter-clear')?.addEventListener('click', ()=>{
       _duelsFilter = '';

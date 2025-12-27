@@ -536,6 +536,11 @@
               <div class="tools">
                 <input class="input sm" id="duels-filter" placeholder="Фильтр: id:123 status:cancelled user:97 hum:1 stake:1000 creator:97 opponent:12 winner:45" />
                 <button class="btn ghost sm" id="duels-filter-clear" title="Очистить фильтр">×</button>
+                <input class="input sm input-date" id="duels-day" type="date" title="Дата (по Москве)" />
+                <button class="btn ghost sm" id="duels-prev" title="Предыдущие 100">←</button>
+                <span class="muted tiny" id="duels-page">стр. 1</span>
+                <button class="btn ghost sm" id="duels-next" title="Следующие 100">→</button>
+
                 <button class="btn sm" id="refresh-duels">Обновить</button>
               </div>
             </div>
@@ -731,7 +736,7 @@
   <!-- auth shim / hum toggle -->
   <script src="/admin/admin-auth-headers.js?v=20251224c"></script>
 
-  <script src="/admin/admin2.js?v=20251227e"></script>
+  <script src="/admin/admin2.js?v=20251227121551e"></script>
   <script src="/admin/chart-range.js?v=20251224c"></script>
   <script src="/admin/chart.js?v=20251224c"></script>
 </body>
