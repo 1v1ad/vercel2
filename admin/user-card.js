@@ -2,10 +2,6 @@
 (function(){
   const $ = (sel, root=document) => root.querySelector(sel);
 
-  let stakeMode = (localStorage.getItem('UC_STAKES_MODE') || 'count').toString();
-  if (stakeMode !== 'turnover' && stakeMode !== 'count') stakeMode = 'count';
-  let toggleBound = false;
-
   function api(){
     const raw = (window.API || localStorage.getItem('ADMIN_API') || localStorage.getItem('admin_api') || '').toString().trim();
     return raw ? raw.replace(/\/+$/,'') : location.origin;
@@ -28,46 +24,6 @@
     const v = Number(n);
     if (!Number.isFinite(v)) return '—';
     return nf0.format(Math.trunc(v)) + ' ₽';
-  }
-
-  // BigInt helpers (for turnover donuts)
-  function toBigIntSafe(x){
-    try{
-      if (typeof x === 'bigint') return x;
-      if (x === null || x === undefined) return 0n;
-      const s = String(x).trim();
-      if (!s) return 0n;
-      if (/^-?\d+$/.test(s)) return BigInt(s);
-      const t = s.replace(/[^\d\-]/g,'');
-      if (!t || t === '-') return 0n;
-      return BigInt(t);
-    }catch(_){ return 0n; }
-  }
-
-  function fmtRubBig(x){
-    const bi = toBigIntSafe(x);
-    const sign = bi < 0n ? '-' : '';
-    const abs = bi < 0n ? -bi : bi;
-    const s = abs.toString();
-    let out='';
-    for (let i=0;i<s.length;i++){
-      const j = s.length - i;
-      out += s[i];
-      if (j>1 && (j-1)%3===0) out += ' ';
-    }
-    return sign + out + ' ₽';
-  }
-
-  function pickScaleDiv(bigints){
-    let max = 0n;
-    (bigints||[]).forEach(b=>{
-      const a = b < 0n ? -b : b;
-      if (a > max) max = a;
-    });
-    const digits = max.toString().length;
-    const drop = Math.max(0, digits - 15);
-    const div = 10n ** BigInt(drop);
-    return { drop, div };
   }
 
   function prettyTs(v){
@@ -114,97 +70,6 @@
     if (lower.includes('ipad') || lower.includes('tablet')) type = 'Tablet';
 
     return { os, client, type };
-  }
-
-  const NS = 'http://www.w3.org/2000/svg';
-
-  function svgElt(tag, attrs){
-    const e = document.createElementNS(NS, tag);
-    if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
-    return e;
-  }
-  function clearSvg(svg){
-    while (svg && svg.firstChild) svg.removeChild(svg.firstChild);
-  }
-  function pickColors(n){
-    const vars = ['--seg1','--seg2','--seg3','--seg4','--seg5','--seg6','--seg7','--seg8'];
-    const root = getComputedStyle(document.documentElement);
-    const arr = [];
-    for (let i=0;i<n;i++){
-      const v = vars[i % vars.length];
-      const c = root.getPropertyValue(v).trim() || '#4dabf7';
-      arr.push(c);
-    }
-    return arr;
-  }
-
-  function drawDonut(svg, centerEl, legendEl, items, totalNum, totalRaw, valueFormatter, subLabel){
-    if (!svg || !centerEl || !legendEl) return;
-    clearSvg(svg);
-    legendEl.innerHTML = '';
-
-    const valEl = centerEl.querySelector?.('.uc-donut-center-val');
-    const subEl = centerEl.querySelector?.('.uc-donut-center-sub');
-    const setCenter = (mainHtml, subText) => {
-      if (valEl) valEl.innerHTML = mainHtml;
-      else centerEl.innerHTML = mainHtml;
-      if (subEl) subEl.textContent = subText || '';
-    };
-
-    const R = 40;
-    const C = 2 * Math.PI * R;
-
-    // track
-    svg.appendChild(svgElt('circle', { cx:50, cy:50, r:R, fill:'none', stroke:'rgba(255,255,255,0.08)', 'stroke-width':18 }));
-
-    const nonZero = (items||[]).filter(x => (x.valueNum > 0));
-    if (!nonZero.length || !totalNum){
-      setCenter('—', subLabel||'');
-      return;
-    }
-
-    const colors = pickColors(nonZero.length);
-    let offset = 0;
-
-    nonZero.forEach((it, idx)=>{
-      const frac = it.valueNum / totalNum;
-      const seg = Math.max(0, C * frac);
-      const c = svgElt('circle', {
-        cx:50, cy:50, r:R, fill:'none',
-        stroke: colors[idx],
-        'stroke-width':18,
-        'stroke-dasharray': `${seg} ${C}`,
-        'stroke-dashoffset': String(-offset),
-        transform: 'rotate(-90 50 50)',
-      });
-      const t = svgElt('title');
-      t.textContent = `${it.label}: ${valueFormatter(it.valueRaw)} (${Math.round(frac*100)}%)`;
-      c.appendChild(t);
-      svg.appendChild(c);
-      offset += seg;
-
-      const row = document.createElement('div');
-      row.className = 'donut-leg-row';
-
-      const dot = document.createElement('span');
-      dot.className = 'donut-dot';
-      dot.style.background = colors[idx];
-
-      const name = document.createElement('span');
-      name.className = 'name';
-      name.textContent = it.label;
-
-      const val = document.createElement('span');
-      val.className = 'val';
-      val.textContent = `${valueFormatter(it.valueRaw)} • ${Math.round(frac*100)}%`;
-
-      row.appendChild(dot);
-      row.appendChild(name);
-      row.appendChild(val);
-      legendEl.appendChild(row);
-    });
-
-    centerEl.innerHTML = `${valueFormatter(totalRaw)}<span class="sub">${esc(subLabel||'')}</span>`;
   }
 
   function badge(label, kind=''){
@@ -325,7 +190,6 @@
     try{ if (window.decorateFlags) window.decorateFlags(document); }catch(_){}
 
     renderOverview(data);
-    window.__uc_last = data;
   }
 
   function renderOverview(data){
@@ -384,6 +248,11 @@
       `).join('');
     }
 
+    // Step 4 charts
+    try{ renderActivity(data.activity); }catch(_){ }
+    try{ renderDonut(data.stakes); }catch(_){ }
+
+
     // Last duels table
     const tbl = $('#uc-last-duels');
     const tbody = tbl?.querySelector('tbody');
@@ -428,11 +297,6 @@
       }
     }
 
-    // Mini activity + stakes donut
-    renderMiniActivity(data);
-    setupStakesToggle();
-    renderMiniStakes(data);
-
     // Last events list
     const evBox = $('#uc-last-events');
     if (evBox){
@@ -458,173 +322,178 @@
     }
   }
 
-
-
-  function setupStakesToggle(){
-    if (toggleBound) return;
-    const box = $('#uc-stakes-toggle');
-    if (!box) return;
-    toggleBound = true;
-
-    const setActive = () => {
-      box.querySelectorAll('button').forEach(b=>{
-        const m = b.getAttribute('data-mode');
-        if (m === stakeMode) b.classList.add('is-active');
-        else b.classList.remove('is-active');
-      });
-    };
-    setActive();
-
-    box.addEventListener('click', (e)=>{
-      const btn = e.target?.closest?.('button[data-mode]');
-      if (!btn) return;
-      const m = (btn.getAttribute('data-mode') || '').toString();
-      if (m !== 'count' && m !== 'turnover') return;
-      stakeMode = m;
-      localStorage.setItem('UC_STAKES_MODE', stakeMode);
-      setActive();
-      if (window.__uc_last) renderMiniStakes(window.__uc_last);
-    });
-  }
-
-  function normalizeStakes(items){
-    const pref = [100,250,500,1000,2500];
-    const map = new Map();
-    (items||[]).forEach(r=>{
-      const s = Number(r.stake||0) || 0;
-      const key = String(s||0);
-      if (!map.has(key)) map.set(key, { stake:s, duels_count:0, turnover:0n });
-      const cur = map.get(key);
-      cur.duels_count += Number(r.duels_count || 0);
-      cur.turnover += toBigIntSafe(r.turnover);
-    });
-
-    const out=[];
-    for (const s of pref){
-      const k = String(s);
-      if (map.has(k)) {
-        const v = map.get(k);
-        out.push({ label: `${s} ₽`, stake:s, duels_count:v.duels_count, turnover:v.turnover });
-        map.delete(k);
-      }
-    }
-    const rest=[];
-    let vip=null;
-    for (const [k,v] of map.entries()){
-      if (k === '0') { vip=v; continue; }
-      rest.push({ label: `${v.stake} ₽`, stake:v.stake, duels_count:v.duels_count, turnover:v.turnover });
-    }
-    rest.sort((a,b)=>(a.stake||0)-(b.stake||0));
-    out.push(...rest);
-    if (vip) out.push({ label:'VIP', stake:0, duels_count:vip.duels_count, turnover:vip.turnover });
-    return out;
-  }
-
-  function renderMiniStakes(data){
-    const wrap = $('#uc-stakes-donut');
-    const svg = $('#uc-stakes-svg') || wrap?.querySelector('svg');
-    const center = $('#uc-stakes-center') || wrap?.querySelector('.uc-donut-center');
-    const legend = $('#uc-stakes-legend');
-    if (!wrap || !svg || !center || !legend) return;
-
-    const raw = data?.stakes?.items || [];
-    const itemsN = normalizeStakes(raw);
-
-    if (stakeMode === 'turnover'){
-      const vals = itemsN.map(x=>x.turnover);
-      const totalBig = vals.reduce((a,b)=>a+b, 0n);
-      const { div } = pickScaleDiv([totalBig, ...vals]);
-      const totalNum = Number(totalBig / div);
-      const drawItems = itemsN.map(x=>({
-        label: x.label,
-        valueRaw: x.turnover,
-        valueNum: Number(x.turnover / div),
-      }));
-      drawDonut(svg, center, legend, drawItems, totalNum, totalBig, (v)=>fmtRubBig(v), 'Оборот');
-    } else {
-      const total = itemsN.reduce((a,x)=>a + (Number(x.duels_count||0)), 0);
-      const drawItems = itemsN.map(x=>({
-        label: x.label,
-        valueRaw: Number(x.duels_count||0),
-        valueNum: Number(x.duels_count||0),
-      }));
-      drawDonut(svg, center, legend, drawItems, total, total, (v)=>fmtInt(v), 'Дуэлей');
-    }
-  }
-
-  function dateOnly(v){
-    const s = (v??'').toString();
-    const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
-    return m ? m[1] : s;
-  }
-
-  function renderMiniActivity(data){
-    const svg = $('#uc-activity-chart');
-    const tip = $('#uc-activity-tip');
-    if (!svg) return;
-
-    const series = (data && data.activity_90 && Array.isArray(data.activity_90.points))
-      ? data.activity_90
-      : (data?.activity_series || {});
-
-    const pts = Array.isArray(series.points) ? series.points : [];
-
-    // clear
-    clearSvg(svg);
-    if (!pts.length) return;
-
-    const W = 300, H = 80, pad = 6;
-    const max = Math.max(1, ...pts.map(p=>Number(p.c||0)));
-
-    // grid (3 lines)
-    for (let i=1;i<=3;i++){
-      const y = pad + ((H - pad*2) * i / 4);
-      svg.appendChild(svgElt('line', { x1:0, y1:y, x2:W, y2:y, class:'uc-activity-grid' }));
-    }
-
-    const n = pts.length;
-    const step = (W - pad*2) / n;
-    const barW = Math.max(1, step * 0.85);
-
-    for (let i=0;i<n;i++){
-      const p = pts[i];
-      const c = Number(p.c||0);
-      const bh = (H - pad*2) * (c / max);
-      const x = pad + i*step + (step - barW)/2;
-      const y = H - pad - bh;
-      const r = svgElt('rect', { x, y, width:barW, height:Math.max(1,bh), rx:1, class:'uc-activity-bar' });
-      r.dataset.t = dateOnly(p.t);
-      r.dataset.c = String(c);
-      svg.appendChild(r);
-    }
-
-    // tooltip
-    if (tip && !svg.dataset.ucTipInit){
-      svg.dataset.ucTipInit = '1';
-      const wrap = svg.parentElement || svg;
-
-      const show = (e)=>{
-        const t = e.target;
-        if (!(t && t.tagName && t.tagName.toLowerCase() === 'rect')) return hide();
-        const dt = t.dataset.t || '';
-        const c  = t.dataset.c || '0';
-        tip.textContent = `${dt}: ${c}`;
-        const br = wrap.getBoundingClientRect();
-        const x = e.clientX - br.left;
-        const y = e.clientY - br.top;
-        tip.style.left = Math.min(br.width - 10, Math.max(10, x + 10)) + 'px';
-        tip.style.top  = Math.max(6, y - 10) + 'px';
-        tip.classList.add('show');
-      };
-
-      const hide = ()=>{
-        tip.classList.remove('show');
-      };
-
-      svg.addEventListener('mousemove', show);
-      svg.addEventListener('mouseleave', hide);
-    }
-  }
-
   document.addEventListener('DOMContentLoaded', load);
+
+
+// --- Step 4: Activity mini-bars (SVG) ---
+function renderActivity(activity){
+  const svg = document.getElementById('uc-activity-chart');
+  const tip = document.getElementById('uc-activity-tip');
+  if (!svg) return;
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const days = activity?.days || [];
+  const counts = activity?.counts || [];
+  if (!days.length){
+    if (tip) tip.textContent = 'Нет данных';
+    return;
+  }
+  const W = 300, H = 80;
+  const n = Math.min(days.length, counts.length);
+  const maxV = Math.max(1, ...counts.slice(0,n));
+  const barW = W / n;
+
+  const grid = document.createElementNS('http://www.w3.org/2000/svg','line');
+  grid.setAttribute('x1','0'); grid.setAttribute('y1', String(H-0.5));
+  grid.setAttribute('x2', String(W)); grid.setAttribute('y2', String(H-0.5));
+  grid.setAttribute('class','uc-activity-grid');
+  svg.appendChild(grid);
+
+  for (let i=0;i<n;i++){
+    const v = counts[i] || 0;
+    const h = Math.round((v / maxV) * (H-6));
+    const x = i * barW;
+    const y = H - h;
+
+    const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x', String(x+0.6));
+    r.setAttribute('y', String(y));
+    r.setAttribute('width', String(Math.max(1, barW-1.2)));
+    r.setAttribute('height', String(h));
+    r.setAttribute('rx','1.6');
+    r.setAttribute('class','uc-activity-bar');
+    r.dataset.day = days[i];
+    r.dataset.cnt = String(v);
+    svg.appendChild(r);
+  }
+
+  svg.onmousemove = (e)=>{
+    const t = e.target;
+    if (!t || t.tagName !== 'rect') return;
+    const day = t.dataset.day || '';
+    const cnt = t.dataset.cnt || '0';
+    if (tip){
+      tip.textContent = `${day}: ${cnt}`;
+      tip.classList.add('show');
+      const box = svg.getBoundingClientRect();
+      tip.style.left = (e.clientX - box.left + 10) + 'px';
+      tip.style.top  = (e.clientY - box.top - 10) + 'px';
+    }
+  };
+  svg.onmouseleave = ()=>{
+    if (tip) tip.classList.remove('show');
+  };
+}
+
+// --- Step 4: Donut (SVG) ---
+function renderDonut(stakes){
+  const el = document.getElementById('uc-stakes-donut');
+  const leg = document.getElementById('uc-stakes-legend');
+  if (!el || !leg) return;
+
+  el.innerHTML = '';
+  leg.innerHTML = '';
+
+  const rows = (stakes?.by_stake || []).filter(r => (r.duels||0) > 0 || (r.turnover||0) > 0);
+  if (!rows.length){
+    el.innerHTML = '<div class="uc-muted">Нет дуэлей</div>';
+    return;
+  }
+
+  const totals = stakes?.totals || {};
+  const totalDuels = Number(totals.duels || rows.reduce((a,r)=>a+Number(r.duels||0),0));
+  const totalTurn  = Number(totals.turnover || rows.reduce((a,r)=>a+Number(r.turnover||0),0));
+
+  // Persisted metric across clicks (default: duels)
+  const metric = (window.__ucDonutMetric === 'turnover') ? 'turnover' : 'duels';
+  const total = metric === 'turnover' ? Math.max(1,totalTurn) : Math.max(1,totalDuels);
+
+  const size = 168;
+  const rOuter = 74;
+  const rInner = 54;
+  const cx = size/2, cy = size/2;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('class','uc-donut-svg');
+
+  const bg = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  bg.setAttribute('cx',cx); bg.setAttribute('cy',cy);
+  bg.setAttribute('r', (rOuter+rInner)/2);
+  bg.setAttribute('class','uc-donut-bg');
+  bg.setAttribute('stroke-width', String(rOuter-rInner));
+  svg.appendChild(bg);
+
+  const colors = ['uc-dc-1','uc-dc-2','uc-dc-3','uc-dc-4','uc-dc-5','uc-dc-6','uc-dc-7'];
+  let a0 = -Math.PI/2;
+
+  function arcPath(aStart, aEnd){
+    const r = (rOuter+rInner)/2;
+    const x1 = cx + r*Math.cos(aStart), y1 = cy + r*Math.sin(aStart);
+    const x2 = cx + r*Math.cos(aEnd),   y2 = cy + r*Math.sin(aEnd);
+    const large = (aEnd-aStart) > Math.PI ? 1 : 0;
+    return `M ${x1.toFixed(3)} ${y1.toFixed(3)} A ${r.toFixed(3)} ${r.toFixed(3)} 0 ${large} 1 ${x2.toFixed(3)} ${y2.toFixed(3)}`;
+  }
+
+  rows.forEach((row, i)=>{
+    const val = metric === 'turnover' ? Number(row.turnover||0) : Number(row.duels||0);
+    const frac = val / total;
+    const a1 = a0 + frac * Math.PI*2;
+
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', arcPath(a0,a1));
+    p.setAttribute('class', 'uc-donut-seg ' + colors[i % colors.length]);
+    p.setAttribute('stroke-width', String(rOuter-rInner));
+    p.style.cursor = 'pointer';
+    svg.appendChild(p);
+
+    a0 = a1;
+  });
+
+  const center = document.createElement('div');
+  center.className = 'uc-donut-center';
+  const centerValue = metric === 'turnover'
+    ? fmtMoney(totalTurn)
+    : (fmtInt(totalDuels) + ' шт');
+  center.innerHTML = `<div class="uc-donut-center-val">${esc(centerValue)}</div>
+                      <div class="uc-donut-center-sub">${metric === 'turnover' ? 'оборот' : 'дуэли'}</div>`;
+
+  el.appendChild(svg);
+  el.appendChild(center);
+
+  // Legend
+  rows.forEach((row,i)=>{
+    const stake = Number(row.stake||0);
+    const label = stake ? `${stake} ₽` : 'VIP';
+    const duels = Number(row.duels||0);
+    const turn  = Number(row.turnover||0);
+    const val = metric === 'turnover' ? turn : duels;
+    const pct = Math.round((val / total)*1000)/10;
+
+    const it = document.createElement('div');
+    it.className = 'uc-leg-item';
+    it.innerHTML = `
+      <span class="uc-leg-dot ${colors[i%colors.length]}"></span>
+      <span class="uc-leg-name">${esc(label)}</span>
+      <span class="uc-leg-val">${metric === 'turnover' ? (esc(fmtMoney(turn)) + ' • ' + esc(pct) + '%') : (esc(fmtInt(duels)) + ' • ' + esc(pct) + '%')}</span>
+    `;
+    leg.appendChild(it);
+  });
+
+  // Toggle: be resilient across SVG bubbling quirks (Edge sometimes behaves oddly).
+  const toggle = ()=>{
+    window.__ucDonutMetric = (metric === 'duels') ? 'turnover' : 'duels';
+    renderDonut(stakes);
+  };
+
+  el.style.cursor = 'pointer';
+  el.onclick = toggle;
+
+  // Also attach directly to SVG/segments; stopPropagation to avoid double toggles.
+  svg.style.cursor = 'pointer';
+  svg.onclick = (e)=>{ try{ e.stopPropagation(); }catch(_){ } toggle(); };
+
+  const segs = svg.querySelectorAll('path');
+  segs.forEach(p=> p.onclick = (e)=>{ try{ e.stopPropagation(); }catch(_){ } toggle(); });
+}
+
 })();
