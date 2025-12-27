@@ -642,32 +642,71 @@
         <section class="view" id="view-unmerge">
           <div class="panel">
             <div class="panel-head">
-              <div class="panel-title">Расклейка (unmerge)</div>
+              <div class="panel-title">Расклейка</div>
+              <div class="tools">
+                <input class="input sm" id="unmerge-hum" placeholder="hum_id (например 1)" style="width:180px" />
+                <button class="btn sm" id="unmerge-load">Загрузить кластер</button>
+              </div>
             </div>
 
-            <div class="form">
-              <div class="row">
-                <label>hum_id</label>
-                <input class="input" id="unmerge-hum" placeholder="например 1" />
+            <div id="unmerge-cluster" style="display:none">
+              <div class="note muted tiny">Кластер HUM <b id="unmerge-hum-title"></b> — отметь пользователей для расклейки.</div>
+
+              <div class="table-wrap">
+                <table class="table" id="unmerge-users-table">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>User ID</th>
+                      <th>Имя</th>
+                      <th class="truncate">Аккаунты</th>
+                      <th>Страна</th>
+                      <th class="right">Баланс</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td class="muted" colspan="6">Загрузи кластер…</td></tr>
+                  </tbody>
+                </table>
               </div>
-              <div class="row">
-                <label>user_ids</label>
-                <input class="input" id="unmerge-users" placeholder="например 97, 468" />
-              </div>
-              <div class="row">
-                <label>reason</label>
-                <input class="input" id="unmerge-reason" placeholder="почему расклеиваем" />
-              </div>
-              <div class="row">
-                <div></div>
-                <button class="btn danger" id="unmerge-btn">Расклеить</button>
+
+              <div class="section-sep"></div>
+
+              <div class="tools" style="justify-content:space-between; gap:10px; flex-wrap:wrap">
+                <input class="input" id="unmerge-reason" placeholder="Причина (опционально)" style="flex:1; min-width:260px" />
+                <button class="btn danger" id="unmerge-do">Расклеить отмеченные</button>
               </div>
 
               <pre class="out" id="unmerge-out"></pre>
-              <div class="note muted tiny">Технически: POST /api/admin/unmerge</div>
             </div>
           </div>
-        </section>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">История расклеек</div>
+              <div class="tools">
+                <button class="btn sm ghost" id="unmerge-history-reload">Обновить</button>
+                <span class="muted tiny">Последние 100 событий <code>admin_unmerge_manual</code></span>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table class="table" id="unmerge-hist">
+                <thead>
+                  <tr>
+                    <th>Время</th>
+                    <th>HUM</th>
+                    <th>User IDs</th>
+                    <th>Причина</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td class="muted" colspan="4">Загрузка…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+</section>
 
       </div>
     </main>
