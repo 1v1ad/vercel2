@@ -640,34 +640,74 @@
         </section>
 
         <section class="view" id="view-unmerge">
-          <div class="panel">
-            <div class="panel-head">
-              <div class="panel-title">Расклейка (unmerge)</div>
-            </div>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">Расклейка (ручная)</div>
+    </div>
 
-            <div class="form">
-              <div class="row">
-                <label>hum_id</label>
-                <input class="input" id="unmerge-hum" placeholder="например 1" />
-              </div>
-              <div class="row">
-                <label>user_ids</label>
-                <input class="input" id="unmerge-users" placeholder="например 97, 468" />
-              </div>
-              <div class="row">
-                <label>reason</label>
-                <input class="input" id="unmerge-reason" placeholder="почему расклеиваем" />
-              </div>
-              <div class="row">
-                <div></div>
-                <button class="btn danger" id="unmerge-btn">Расклеить</button>
-              </div>
+    <div class="form">
+      <div class="row">
+        <label>hum_id</label>
+        <input class="input" id="unmerge-hum" placeholder="например 1" />
+        <button class="btn" id="unmerge-load" type="button">Загрузить кластер</button>
+      </div>
 
-              <pre class="out" id="unmerge-out"></pre>
-              <div class="note muted tiny">Технически: POST /api/admin/unmerge</div>
-            </div>
-          </div>
-        </section>
+      <div id="unmerge-cluster" style="display:none">
+        <div class="table-wrap" style="margin-top:10px">
+          <table class="table" id="unmerge-users-table">
+            <thead>
+              <tr>
+                <th style="width:34px"><input type="checkbox" id="unmerge-all" title="Выбрать всех" /></th>
+                <th class="tight">User</th>
+                <th>Имя</th>
+                <th>Аккаунты</th>
+                <th>Страна</th>
+                <th class="right">Баланс</th>
+              </tr>
+            </thead>
+            <tbody id="unmerge-users-body">
+              <tr><td class="muted" colspan="6">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <label>reason</label>
+          <input class="input" id="unmerge-reason" placeholder="почему расклеиваем (опционально)" style="flex:1" />
+          <button class="btn danger" id="unmerge-btn" type="button">Расклеить отмеченные</button>
+        </div>
+
+        <pre class="out" id="unmerge-out"></pre>
+      </div>
+
+      <div class="note muted tiny">Технически: GET /api/admin/cluster?hum_id=… → POST /api/admin/unmerge → события admin_unmerge_manual</div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:14px">
+    <div class="panel-head">
+      <div class="panel-title">История расклеек</div>
+      <div class="panel-actions">
+        <button class="btn ghost sm" id="unmerge-history-refresh" type="button">Обновить</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="table" id="unmerge-hist">
+        <thead>
+          <tr>
+            <th>Время</th>
+            <th>HUM</th>
+            <th>User IDs</th>
+            <th>Причина</th>
+          </tr>
+        </thead>
+        <tbody id="unmerge-hist-body">
+          <tr><td class="muted" colspan="4">Загрузка…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
       </div>
     </main>
@@ -676,7 +716,7 @@
   <!-- auth shim / hum toggle -->
   <script src="/admin/admin-auth-headers.js?v=20251224c"></script>
 
-  <script src="/admin/admin2.js?v=20251227a"></script>
+  <script src="/admin/admin2.js?v=20251227c"></script>
   <script src="/admin/chart-range.js?v=20251224c"></script>
   <script src="/admin/chart.js?v=20251224c"></script>
 </body>

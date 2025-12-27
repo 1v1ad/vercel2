@@ -922,6 +922,12 @@ _usersMiniCtx = {
     if (view === 'events') return loadEvents();
     if (view === 'duels') return loadDuels();
 
+    if (view === 'unmerge'){
+      loadUnmergeHistory().catch(()=>{});
+      return;
+    }
+
+
     if (view === 'topup'){
       _topupRawList = null;
       loadTopupHistory(true).catch(()=>{});
@@ -2215,6 +2221,143 @@ async function loadMiniDuels(){
     }
   }
 
+
+
+// --- Расклейка (ручная): портировано из /admin/split ---
+function renderUnmergeCluster(data){
+  const box = $('#unmerge-cluster');
+  if (box) box.style.display = '';
+
+  const tbody = $('#unmerge-users-body');
+  if (!tbody) return;
+
+  const users = (data && (data.users || data.cluster || data.list)) || [];
+  if (!Array.isArray(users) || users.length === 0){
+    tbody.innerHTML = '<tr><td class="muted" colspan="6">Пусто…</td></tr>';
+    return;
+  }
+
+  const rows = users.map(u=>{
+    const acc = (u.accounts||[]).map(a=>{
+      const prov = escapeHtml(a.provider ?? '');
+      const pid  = escapeHtml(a.provider_user_id ?? '');
+      return prov && pid ? (prov + ':' + pid) : (prov || pid);
+    }).filter(Boolean).join(', ');
+
+    const name = (`${escapeHtml(u.first_name||'')} ${escapeHtml(u.last_name||'')}`).trim() || '—';
+    const cc = escapeHtml(u.country_code||'') || '—';
+    const bal = fmtInt(u.balance);
+
+    return `
+      <tr>
+        <td><input type="checkbox" class="unmerge-chk" value="${escapeHtml(u.id)}"></td>
+        <td class="mono">${escapeHtml(u.id)}</td>
+        <td>${name}</td>
+        <td class="mono">${acc || '—'}</td>
+        <td>${cc}</td>
+        <td class="right mono">${bal}</td>
+      </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rows;
+
+  const all = $('#unmerge-all');
+  if (all) all.checked = false;
+}
+
+async function loadUnmergeCluster(opts){
+  const out = $('#unmerge-out');
+  const silent = !!(opts && opts.silent);
+  if (out && !silent) out.textContent = '...';
+
+  const hum_id = Number(String($('#unmerge-hum')?.value || '').trim());
+  if (!Number.isFinite(hum_id) || hum_id <= 0) throw new Error('bad_hum_id');
+
+  const r = await jget(`/api/admin/cluster?hum_id=${encodeURIComponent(String(hum_id))}`);
+  renderUnmergeCluster(r);
+
+  if (out && !silent) out.textContent = '';
+  return r;
+}
+
+function fmtMsk(dt){
+  try{
+    const d = (dt instanceof Date) ? dt : new Date(dt || 0);
+    return d.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+  }catch(_){
+    return String(dt || '');
+  }
+}
+
+async function loadUnmergeHistory(){
+  const tbody = $('#unmerge-hist-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td class="muted" colspan="4">Загрузка…</td></tr>';
+
+  try{
+    const r = await jget('/api/admin/events?type=admin_unmerge_manual&take=100&skip=0');
+    const list = (r && (r.events || r.rows || r.list)) || [];
+    const arr = Array.isArray(list) ? list : [];
+
+    if (!arr.length){
+      tbody.innerHTML = '<tr><td class="muted" colspan="4">Нет расклеек…</td></tr>';
+      return;
+    }
+
+    const rows = arr.slice().sort((a,b)=>{
+      const ta = new Date(a.created_at || a.ts || a.createdAt || 0).getTime();
+      const tb = new Date(b.created_at || b.ts || b.createdAt || 0).getTime();
+      return tb - ta;
+    });
+
+    tbody.innerHTML = '';
+    for (const ev of rows){
+      const p = ev.payload || {};
+      const hum = escapeHtml(ev.hum_id ?? p.hum_id ?? '');
+      const ids = p.user_ids || p.requested_ids || p.userIds || [];
+      const reason = escapeHtml(p.reason || p.note || '');
+      const t = fmtMsk(ev.created_at || ev.ts || ev.createdAt || Date.now());
+
+      const idsTxt = (Array.isArray(ids) && ids.length) ? escapeHtml(ids.join(', ')) : '—';
+      const humTxt = hum || '—';
+      const reasonTxt = reason || '—';
+
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td class="muted">${escapeHtml(t)}</td>
+          <td>${humTxt}</td>
+          <td class="mono">${idsTxt}</td>
+          <td>${reasonTxt}</td>
+        </tr>`);
+    }
+
+  }catch(e){
+    tbody.innerHTML = `<tr><td class="muted" colspan="4">Ошибка: ${escapeHtml(e?.message || e)}</td></tr>`;
+  }
+}
+
+async function applyUnmergeSelected(){
+  const out = $('#unmerge-out');
+  if (out) out.textContent = '...';
+
+  const hum_id = Number(String($('#unmerge-hum')?.value || '').trim());
+  const reason = String($('#unmerge-reason')?.value || '').trim();
+  const ids = Array.from(document.querySelectorAll('.unmerge-chk:checked'))
+    .map(x => Number(String(x.value || '').trim()))
+    .filter(n => Number.isFinite(n) && n > 0);
+
+  if (!Number.isFinite(hum_id) || hum_id <= 0) throw new Error('bad_hum_id');
+  if (!ids.length) throw new Error('select_users');
+
+  const r = await jpost('/api/admin/unmerge', { hum_id, user_ids: ids, reason });
+  if (out) out.textContent = JSON.stringify(r, null, 2);
+
+  // освежаем кластер и историю
+  loadUnmergeCluster({ silent:true }).catch(()=>{});
+  loadUnmergeHistory().catch(()=>{});
+}
+
   function bindActions(){
     $('#refresh-finance')?.addEventListener('click', loadFinance);
     $('#refresh-users')?.addEventListener('click', loadUsers);
@@ -2292,21 +2435,34 @@ async function loadMiniDuels(){
       }
     });
 
-    $('#unmerge-btn')?.addEventListener('click', async ()=>{
-      const out = $('#unmerge-out');
-      out.textContent = '...';
-      try{
-        const hum_id = Number(String($('#unmerge-hum').value||'').trim());
-        const raw = String($('#unmerge-users').value||'').trim();
-        const reason = String($('#unmerge-reason').value||'').trim();
-        const user_ids = raw.split(',').map(s=>Number(s.trim())).filter(n=>Number.isFinite(n) && n>0);
-        if (!Number.isFinite(hum_id) || !user_ids.length) throw new Error('bad_params');
-        const r = await jpost(`/api/admin/unmerge`, { hum_id, user_ids, reason });
-        out.textContent = JSON.stringify(r, null, 2);
-      }catch(e){
-        out.textContent = 'ERROR: ' + (e?.message || e);
-      }
-    });
+// Расклейка (порт из /admin/split)
+$('#unmerge-load')?.addEventListener('click', async ()=>{
+  const out = $('#unmerge-out');
+  if (out) out.textContent = '...';
+  try{
+    await loadUnmergeCluster();
+    // после загрузки покажем историю (на всякий)
+    loadUnmergeHistory().catch(()=>{});
+  }catch(e){
+    if (out) out.textContent = 'ERROR: ' + (e?.message || e);
+  }
+});
+
+$('#unmerge-btn')?.addEventListener('click', async ()=>{
+  const out = $('#unmerge-out');
+  try{
+    await applyUnmergeSelected();
+  }catch(e){
+    if (out) out.textContent = 'ERROR: ' + (e?.message || e);
+  }
+});
+
+$('#unmerge-history-refresh')?.addEventListener('click', ()=>{ loadUnmergeHistory(); });
+
+$('#unmerge-all')?.addEventListener('change', (e)=>{
+  const on = !!e?.target?.checked;
+  document.querySelectorAll('.unmerge-chk').forEach(ch=>{ ch.checked = on; });
+});
   }
 
   function escapeHtml(s){
