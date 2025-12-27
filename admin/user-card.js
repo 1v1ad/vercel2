@@ -1,4 +1,4 @@
-// admin/user-card.js — user card (step 2: header via /api/admin/user-card)
+// admin/user-card.js — user card (step 3: overview KPIs + last duels/events)
 (function(){
   const $ = (sel, root=document) => root.querySelector(sel);
 
@@ -13,6 +13,24 @@
 
   function esc(s){
     return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  const nf0 = new Intl.NumberFormat('ru-RU');
+  function fmtInt(n){
+    const v = Number(n);
+    return Number.isFinite(v) ? nf0.format(Math.trunc(v)) : '—';
+  }
+  function fmtMoney(n){
+    const v = Number(n);
+    if (!Number.isFinite(v)) return '—';
+    return nf0.format(Math.trunc(v)) + ' ₽';
+  }
+
+  function prettyTs(v){
+    const s = (v ?? '').toString();
+    if (!s) return '—';
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/);
+    return m ? `${m[1]} ${m[2]}` : esc(s);
   }
 
   function fmtProvider(p){
@@ -65,8 +83,15 @@
   function summarizeEvent(ev){
     if (!ev || !ev.event_type) return '—';
     const t = String(ev.event_type);
-    const amt = (ev.amount != null && ev.amount !== '') ? ` · ${esc(ev.amount)} ₽` : '';
+    const amt = (ev.amount != null && ev.amount !== '') ? ` · ${fmtMoney(ev.amount)}` : '';
     return esc(t) + amt;
+  }
+
+  function tinyName(first, last){
+    const fn = (first||'').toString().trim();
+    const ln = (last||'').toString().trim();
+    const full = [fn, ln].filter(Boolean).join(' ').trim();
+    return full || '—';
   }
 
   async function load(){
@@ -77,7 +102,8 @@
     if (topRight) topRight.textContent = userId ? `user_id: ${userId}` : '';
 
     if (!userId) {
-      $('#uc-note').textContent = 'Не указан user_id в URL.';
+      const links = $('#uc-links');
+      if (links) links.textContent = 'Не указан user_id в URL.';
       return;
     }
 
@@ -90,7 +116,8 @@
       if (!r.ok || !j?.ok) throw new Error(j?.error || `HTTP ${r.status}`);
     }catch(e){
       const msg = 'Ошибка загрузки карточки: ' + String(e?.message || e);
-      $('#uc-note').textContent = msg;
+      const links = $('#uc-links');
+      if (links) links.textContent = msg;
       return;
     }
 
@@ -139,7 +166,7 @@
       const chips = [];
 
       // last auth
-      const authAt = la?.at ? esc(la.at) : '—';
+      const authAt = la?.at ? prettyTs(la.at) : '—';
       const cc = (la?.country_code || p.country_code || '').toString().trim();
       const flag = cc ? `<span class="uc-flag" data-cc="${esc(cc)}"></span>` : '';
       const ip = la?.ip ? esc(la.ip) : '—';
@@ -150,26 +177,143 @@
       chips.push(chip('Устройство', `${esc(d.os)} · ${esc(d.client)} · ${esc(d.type)}`));
 
       // last activity
-      chips.push(chip('Последняя активность', le?.at ? `${esc(le.at)} · ${summarizeEvent(le)}` : '—'));
+      chips.push(chip('Последняя активность', le?.at ? `${prettyTs(le.at)} · ${summarizeEvent(le)}` : '—'));
 
       // registration
       const regVia = data.registered_via ? fmtProvider(data.registered_via) : (p.provider ? fmtProvider(p.provider) : '—');
-      chips.push(chip('Регистрация', `${p.created_at ? esc(p.created_at) : '—'} · ${esc(regVia)}`));
+      chips.push(chip('Регистрация', `${p.created_at ? prettyTs(p.created_at) : '—'} · ${esc(regVia)}`));
 
       metaEl.innerHTML = chips.join('');
     }
 
-    // decorate flags (stable)
+    // decorate flags
     try{ if (window.decorateFlags) window.decorateFlags(document); }catch(_){}
 
-    // note section
-    const note = $('#uc-note');
-    if (note){
-      // show quick link info
-      const links = [];
-      links.push(`VK linked: <b>${data.is_vk_linked ? 'да' : 'нет'}</b>`);
-      links.push(`TG linked: <b>${data.is_tg_linked ? 'да' : 'нет'}</b>`);
-      note.innerHTML = links.join(' · ');
+    renderOverview(data);
+  }
+
+  function renderOverview(data){
+    const p = data.profile || {};
+    const k = data.kpis || {};
+    const isHum = (scope() === 'hum');
+
+    // links / connections + HUM family
+    const links = $('#uc-links');
+    if (links){
+      const parts = [];
+      parts.push(`VK linked: <b>${data.is_vk_linked ? 'да' : 'нет'}</b>`);
+      parts.push(`TG linked: <b>${data.is_tg_linked ? 'да' : 'нет'}</b>`);
+
+      const fam = Array.isArray(data.hum_family) ? data.hum_family : [];
+      if (fam.length > 1){
+        parts.push(`HUM аккаунтов: <b>${fam.length}</b>${isHum ? ' (режим HUM)' : ''}`);
+      } else {
+        parts.push(`HUM аккаунтов: <b>${fam.length || 1}</b>${isHum ? ' (режим HUM)' : ''}`);
+      }
+
+      // mini avatars
+      let famHtml = '';
+      if (fam.length){
+        famHtml = `<div class="uc-family">` + fam.map(u=>{
+          const id = u.id;
+          const img = (u.avatar_url || u.avatar || '').toString();
+          const title = `${tinyName(u.first_name, u.last_name)} · user_id: ${id}`;
+          const pic = img
+            ? `<img src="${esc(img)}" alt="u" referrerpolicy="no-referrer" />`
+            : `<span class="uc-family-empty">#${esc(id)}</span>`;
+          return `<a class="uc-family-item" href="/admin/user-card.html?user_id=${encodeURIComponent(id)}" title="${esc(title)}">${pic}</a>`;
+        }).join('') + `</div>`;
+      }
+
+      links.innerHTML = parts.join(' · ') + famHtml;
+    }
+
+    // KPIs
+    const kpisEl = $('#uc-kpis');
+    if (kpisEl){
+      const duels = Number(k.duels || 0);
+      const items = [
+        { l:'Дуэлей', v: fmtInt(duels) },
+        { l:'Оборот', v: fmtMoney(k.turnover || 0) },
+        { l:'Рейк', v: fmtMoney(k.rake || 0) },
+        { l:'Победы', v: fmtInt(k.wins || 0) },
+        { l:'Поражения', v: fmtInt(k.losses || 0) },
+        { l:'Винрейт', v: duels ? (String(k.winrate ?? 0) + '%') : '—' },
+      ];
+      kpisEl.innerHTML = items.map(it => `
+        <div class="uc-kpi">
+          <div class="uc-kpi-v">${esc(it.v)}</div>
+          <div class="uc-kpi-l">${esc(it.l)}</div>
+        </div>
+      `).join('');
+    }
+
+    // Last duels table
+    const tbl = $('#uc-last-duels');
+    const tbody = tbl?.querySelector('tbody');
+    if (tbody){
+      const rows = Array.isArray(data.last_duels) ? data.last_duels : [];
+      if (!rows.length){
+        tbody.innerHTML = `<tr><td class="muted" colspan="7">Нет данных</td></tr>`;
+      } else {
+        const myUserId = Number(p.user_id || 0);
+        const myHumId = Number(p.hum_id || 0);
+        const isHumMode = (scope() === 'hum');
+
+        tbody.innerHTML = rows.map(d=>{
+          const at = prettyTs(d.finished_at || d.created_at || '');
+          const stake = fmtMoney(d.stake || 0);
+          const status = esc(d.status || '—');
+
+          const pot = (d.pot == null) ? '—' : fmtMoney(d.pot);
+          const rake = (d.rake == null) ? '—' : fmtMoney(d.rake);
+
+          let winTxt = '—';
+          if ((d.status||'') === 'finished'){
+            const win = isHumMode
+              ? (Number(d.winner_hum_id || 0) === myHumId)
+              : (Number(d.winner_user_id || 0) === myUserId);
+            const lose = (d.winner_user_id != null) && !win;
+            winTxt = win ? '<span class="uc-win">WIN</span>' : (lose ? '<span class="uc-lose">LOSE</span>' : '—');
+          }
+
+          return `
+            <tr>
+              <td class="muted">${esc(at)}</td>
+              <td class="mono">${esc(d.id ?? '—')}</td>
+              <td class="mono">${esc(stake)}</td>
+              <td>${status}</td>
+              <td class="mono">${esc(pot)}</td>
+              <td class="mono">${esc(rake)}</td>
+              <td>${winTxt}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // Last events list
+    const evBox = $('#uc-last-events');
+    if (evBox){
+      const rows = Array.isArray(data.last_events) ? data.last_events : [];
+      if (!rows.length){
+        evBox.innerHTML = `<div class="muted">Нет данных</div>`;
+      } else {
+        evBox.innerHTML = rows.map(ev=>{
+          const at = prettyTs(ev.at || '');
+          const type = esc(ev.event_type || '—');
+          const amt = (ev.amount != null && ev.amount !== '') ? fmtMoney(ev.amount) : '';
+          return `
+            <div class="uc-ev">
+              <div class="uc-ev-left">
+                <div class="uc-ev-type">${type}</div>
+                <div class="uc-ev-time muted">${esc(at)}</div>
+              </div>
+              <div class="uc-ev-right mono">${esc(amt)}</div>
+            </div>
+          `;
+        }).join('');
+      }
     }
   }
 
