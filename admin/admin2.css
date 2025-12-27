@@ -682,19 +682,7 @@ body{
   padding-top:14px;
   border-top:1px solid rgba(255,255,255,.06);
 }
-
-
-
-/* Visits panel: put period badge on second row (and nudge 10px down) */
+/* --- tweaks: Visits chart spacing (keep "7 дней" in first row) --- */
 .visits-panel .panel-head{
-  display:flex;
-  flex-direction:column !important;
-  align-items:flex-start !important;
-  justify-content:flex-start !important;
-  gap:0 !important;
-}
-.visits-panel .panel-head .chip{
-  margin-left:0 !important;
-  margin-top:10px !important;
-  align-self:flex-start;
+  margin-bottom:20px; /* default is 10px; add "empty line" under header to push chart down */
 }
