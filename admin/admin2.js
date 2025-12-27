@@ -1922,12 +1922,59 @@ async function loadMiniDuels(){
     }
   }
 
-  async function loadEvents(){
+  
+  // --- Events (search + paging) ---
+  let _eventsTake = 100;
+  let _eventsSkip = 0;
+
+  function readEventsFilters(){
+    const user_id = toInt($('#events-user')?.value, 0);
+    const type    = ($('#events-type')?.value || '').trim();
+    const term    = ($('#events-term')?.value || '').trim();
+    const day     = ($('#events-day')?.value || '').trim(); // YYYY-MM-DD
+    return { user_id, type, term, day };
+  }
+
+  function buildEventsQuery(take, skip, f){
+    const q = new URLSearchParams();
+    q.set('take', String(take));
+    q.set('skip', String(skip));
+    if (f.user_id) q.set('user_id', String(f.user_id));
+    if (f.type)    q.set('type', f.type);
+    if (f.term)    q.set('term', f.term);
+    if (f.day)     q.set('day', f.day);
+    return q.toString();
+  }
+
+  function setEventsPageInfo(skip, take, f, count){
+    const el = $('#events-pageinfo');
+    if (!el) return;
+    const parts = [];
+    if (f.user_id) parts.push(`user:${f.user_id}`);
+    if (f.type) parts.push(`type:${escapeHtml(f.type)}`);
+    if (f.day) parts.push(`day:${escapeHtml(f.day)}`);
+    if (f.term) parts.push(`term:“${escapeHtml(shorten(f.term, 24))}”`);
+    const filters = parts.length ? (' • ' + parts.join(' • ')) : '';
+    const shown = (typeof count === 'number') ? ` (получено: ${count})` : '';
+    el.innerHTML = `Страница: ${Math.floor(skip/take)+1} • offset=${skip}${filters}${shown}`;
+  }
+
+  async function loadEvents(opts={}){
     const tbody = $('#tbl-events tbody');
     tbody.innerHTML = `<tr><td colspan="7" class="muted">Загрузка…</td></tr>`;
     try{
-      const r = await jget('/api/admin/events?take=100');
+      const take = opts.take ?? _eventsTake;
+      const skip = Math.max(opts.skip ?? _eventsSkip, 0);
+      const f    = opts.filters ?? readEventsFilters();
+
+      const qs = buildEventsQuery(take, skip, f);
+      const r = await jget('/api/admin/events?' + qs);
       const items = r.items || r.events || r.rows || [];
+      _eventsTake = take;
+      _eventsSkip = skip;
+
+      setEventsPageInfo(skip, take, f, items.length);
+
       if (!items.length){
         tbody.innerHTML = `<tr><td colspan="7" class="muted">Пусто</td></tr>`;
         return;
@@ -1955,6 +2002,7 @@ async function loadMiniDuels(){
       tbody.innerHTML = `<tr><td colspan="7" class="muted">Ошибка загрузки</td></tr>`;
     }
   }
+
 
   // --- Topup history (ported from classic /admin/topup.html) ---
   let _topupSortKey = 'created_at';
@@ -2362,7 +2410,24 @@ async function applyUnmergeSelected(){
     $('#refresh-finance')?.addEventListener('click', loadFinance);
     $('#refresh-users')?.addEventListener('click', loadUsers);
     $('#refresh-users-analytics')?.addEventListener('click', loadUsersAnalyticsDuels);
-    $('#refresh-events')?.addEventListener('click', loadEvents);
+    $('#refresh-events')?.addEventListener('click', ()=>loadEvents({skip:_eventsSkip}));
+    $('#events-find')?.addEventListener('click', ()=>{ _eventsSkip=0; loadEvents({skip:0}); });
+    $('#events-clear')?.addEventListener('click', ()=>{
+      const u=$('#events-user'), t=$('#events-type'), s=$('#events-term'), d=$('#events-day');
+      if(u) u.value=''; if(t) t.value=''; if(s) s.value=''; if(d) d.value='';
+      _eventsSkip=0;
+      loadEvents({skip:0, filters:{user_id:0,type:'',term:'',day:''}});
+    });
+    $('#events-next')?.addEventListener('click', ()=>{
+      const f = readEventsFilters();
+      _eventsSkip += _eventsTake;
+      loadEvents({skip:_eventsSkip, filters:f});
+    });
+    $('#events-prev')?.addEventListener('click', ()=>{
+      const f = readEventsFilters();
+      _eventsSkip = Math.max(_eventsSkip - _eventsTake, 0);
+      loadEvents({skip:_eventsSkip, filters:f});
+    });
     $('#refresh-duels')?.addEventListener('click', loadDuels);
     $('#refresh-events-mini')?.addEventListener('click', loadMiniEvents);
     $('#refresh-duels-mini')?.addEventListener('click', loadMiniDuels);

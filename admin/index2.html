@@ -566,9 +566,26 @@
           <div class="panel">
             <div class="panel-head">
               <div class="panel-title">События</div>
-              <button class="btn sm" id="refresh-events">Обновить</button>
+              <div class="tools events-tools">
+                <input class="input sm" id="events-user" placeholder="user_id (например 97)" />
+                <input class="input sm" id="events-type" placeholder="type (например admin_unmerge_manual)" />
+                <input class="input sm grow" id="events-term" placeholder="поиск: user/hum/type/payload (часть текста)" />
+                <input class="input sm" id="events-day" type="date" title="Дата (опционально)" />
+                <button class="btn ghost sm" id="events-clear" title="Сбросить фильтры">×</button>
+                <button class="btn sm" id="events-find">Найти</button>
+                <button class="btn sm" id="refresh-events">Обновить</button>
+              </div>
             </div>
-            <div class="note muted tiny">Это “сырой” лог — очень полезно для отладки платёжек и спорных кейсов.</div>
+            <div class="note muted tiny">Это “сырой” лог — полезно для отладки платёжек и спорных кейсов. Фильтры работают вместе: можно указать <code>user_id</code> + дату + текст.</div>
+
+            <div class="events-pager">
+              <div class="muted tiny" id="events-pageinfo">Показаны последние 100</div>
+              <div class="events-pagebtns">
+                <button class="btn ghost sm" id="events-prev">← Предыдущие</button>
+                <button class="btn ghost sm" id="events-next">Следующие →</button>
+              </div>
+            </div>
+
             <div class="table-wrap">
               <table class="table" id="tbl-events">
                 <thead><tr><th>ID</th><th>HUMid</th><th>user_id</th><th>event_type</th><th>IP</th><th>UA</th><th>Создано</th></tr></thead>
