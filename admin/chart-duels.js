@@ -1,5 +1,5 @@
 // admin/chart-duels.js — big duels chart (games + turnover + rake)
-// Reads: GET /api/admin/duels_range?from=YYYY-MM-DD&to=YYYY-MM-DD&tz=Europe/Moscow
+// Reads: GET /api/admin/analytics/duels/daily?from=YYYY-MM-DD&to=YYYY-MM-DD&tz=Europe/Moscow
 // Draws: bars = number of finished duels; line = turnover (pot sum). Tooltip also shows rake.
 
 (() => {
@@ -290,7 +290,7 @@
       if (inpFrom.value) qs.set('from', inpFrom.value);
       if (inpTo.value) qs.set('to', inpTo.value);
 
-      const r = await fetch(urlBase + '/api/admin/duels_range?' + qs.toString(), {
+      const r = await fetch(urlBase + '/api/admin/analytics/duels/daily?' + qs.toString(), {
         headers: window.adminHeaders ? window.adminHeaders() : {},
       });
       const j = await r.json().catch(() => null);
