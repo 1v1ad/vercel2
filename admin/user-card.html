@@ -113,6 +113,42 @@
     </div>
   </div>
 
+  <div class="uc-filters" id="uc-duels-filters">
+    <select class="input sm" id="uc-duels-filter-status" title="Статус">
+      <option value="">Статус: все</option>
+      <option value="open">Открыта</option>
+      <option value="finished">Завершена</option>
+      <option value="cancelled">Отмена</option>
+    </select>
+
+    <select class="input sm" id="uc-duels-filter-stake" title="Ставка">
+      <option value="">Ставка: все</option>
+      <option value="100">100</option>
+      <option value="250">250</option>
+      <option value="500">500</option>
+      <option value="1000">1000</option>
+      <option value="2500">2500</option>
+      <option value="5000">5000</option>
+      <option value="vip">VIP</option>
+    </select>
+
+    <select class="input sm" id="uc-duels-filter-period" title="Период">
+      <option value="all" selected>Период: всё</option>
+      <option value="7">Период: 7 дн.</option>
+      <option value="30">Период: 30 дн.</option>
+      <option value="90">Период: 90 дн.</option>
+      <option value="custom">Период: вручную</option>
+    </select>
+
+    <input class="input sm uc-hide" id="uc-duels-filter-from" type="date" />
+    <input class="input sm uc-hide" id="uc-duels-filter-to" type="date" />
+
+    <input class="input sm" id="uc-duels-filter-term" placeholder="Поиск (id / статус / mode)" />
+
+    <button class="btn ghost sm" id="uc-duels-filter-apply" type="button" title="Применить">Применить</button>
+    <button class="btn ghost sm" id="uc-duels-filter-reset" type="button" title="Сбросить">Сброс</button>
+  </div>
+
   <div class="uc-block">
     <div class="uc-block-title">Дуэли</div>
     <div class="uc-block-body">
@@ -120,12 +156,14 @@
         <thead>
           <tr>
             <th class="uc-th-time">Время</th>
-            <th>id</th>
-            <th>stake</th>
-            <th>status</th>
-            <th>pot</th>
-            <th>rake</th>
-            <th>result</th>
+            <th class="uc-th-id">id</th>
+            <th class="uc-th-role">Роль</th>
+            <th class="uc-th-opp">Оппонент</th>
+            <th class="uc-th-stake">Ставка</th>
+            <th class="uc-th-status">Статус</th>
+            <th class="uc-th-pot">Pot</th>
+            <th class="uc-th-rake">Rake</th>
+            <th class="uc-th-res">Итог</th>
           </tr>
         </thead>
         <tbody></tbody>

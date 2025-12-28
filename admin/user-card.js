@@ -6,7 +6,7 @@
     userId: null,
     tab: 'overview',
     events: { page: 1, limit: 50, total: 0, items: [], loading: false },
-    duels:  { page: 1, limit: 50, total: 0, items: [], loading: false }
+    duels:  { page: 1, limit: 50, total: 0, items: [], loading: false, error: '', filters: { status: '', stake: '', period: 'all', from: '', to: '', term: '' } }
   };
 
   function api(){
@@ -313,15 +313,52 @@
   }
 
 
-  async function loadDuels(page){
+    async function loadDuels(page){
     const userId = state.userId;
     if (!userId) return;
 
-    const prevBtn = document.getElementById('uc-duels-prev');
-    const nextBtn = document.getElementById('uc-duels-next');
+    const prevBtn   = document.getElementById('uc-duels-prev');
+    const nextBtn   = document.getElementById('uc-duels-next');
     const reloadBtn = document.getElementById('uc-duels-reload');
 
-    // wire buttons once
+    const statusSel = document.getElementById('uc-duels-filter-status');
+    const stakeSel  = document.getElementById('uc-duels-filter-stake');
+    const periodSel = document.getElementById('uc-duels-filter-period');
+    const fromInp   = document.getElementById('uc-duels-filter-from');
+    const toInp     = document.getElementById('uc-duels-filter-to');
+    const termInp   = document.getElementById('uc-duels-filter-term');
+    const applyBtn  = document.getElementById('uc-duels-filter-apply');
+    const resetBtn  = document.getElementById('uc-duels-filter-reset');
+
+    const pad2 = (n) => String(n).padStart(2,'0');
+    const ymdLocal = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+
+    function show(el, on){
+      if (!el) return;
+      el.classList.toggle('uc-hide', !on);
+    }
+
+    function setPeriodQuick(days){
+      const f = state.duels.filters;
+      if (!days){
+        f.from = '';
+        f.to = '';
+        if (fromInp) fromInp.value = '';
+        if (toInp) toInp.value = '';
+        return;
+      }
+      const dTo = new Date();
+      const dFrom = new Date();
+      dFrom.setDate(dFrom.getDate() - Number(days));
+      const from = ymdLocal(dFrom);
+      const to = ymdLocal(dTo);
+      f.from = from;
+      f.to = to;
+      if (fromInp) fromInp.value = from;
+      if (toInp) toInp.value = to;
+    }
+
+    // wire buttons/filters once
     if (prevBtn && !prevBtn.__ucWired){
       prevBtn.__ucWired = true;
       prevBtn.addEventListener('click', ()=> loadDuels(Math.max(1, (state.duels.page||1) - 1)));
@@ -332,8 +369,104 @@
     }
     if (reloadBtn && !reloadBtn.__ucWired){
       reloadBtn.__ucWired = true;
-      reloadBtn.addEventListener('click', ()=> loadDuels(state.duels.page || 1));
+      reloadBtn.addEventListener('click', ()=> loadDuels(state.duels.page||1));
     }
+
+    if (statusSel && !statusSel.__ucWired){
+      statusSel.__ucWired = true;
+      statusSel.value = state.duels.filters?.status || '';
+      statusSel.addEventListener('change', ()=>{
+        state.duels.filters.status = statusSel.value || '';
+        loadDuels(1);
+      });
+    }
+
+    if (stakeSel && !stakeSel.__ucWired){
+      stakeSel.__ucWired = true;
+      stakeSel.value = state.duels.filters?.stake || '';
+      stakeSel.addEventListener('change', ()=>{
+        state.duels.filters.stake = stakeSel.value || '';
+        loadDuels(1);
+      });
+    }
+
+    if (periodSel && !periodSel.__ucWired){
+      periodSel.__ucWired = true;
+      periodSel.value = state.duels.filters?.period || 'all';
+
+      // sync visibility
+      show(fromInp, periodSel.value === 'custom');
+      show(toInp, periodSel.value === 'custom');
+
+      // if quick period already chosen in state — reflect it
+      if (periodSel.value === '7' || periodSel.value === '30' || periodSel.value === '90'){
+        setPeriodQuick(periodSel.value);
+      } else if (periodSel.value === 'all'){
+        setPeriodQuick(null);
+      }
+
+      periodSel.addEventListener('change', ()=>{
+        const v = periodSel.value || 'all';
+        state.duels.filters.period = v;
+
+        const isCustom = (v === 'custom');
+        show(fromInp, isCustom);
+        show(toInp, isCustom);
+
+        if (v === 'all'){
+          setPeriodQuick(null);
+          loadDuels(1);
+        } else if (v === '7' || v === '30' || v === '90'){
+          setPeriodQuick(v);
+          loadDuels(1);
+        } else {
+          // custom: waiting for Apply
+        }
+      });
+    }
+
+    if (applyBtn && !applyBtn.__ucWired){
+      applyBtn.__ucWired = true;
+      applyBtn.addEventListener('click', ()=>{
+        if (fromInp) state.duels.filters.from = fromInp.value || '';
+        if (toInp) state.duels.filters.to = toInp.value || '';
+        if (termInp) state.duels.filters.term = (termInp.value || '').trim();
+        loadDuels(1);
+      });
+    }
+
+    if (resetBtn && !resetBtn.__ucWired){
+      resetBtn.__ucWired = true;
+      resetBtn.addEventListener('click', ()=>{
+        state.duels.filters = { status:'', stake:'', period:'all', from:'', to:'', term:'' };
+        if (statusSel) statusSel.value = '';
+        if (stakeSel) stakeSel.value = '';
+        if (periodSel) periodSel.value = 'all';
+        if (fromInp) fromInp.value = '';
+        if (toInp) toInp.value = '';
+        if (termInp) termInp.value = '';
+        show(fromInp, false);
+        show(toInp, false);
+        loadDuels(1);
+      });
+    }
+
+    if (termInp && !termInp.__ucWired){
+      termInp.__ucWired = true;
+      termInp.value = state.duels.filters?.term || '';
+      termInp.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter'){
+          state.duels.filters.term = (termInp.value || '').trim();
+          loadDuels(1);
+        }
+      });
+      termInp.addEventListener('blur', ()=>{
+        state.duels.filters.term = (termInp.value || '').trim();
+      });
+    }
+
+    const p = Math.max(1, toInt(page || state.duels.page || 1, 1) || 1);
+    state.duels.page = p;
 
     state.duels.loading = true;
     state.duels.error = null;
@@ -341,11 +474,28 @@
 
     try{
       const limit = state.duels.limit || 50;
-      const url = api() + `/api/admin/user-card/duels?user_id=${encodeURIComponent(userId)}&scope=${encodeURIComponent(scope())}&page=${encodeURIComponent(page)}&limit=${encodeURIComponent(limit)}`;
-      const r = await fetch(url, { headers: window.adminHeaders ? window.adminHeaders() : {} });
+
+      const qs = new URLSearchParams({
+        user_id: String(userId),
+        scope: String(scope()),
+        page: String(p),
+        limit: String(limit),
+      });
+
+      const f = state.duels.filters || {};
+      if (f.status) qs.set('status', String(f.status));
+      if (f.stake)  qs.set('stake',  String(f.stake));
+      if (f.from)   qs.set('from',   String(f.from));
+      if (f.to)     qs.set('to',     String(f.to));
+      if (f.term)   qs.set('term',   String(f.term));
+
+      const url = api() + `/api/admin/user-card/duels?${qs.toString()}`;
+
+      const r = await fetch(url, { headers: (window.adminHeaders ? window.adminHeaders() : {}) });
       const j = await r.json().catch(()=> ({}));
       if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP '+r.status));
-      state.duels.page  = j.page || page;
+
+      state.duels.page  = j.page || p;
       state.duels.limit = j.limit || limit;
       state.duels.total = Number(j.total || 0);
       state.duels.items = Array.isArray(j.items) ? j.items : [];
@@ -357,6 +507,7 @@
       renderDuels();
     }
   }
+
 
   function renderDuels(){
     const statusEl = document.getElementById('uc-duels-status');
@@ -388,22 +539,44 @@
     if (!tbody) return;
 
     if (state.duels.loading){
-      tbody.innerHTML = `<tr><td class="muted" colspan="7">Загрузка…</td></tr>`;
+      tbody.innerHTML = `<tr><td class="muted" colspan="9">Загрузка…</td></tr>`;
       return;
     }
     if (state.duels.error){
-      tbody.innerHTML = `<tr><td class="muted" colspan="7">Ошибка: ${esc(state.duels.error)}</td></tr>`;
+      tbody.innerHTML = `<tr><td class="muted" colspan="9">Ошибка: ${esc(state.duels.error)}</td></tr>`;
       return;
     }
     if (!items.length){
-      tbody.innerHTML = `<tr><td class="muted" colspan="7">Нет данных</td></tr>`;
+      tbody.innerHTML = `<tr><td class="muted" colspan="9">Нет данных</td></tr>`;
       return;
     }
 
+    const statusMap = {
+      open: 'Открыта',
+      finished: 'Завершена',
+      cancelled: 'Отмена'
+    };
+
     tbody.innerHTML = items.map(d=>{
-      const at = prettyTs(d.finished_at || d.created_at || '');
-      const stake = fmtMoney(d.stake || 0);
-      const status = esc(d.status || '—');
+      const ts = (d.status === 'finished' || d.status === 'cancelled')
+        ? (d.finished_at || d.created_at)
+        : (d.created_at || d.finished_at);
+
+      const at = fmtTs(ts);
+
+      const roleRaw = (d.role || '').toString();
+      const roleLabel = roleRaw === 'joined' ? 'Вошёл' : (roleRaw === 'created' ? 'Создал' : '—');
+      const role = `<span class="uc-role">${esc(roleLabel)}</span>`;
+
+      const stake = (d.mode === 'vip')
+        ? `<span class="mono">VIP</span>${(d.stake != null ? ` · <span class="mono">${fmtMoney(d.stake)}</span>` : '')}`
+        : `<span class="mono">${(d.stake == null ? '—' : fmtMoney(d.stake))}</span>`;
+
+      const st = (d.status || '—').toString().toLowerCase();
+      const stLabel = statusMap[st] || st;
+      const stClass = (st === 'open' || st === 'finished' || st === 'cancelled') ? st : 'other';
+      const status = `<span class="uc-status ${stClass}">${esc(stLabel)}</span>`;
+
       const pot = (d.pot == null) ? '—' : fmtMoney(d.pot);
       const rake = (d.rake == null) ? '—' : fmtMoney(d.rake);
 
@@ -413,11 +586,30 @@
       else if (r === 'lose') res = '<span class="uc-lose">LOSE</span>';
       else if (r === 'cancelled') res = '<span class="muted">CANCELLED</span>';
 
+      // opponent relative to matched_user_id
+      const matched = Number(d.matched_user_id || state.userId || 0) || 0;
+      const isCreator = matched && Number(d.creator_user_id) === matched;
+
+      const oppId = isCreator ? d.opponent_user_id : d.creator_user_id;
+      const oppName = isCreator
+        ? [d.opponent_first_name, d.opponent_last_name].filter(Boolean).join(' ').trim()
+        : [d.creator_first_name, d.creator_last_name].filter(Boolean).join(' ').trim();
+      const oppAva = isCreator ? d.opponent_avatar : d.creator_avatar;
+
+      const oppTitle = oppId ? (oppName || `user_id: ${oppId}`) : '—';
+      const oppHref = oppId ? `user-card.html?user_id=${encodeURIComponent(oppId)}` : '';
+      const oppAvaHtml = oppAva ? `<img class="uc-opp-ava" src="${esc(oppAva)}" alt="">` : `<span class="uc-opp-ava"></span>`;
+      const oppHtml = oppId
+        ? `<div class="uc-opp">${oppAvaHtml}<a class="uc-opp-name" href="${oppHref}">${esc(oppTitle)}</a> <span class="muted mono">#${esc(oppId)}</span></div>`
+        : `<div class="uc-opp"><span class="uc-opp-ava"></span><span class="muted">—</span></div>`;
+
       return `
         <tr>
           <td class="mono">${at}</td>
           <td class="mono">${esc(d.id)}</td>
-          <td class="mono">${stake}</td>
+          <td>${role}</td>
+          <td>${oppHtml}</td>
+          <td>${stake}</td>
           <td>${status}</td>
           <td class="mono">${pot}</td>
           <td class="mono">${rake}</td>
@@ -428,7 +620,7 @@
   }
 
 
-  function render(data){
+function render(data){
     const p = data.profile || {};
     const prov = data.providers || {};
     const la = data.last_auth || null;

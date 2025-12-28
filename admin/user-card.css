@@ -86,3 +86,66 @@
   shape-rendering: crispEdges;
   pointer-events: none;
 }
+
+/* Duels filters + richer table */
+.uc-filters{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin: 0 0 12px;
+  align-items:center;
+}
+.uc-filters .input.sm{ height: 34px; }
+.uc-filters .btn.sm{ height: 34px; }
+
+.uc-hide{ display:none !important; }
+
+.uc-th-id{ width: 70px; }
+.uc-th-role{ width: 90px; }
+.uc-th-stake{ width: 90px; }
+.uc-th-status{ width: 110px; }
+.uc-th-pot{ width: 100px; }
+.uc-th-rake{ width: 100px; }
+.uc-th-res{ width: 90px; }
+.uc-th-opp{ min-width: 220px; }
+
+.uc-opp{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width: 0;
+}
+.uc-opp .uc-opp-ava{
+  width:22px; height:22px;
+  border-radius:999px;
+  object-fit:cover;
+  background: rgba(255,255,255,0.08);
+  flex:0 0 auto;
+}
+.uc-opp .uc-opp-name{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.uc-role{
+  display:inline-flex;
+  padding:2px 8px;
+  border-radius:999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size:12px;
+}
+.uc-status{
+  display:inline-flex;
+  padding:2px 8px;
+  border-radius:999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size:12px;
+}
+.uc-status.open{ opacity:0.9; }
+.uc-status.finished{ opacity:0.95; }
+.uc-status.cancelled{ opacity:0.75; }
+
+.uc-opp a{ color: inherit; text-decoration: none; }
+.uc-opp a:hover{ text-decoration: underline; }
