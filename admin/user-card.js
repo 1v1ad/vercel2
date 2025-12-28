@@ -5,7 +5,8 @@
   const state = {
     userId: null,
     tab: 'overview',
-    events: { page: 1, limit: 50, total: 0, items: [], loading: false }
+    events: { page: 1, limit: 50, total: 0, items: [], loading: false },
+    duels:  { page: 1, limit: 50, total: 0, items: [], loading: false }
   };
 
   function api(){
@@ -170,6 +171,7 @@
     // panels
     const panels = [
       { id:'uc-panel-overview', tab:'overview' },
+      { id:'uc-panel-duels', tab:'duels' },
       { id:'uc-panel-events', tab:'events' },
     ];
     panels.forEach(p=>{
@@ -180,6 +182,8 @@
 
     if (tab === 'events') {
       loadEvents(1);
+    } else if (tab === 'duels') {
+      loadDuels(1);
     }
   }
 
@@ -307,6 +311,122 @@
       `;
     }).join('');
   }
+
+
+  async function loadDuels(page){
+    const userId = state.userId;
+    if (!userId) return;
+
+    const prevBtn = document.getElementById('uc-duels-prev');
+    const nextBtn = document.getElementById('uc-duels-next');
+    const reloadBtn = document.getElementById('uc-duels-reload');
+
+    // wire buttons once
+    if (prevBtn && !prevBtn.__ucWired){
+      prevBtn.__ucWired = true;
+      prevBtn.addEventListener('click', ()=> loadDuels(Math.max(1, (state.duels.page||1) - 1)));
+    }
+    if (nextBtn && !nextBtn.__ucWired){
+      nextBtn.__ucWired = true;
+      nextBtn.addEventListener('click', ()=> loadDuels((state.duels.page||1) + 1));
+    }
+    if (reloadBtn && !reloadBtn.__ucWired){
+      reloadBtn.__ucWired = true;
+      reloadBtn.addEventListener('click', ()=> loadDuels(state.duels.page || 1));
+    }
+
+    state.duels.loading = true;
+    state.duels.error = null;
+    renderDuels();
+
+    try{
+      const limit = state.duels.limit || 50;
+      const url = api() + `/api/admin/user-card/duels?user_id=${encodeURIComponent(userId)}&scope=${encodeURIComponent(scope())}&page=${encodeURIComponent(page)}&limit=${encodeURIComponent(limit)}`;
+      const r = await fetch(url, { headers: window.adminHeaders ? window.adminHeaders() : {} });
+      const j = await r.json().catch(()=> ({}));
+      if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP '+r.status));
+      state.duels.page  = j.page || page;
+      state.duels.limit = j.limit || limit;
+      state.duels.total = Number(j.total || 0);
+      state.duels.items = Array.isArray(j.items) ? j.items : [];
+    }catch(e){
+      console.error('user-card duels load error', e);
+      state.duels.error = String(e?.message || e);
+    }finally{
+      state.duels.loading = false;
+      renderDuels();
+    }
+  }
+
+  function renderDuels(){
+    const statusEl = document.getElementById('uc-duels-status');
+    const pageEl   = document.getElementById('uc-duels-page');
+    const prevBtn  = document.getElementById('uc-duels-prev');
+    const nextBtn  = document.getElementById('uc-duels-next');
+
+    const tbl = document.getElementById('uc-duels-table');
+    const tbody = tbl?.querySelector('tbody');
+
+    const page  = Number(state.duels.page || 1);
+    const limit = Number(state.duels.limit || 50);
+    const total = Number(state.duels.total || 0);
+    const items = Array.isArray(state.duels.items) ? state.duels.items : [];
+
+    const fromN = total ? ((page - 1) * limit + 1) : 0;
+    const toN   = Math.min(total, (page - 1) * limit + items.length);
+
+    if (statusEl){
+      if (state.duels.loading) statusEl.textContent = 'Загрузка…';
+      else if (state.duels.error) statusEl.textContent = 'Ошибка: ' + state.duels.error;
+      else statusEl.textContent = total ? `Показано ${fromN}–${toN} из ${total}` : 'Нет данных';
+    }
+
+    if (pageEl) pageEl.textContent = `${page}/${Math.max(1, Math.ceil((total||1)/limit))}`;
+    if (prevBtn) prevBtn.disabled = (page <= 1) || state.duels.loading;
+    if (nextBtn) nextBtn.disabled = (toN >= total) || state.duels.loading;
+
+    if (!tbody) return;
+
+    if (state.duels.loading){
+      tbody.innerHTML = `<tr><td class="muted" colspan="7">Загрузка…</td></tr>`;
+      return;
+    }
+    if (state.duels.error){
+      tbody.innerHTML = `<tr><td class="muted" colspan="7">Ошибка: ${esc(state.duels.error)}</td></tr>`;
+      return;
+    }
+    if (!items.length){
+      tbody.innerHTML = `<tr><td class="muted" colspan="7">Нет данных</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = items.map(d=>{
+      const at = prettyTs(d.finished_at || d.created_at || '');
+      const stake = fmtMoney(d.stake || 0);
+      const status = esc(d.status || '—');
+      const pot = (d.pot == null) ? '—' : fmtMoney(d.pot);
+      const rake = (d.rake == null) ? '—' : fmtMoney(d.rake);
+
+      let res = '—';
+      const r = (d.result || '').toString();
+      if (r === 'win') res = '<span class="uc-win">WIN</span>';
+      else if (r === 'lose') res = '<span class="uc-lose">LOSE</span>';
+      else if (r === 'cancelled') res = '<span class="muted">CANCELLED</span>';
+
+      return `
+        <tr>
+          <td class="mono">${at}</td>
+          <td class="mono">${esc(d.id)}</td>
+          <td class="mono">${stake}</td>
+          <td>${status}</td>
+          <td class="mono">${pot}</td>
+          <td class="mono">${rake}</td>
+          <td>${res}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
 
   function render(data){
     const p = data.profile || {};
