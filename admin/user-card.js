@@ -331,38 +331,129 @@ function renderActivity(activity){
   const tip = document.getElementById('uc-activity-tip');
   if (!svg) return;
   while (svg.firstChild) svg.removeChild(svg.firstChild);
+
   const days = activity?.days || [];
-  const counts = activity?.counts || [];
-  if (!days.length){
+  const duelsArr = activity?.duels || [];
+  const turnoverArr = activity?.turnover || activity?.counts || [];
+  const rakeArr = activity?.rake || [];
+
+  const n = Math.min(
+    days.length || 0,
+    turnoverArr.length || 0,
+    (duelsArr.length || (days.length || 0)),
+  );
+
+  if (!n){
     if (tip) tip.textContent = 'Нет данных';
     return;
   }
+
   const W = 300, H = 80;
-  const n = Math.min(days.length, counts.length);
-  const maxV = Math.max(1, ...counts.slice(0,n));
-  const barW = W / n;
+  const M = { top: 6, right: 44, bottom: 14, left: 3 };
+  const plotW = W - M.left - M.right;
+  const plotH = H - M.top - M.bottom;
 
-  const grid = document.createElementNS('http://www.w3.org/2000/svg','line');
-  grid.setAttribute('x1','0'); grid.setAttribute('y1', String(H-0.5));
-  grid.setAttribute('x2', String(W)); grid.setAttribute('y2', String(H-0.5));
-  grid.setAttribute('class','uc-activity-grid');
-  svg.appendChild(grid);
+  const vals = turnoverArr.slice(0,n).map(x=>Number(x||0));
+  const maxV = Math.max(1, ...vals);
 
+  // nice ticks for Y axis
+  function niceStep(x){
+    if (!isFinite(x) || x <= 0) return 1;
+    const exp = Math.floor(Math.log10(x));
+    const f = x / Math.pow(10, exp);
+    let nf = 1;
+    if (f <= 1) nf = 1;
+    else if (f <= 2) nf = 2;
+    else if (f <= 5) nf = 5;
+    else nf = 10;
+    return nf * Math.pow(10, exp);
+  }
+  let step = niceStep(maxV / 4);
+  let top = step * 4;
+  if (top < maxV){
+    step = niceStep(maxV / 3);
+    top = step * 4;
+  }
+  if (top < maxV) top = maxV;
+
+  const ticks = [0, step, step*2, step*3, top];
+
+  // horizontal grid + labels
+  for (let i=0;i<ticks.length;i++){
+    const v = ticks[i];
+    const y = M.top + plotH - (v / top) * plotH;
+
+    const ln = document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1', String(M.left));
+    ln.setAttribute('x2', String(M.left + plotW));
+    ln.setAttribute('y1', String(y));
+    ln.setAttribute('y2', String(y));
+    ln.setAttribute('class', 'uc-activity-grid');
+    svg.appendChild(ln);
+
+    const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+    tx.setAttribute('x', String(M.left + plotW + 4));
+    tx.setAttribute('y', String(y + 3));
+    tx.setAttribute('class', 'uc-activity-axis');
+    tx.textContent = String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    svg.appendChild(tx);
+  }
+
+  // x-axis date ticks: start + month starts + end (max 6)
+  const xTickIdx = new Set([0, n-1]);
   for (let i=0;i<n;i++){
-    const v = counts[i] || 0;
-    const h = Math.round((v / maxV) * (H-6));
-    const x = i * barW;
-    const y = H - h;
+    const d = String(days[i]||'');
+    if (d.endsWith('-01')) xTickIdx.add(i);
+  }
+  let xTicks = Array.from(xTickIdx).sort((a,b)=>a-b);
+  if (xTicks.length > 6){
+    // downsample to 6
+    const keep = [0, n-1];
+    const stepI = Math.floor((n-1)/4) || 1;
+    for (let k=1;k<=3;k++) keep.push(k*stepI);
+    xTicks = Array.from(new Set(keep)).sort((a,b)=>a-b).slice(0,6);
+  }
+
+  for (const i of xTicks){
+    const x = M.left + (i + 0.5) * (plotW / n);
+    const tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+    tick.setAttribute('x1', String(x));
+    tick.setAttribute('x2', String(x));
+    tick.setAttribute('y1', String(M.top + plotH));
+    tick.setAttribute('y2', String(M.top + plotH + 3));
+    tick.setAttribute('class','uc-activity-grid');
+    svg.appendChild(tick);
+
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', String(x));
+    t.setAttribute('y', String(H - 2));
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('class', 'uc-activity-axis');
+    const label = String(days[i]||'').slice(5); // MM-DD
+    t.textContent = label;
+    svg.appendChild(t);
+  }
+
+  // bars
+  const barW = plotW / n;
+  for (let i=0;i<n;i++){
+    const v = vals[i] || 0;
+    const h = (v / top) * plotH;
+    const x = M.left + i * barW;
+    const y = M.top + plotH - h;
 
     const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    r.setAttribute('x', String(x+0.6));
+    r.setAttribute('x', String(x + 0.6));
     r.setAttribute('y', String(y));
-    r.setAttribute('width', String(Math.max(1, barW-1.2)));
-    r.setAttribute('height', String(h));
+    r.setAttribute('width', String(Math.max(1, barW - 1.2)));
+    r.setAttribute('height', String(Math.max(0, h)));
     r.setAttribute('rx','1.6');
     r.setAttribute('class','uc-activity-bar');
-    r.dataset.day = days[i];
-    r.dataset.cnt = String(v);
+
+    r.dataset.day = String(days[i] || '');
+    r.dataset.duels = String(duelsArr[i] ?? 0);
+    r.dataset.turnover = String(turnoverArr[i] ?? 0);
+    r.dataset.rake = String(rakeArr[i] ?? 0);
     svg.appendChild(r);
   }
 
@@ -370,19 +461,31 @@ function renderActivity(activity){
     const t = e.target;
     if (!t || t.tagName !== 'rect') return;
     const day = t.dataset.day || '';
-    const cnt = t.dataset.cnt || '0';
+    const duels = Number(t.dataset.duels || 0);
+    const turnover = Number(t.dataset.turnover || 0);
+    const rake = Number(t.dataset.rake || 0);
+
     if (tip){
-      tip.textContent = `${day}: ${cnt}`;
+      tip.innerHTML = `
+        <div class="uc-tip-date">${esc(day)}</div>
+        <div>Дуэлей: <b>${esc(String(duels))}</b></div>
+        <div>Оборот: <b>${esc(fmtMoney(turnover))}</b></div>
+        <div>Рейк: <b>${esc(fmtMoney(rake))}</b></div>
+      `;
       tip.classList.add('show');
       const box = svg.getBoundingClientRect();
-      tip.style.left = (e.clientX - box.left + 10) + 'px';
-      tip.style.top  = (e.clientY - box.top - 10) + 'px';
+      // keep tooltip inside block a bit
+      let left = (e.clientX - box.left + 10);
+      let topPx  = (e.clientY - box.top - 10);
+      tip.style.left = left + 'px';
+      tip.style.top  = topPx + 'px';
     }
   };
   svg.onmouseleave = ()=>{
     if (tip) tip.classList.remove('show');
   };
 }
+
 
 // --- Step 4: Donut (SVG) ---
 function renderDonut(stakes){
