@@ -32,6 +32,7 @@
     const n = parseInt(v, 10);
     return Number.isFinite(n) ? n : def;
   }
+
   function fmtMoney(n){
     const v = Number(n);
     if (!Number.isFinite(v)) return '—';
@@ -39,11 +40,7 @@
   }
 
   function fmt$(n){
-    // alias for money formatting (some code paths use fmt$)
-    if (typeof fmtMoney === 'function') return fmtMoney(n);
-    const v = Number(n);
-    if (!Number.isFinite(v)) return '—';
-    return nf0.format(Math.trunc(v)) + ' ₽';
+    return fmtMoney(n);
   }
 
 
@@ -52,6 +49,10 @@
     if (!s) return '—';
     const m = s.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/);
     return m ? `${m[1]} ${m[2]}` : esc(s);
+  }
+
+  function fmtTs(v){
+    return prettyTs(v);
   }
 
   function fmtProvider(p){
@@ -714,10 +715,12 @@ function render(data){
       parts.push(`VK linked: <b>${data.is_vk_linked ? 'да' : 'нет'}</b>`);
       parts.push(`TG linked: <b>${data.is_tg_linked ? 'да' : 'нет'}</b>`);
 
-      const famAll = Array.isArray(data.hum_family) ? data.hum_family : [];
-      const fam = famAll.filter(u => String(u?.id) !== String(state.userId));
-      const famCount = (famAll && famAll.length) ? famAll.length : 1;
-      parts.push(`HUM аккаунтов: <b>${famCount}</b>${isHum ? ' (режим HUM)' : ''}`);
+      const fam = Array.isArray(data.hum_family) ? data.hum_family : [];
+      if (fam.length > 1){
+        parts.push(`HUM аккаунтов: <b>${fam.length}</b>${isHum ? ' (режим HUM)' : ''}`);
+      } else {
+        parts.push(`HUM аккаунтов: <b>${fam.length || 1}</b>${isHum ? ' (режим HUM)' : ''}`);
+      }
 
       // mini avatars
       let famHtml = '';
