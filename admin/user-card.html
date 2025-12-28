@@ -10,7 +10,29 @@
   <link rel="stylesheet" href="/admin/user-card.css" />
   <script defer src="/admin/admin-auth-headers.js"></script>
   <script defer src="/admin/flags.js"></script>
-  <script defer src="/admin/user-card.js?v=20251228_2358"></script>
+  <script>
+    // Hotfix: some user-card.js builds call fmt$() but don't define it -> duels table crashes.
+    (function(){
+      try {
+        if (typeof window.fmtMoney !== 'function') {
+          window.fmtMoney = function(n){
+            const v = Number(n);
+            if (!Number.isFinite(v)) return '—';
+            return new Intl.NumberFormat('ru-RU').format(Math.trunc(v)) + ' ₽';
+          };
+        }
+        if (typeof window.fmt$ !== 'function') {
+          window.fmt$ = function(n){ return window.fmtMoney(n); };
+        }
+      } catch (e) {
+        window.fmt$ = function(n){ return (n == null ? '—' : (String(n) + ' ₽')); };
+      }
+    })();
+    // Create a global identifier binding
+    var fmt$ = window.fmt$;
+  </script>
+
+  <script defer src="/admin/user-card.js?v=20251229_0007"></script>
 </head>
 <body>
   <div class="uc-page">
