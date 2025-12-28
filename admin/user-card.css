@@ -1,4 +1,46 @@
 /* User-card-only cosmetic overrides for activity chart */
+.uc-panel{ display:none; }
+.uc-panel.is-active{ display:block; }
+
+.uc-subbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin: 4px 0 12px;
+}
+.uc-sub-right{ display:flex; gap:8px; align-items:center; }
+.uc-sub-left{ flex:1; min-width: 0; }
+
+.uc-th-ip{ width: 160px; }
+.uc-th-ua{ width: 260px; }
+
+.uc-ua{
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.uc-payload{
+  max-width: 420px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: .85;
+}
+
+.uc-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.06);
+  font-size: 12px;
+}
+
 .uc-activity{
   height: 220px !important; /* чуть выше */
 }

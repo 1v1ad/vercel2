@@ -2,6 +2,12 @@
 (function(){
   const $ = (sel, root=document) => root.querySelector(sel);
 
+  const state = {
+    userId: null,
+    tab: 'overview',
+    events: { page: 1, limit: 50, total: 0, items: [], loading: false }
+  };
+
   function api(){
     const raw = (window.API || localStorage.getItem('ADMIN_API') || localStorage.getItem('admin_api') || '').toString().trim();
     return raw ? raw.replace(/\/+$/,'') : location.origin;
@@ -97,6 +103,7 @@
   async function load(){
     const qs = new URLSearchParams(location.search);
     const userId = (qs.get('user_id') || qs.get('id') || '').toString().trim();
+    state.userId = userId || null;
 
     const topRight = $('#uc-top-right');
     if (topRight) topRight.textContent = userId ? `user_id: ${userId}` : '';
@@ -122,6 +129,183 @@
     }
 
     render(j);
+
+    // if user already switched to a secondary tab — keep it alive after reload
+    if (state.tab === 'events') {
+      loadEvents(state.events.page || 1);
+    }
+  }
+
+  function initTabs(){
+    const tabs = document.getElementById('uc-tabs');
+    if (!tabs) return;
+    tabs.addEventListener('click', (e)=>{
+      const btn = e.target?.closest?.('.uc-tab');
+      if (!btn) return;
+      const tab = btn.getAttribute('data-tab');
+      if (!tab) return;
+      setTab(tab);
+    });
+
+    // HUM toggle should refresh current tab (потому что scope меняется)
+    window.addEventListener('adminHumToggle', ()=>{
+      try { load(); } catch(_){}
+      if (state.tab === 'events') {
+        try { loadEvents(1); } catch(_){}
+      }
+    });
+  }
+
+  function setTab(tab){
+    state.tab = tab;
+
+    // buttons
+    const btns = document.querySelectorAll('#uc-tabs .uc-tab');
+    btns.forEach(b=>{
+      const t = b.getAttribute('data-tab');
+      if (!t) return;
+      b.classList.toggle('is-active', t === tab);
+    });
+
+    // panels
+    const panels = [
+      { id:'uc-panel-overview', tab:'overview' },
+      { id:'uc-panel-events', tab:'events' },
+    ];
+    panels.forEach(p=>{
+      const el = document.getElementById(p.id);
+      if (!el) return;
+      el.classList.toggle('is-active', p.tab === tab);
+    });
+
+    if (tab === 'events') {
+      loadEvents(1);
+    }
+  }
+
+  function shortUA(ua){
+    const s = (ua||'').toString();
+    if (!s) return '—';
+    return s.length > 80 ? (s.slice(0, 77) + '…') : s;
+  }
+
+  function shortPayload(p){
+    if (p == null) return '';
+    let s = '';
+    try{
+      s = (typeof p === 'string') ? p : JSON.stringify(p);
+    }catch(_){
+      s = String(p);
+    }
+    s = s.replace(/\s+/g,' ').trim();
+    return s.length > 140 ? (s.slice(0, 137) + '…') : s;
+  }
+
+  async function loadEvents(page){
+    const userId = state.userId;
+    if (!userId) return;
+
+    const prevBtn = document.getElementById('uc-events-prev');
+    const nextBtn = document.getElementById('uc-events-next');
+    const reloadBtn = document.getElementById('uc-events-reload');
+
+    // wire buttons once
+    if (prevBtn && !prevBtn.__ucWired){
+      prevBtn.__ucWired = true;
+      prevBtn.addEventListener('click', ()=> loadEvents(Math.max(1, (state.events.page||1) - 1)));
+    }
+    if (nextBtn && !nextBtn.__ucWired){
+      nextBtn.__ucWired = true;
+      nextBtn.addEventListener('click', ()=> loadEvents((state.events.page||1) + 1));
+    }
+    if (reloadBtn && !reloadBtn.__ucWired){
+      reloadBtn.__ucWired = true;
+      reloadBtn.addEventListener('click', ()=> loadEvents(state.events.page||1));
+    }
+
+    state.events.loading = true;
+    state.events.page = page;
+    renderEvents();
+
+    const url = api() + `/api/admin/user-card/events?user_id=${encodeURIComponent(userId)}`
+      + `&scope=${encodeURIComponent(scope())}`
+      + `&page=${encodeURIComponent(page)}`
+      + `&limit=${encodeURIComponent(state.events.limit)}`;
+
+    try{
+      const r = await fetch(url, { headers: (window.adminHeaders ? window.adminHeaders() : {}) });
+      const j = await r.json();
+      if (!r.ok || !j?.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+
+      state.events.items = Array.isArray(j.items) ? j.items : [];
+      state.events.total = Number(j.total || 0);
+      state.events.limit = Number(j.limit || state.events.limit);
+      state.events.page  = Number(j.page || page);
+    }catch(e){
+      state.events.items = [];
+      state.events.total = 0;
+      state.events.error = String(e?.message || e);
+    }finally{
+      state.events.loading = false;
+      renderEvents();
+    }
+  }
+
+  function renderEvents(){
+    const statusEl = document.getElementById('uc-events-status');
+    const pageEl   = document.getElementById('uc-events-page');
+    const prevBtn  = document.getElementById('uc-events-prev');
+    const nextBtn  = document.getElementById('uc-events-next');
+
+    const tbl = document.getElementById('uc-events-table');
+    const tbody = tbl?.querySelector('tbody');
+
+    const { page, limit, total, items, loading } = state.events;
+
+    const start = total ? ((page - 1) * limit + 1) : 0;
+    const end   = Math.min(page * limit, total || 0);
+
+    if (statusEl){
+      if (loading) statusEl.textContent = 'Загрузка…';
+      else if (state.events.error) statusEl.textContent = `Ошибка: ${state.events.error}`;
+      else statusEl.textContent = total ? `Показано ${start}–${end} из ${total}` : 'Нет данных';
+    }
+
+    if (pageEl){
+      const pages = total ? Math.max(1, Math.ceil(total / limit)) : 1;
+      pageEl.textContent = `${page} / ${pages}`;
+    }
+    if (prevBtn) prevBtn.disabled = loading || page <= 1;
+    if (nextBtn) nextBtn.disabled = loading || (total ? (page * limit >= total) : true);
+
+    if (!tbody) return;
+    if (loading){
+      tbody.innerHTML = `<tr><td class="muted" colspan="6">Загрузка…</td></tr>`;
+      return;
+    }
+    if (!items?.length){
+      tbody.innerHTML = `<tr><td class="muted" colspan="6">Нет данных</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = items.map(ev=>{
+      const at = prettyTs(ev.created_at || ev.at || ev.createdAt || '');
+      const type = esc(ev.event_type || ev.type || '—');
+      const amt = (ev.amount != null && ev.amount !== '') ? fmtMoney(ev.amount) : '—';
+      const ip = esc(ev.ip || '—');
+      const ua = esc(shortUA(ev.ua || ''));
+      const payload = esc(shortPayload(ev.payload));
+      return `
+        <tr>
+          <td class="muted">${esc(at)}</td>
+          <td class="mono">${type}</td>
+          <td class="mono">${esc(amt)}</td>
+          <td class="mono">${ip}</td>
+          <td class="mono uc-ua" title="${ua}">${ua}</td>
+          <td class="mono uc-payload" title="${payload}">${payload}</td>
+        </tr>
+      `;
+    }).join('');
   }
 
   function render(data){
@@ -322,7 +506,10 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', load);
+  document.addEventListener('DOMContentLoaded', ()=>{
+    initTabs();
+    load();
+  });
 
 
 // --- Step 4: Activity mini-bars (SVG) ---
