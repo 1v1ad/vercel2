@@ -27,6 +27,11 @@
     const v = Number(n);
     return Number.isFinite(v) ? nf0.format(Math.trunc(v)) : '—';
   }
+
+  function toInt(v, def=0){
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : def;
+  }
   function fmtMoney(n){
     const v = Number(n);
     if (!Number.isFinite(v)) return '—';
@@ -700,12 +705,10 @@ function render(data){
       parts.push(`VK linked: <b>${data.is_vk_linked ? 'да' : 'нет'}</b>`);
       parts.push(`TG linked: <b>${data.is_tg_linked ? 'да' : 'нет'}</b>`);
 
-      const fam = Array.isArray(data.hum_family) ? data.hum_family : [];
-      if (fam.length > 1){
-        parts.push(`HUM аккаунтов: <b>${fam.length}</b>${isHum ? ' (режим HUM)' : ''}`);
-      } else {
-        parts.push(`HUM аккаунтов: <b>${fam.length || 1}</b>${isHum ? ' (режим HUM)' : ''}`);
-      }
+      const famAll = Array.isArray(data.hum_family) ? data.hum_family : [];
+      const fam = famAll.filter(u => String(u?.id) !== String(state.userId));
+      const famCount = (famAll && famAll.length) ? famAll.length : 1;
+      parts.push(`HUM аккаунтов: <b>${famCount}</b>${isHum ? ' (режим HUM)' : ''}`);
 
       // mini avatars
       let famHtml = '';
