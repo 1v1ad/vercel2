@@ -406,6 +406,8 @@ function renderActivity(activity){
     if (d.endsWith('-01')) xTickIdx.add(i);
   }
   let xTicks = Array.from(xTickIdx).sort((a,b)=>a-b);
+  // if start tick is too close to first month tick, drop it (prevents overlapping labels)
+  if (xTicks.length>=2 && xTicks[0]===0 && xTicks[1] <= 3) xTicks = xTicks.slice(1);
   if (xTicks.length > 6){
     // downsample to 6
     const keep = [0, n-1];
@@ -413,6 +415,9 @@ function renderActivity(activity){
     for (let k=1;k<=3;k++) keep.push(k*stepI);
     xTicks = Array.from(new Set(keep)).sort((a,b)=>a-b).slice(0,6);
   }
+
+  const firstTick = xTicks[0];
+  const lastTick = xTicks[xTicks.length-1];
 
   for (const i of xTicks){
     const x = M.left + (i + 0.5) * (plotW / n);
@@ -426,8 +431,8 @@ function renderActivity(activity){
 
     const t = document.createElementNS('http://www.w3.org/2000/svg','text');
     t.setAttribute('x', String(x));
-    t.setAttribute('y', String(H - 2));
-    t.setAttribute('text-anchor', (i===0 ? 'start' : (i>=n-1 ? 'end' : 'middle')));
+    t.setAttribute('y', String(H - 10));
+    t.setAttribute('text-anchor', (i===firstTick ? 'start' : (i===lastTick ? 'end' : 'middle')));
     t.setAttribute('class', 'uc-activity-axis');
     const label = String(days[i]||'').slice(5); // MM-DD
     t.textContent = label;
