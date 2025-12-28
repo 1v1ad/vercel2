@@ -431,7 +431,7 @@ function renderActivity(activity){
 
     const t = document.createElementNS('http://www.w3.org/2000/svg','text');
     t.setAttribute('x', String(x));
-    t.setAttribute('y', String(H - 10));
+    t.setAttribute('y', String(H - 6));
     t.setAttribute('text-anchor', (i===firstTick ? 'start' : (i===lastTick ? 'end' : 'middle')));
     t.setAttribute('class', 'uc-activity-axis');
     const label = String(days[i]||'').slice(5); // MM-DD
@@ -462,13 +462,40 @@ function renderActivity(activity){
     svg.appendChild(r);
   }
 
+  // вертикальная "черта-курсор" как на больших графиках
+  const hoverLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+  hoverLine.setAttribute('y1', String(M.top));
+  hoverLine.setAttribute('y2', String(M.top + plotH));
+  hoverLine.setAttribute('class','uc-activity-hoverline');
+  hoverLine.style.opacity = '0';
+  hoverLine.setAttribute('pointer-events','none');
+  svg.appendChild(hoverLine);
+
   svg.onmousemove = (e)=>{
-    const t = e.target;
-    if (!t || t.tagName !== 'rect') return;
-    const day = t.dataset.day || '';
-    const duels = Number(t.dataset.duels || 0);
-    const turnover = Number(t.dataset.turnover || 0);
-    const rake = Number(t.dataset.rake || 0);
+    const box = svg.getBoundingClientRect();
+    const xSvg = (e.clientX - box.left) * (W / box.width);
+    const ySvg = (e.clientY - box.top) * (H / box.height);
+
+    // активируем подсказку по X-координате (как на больших графиках), а не только по попаданию в rect
+    if (xSvg < M.left || xSvg > (M.left + plotW) || ySvg < M.top || ySvg > (M.top + plotH)){
+      if (hoverLine) hoverLine.style.opacity = '0';
+      if (tip) tip.classList.remove('show');
+      return;
+    }
+
+    const idx = Math.max(0, Math.min(n - 1, Math.floor((xSvg - M.left) / barW)));
+    const cx = M.left + idx * barW + (barW / 2);
+
+    if (hoverLine){
+      hoverLine.setAttribute('x1', String(cx));
+      hoverLine.setAttribute('x2', String(cx));
+      hoverLine.style.opacity = '1';
+    }
+
+    const day = String(days[idx] || '');
+    const duels = Number(duelsArr[idx] ?? 0);
+    const turnover = Number(turnoverArr[idx] ?? 0);
+    const rake = Number(rakeArr[idx] ?? 0);
 
     if (tip){
       tip.innerHTML = `
@@ -478,15 +505,24 @@ function renderActivity(activity){
         <div>Рейк: <b>${esc(fmtMoney(rake))}</b></div>
       `;
       tip.classList.add('show');
-      const box = svg.getBoundingClientRect();
-      // keep tooltip inside block a bit
-      let left = (e.clientX - box.left + 10);
-      let topPx  = (e.clientY - box.top - 10);
+
+      // позиционируем около курсора, но держим внутри блока
+      const tw = tip.offsetWidth || 0;
+      const th = tip.offsetHeight || 0;
+      let left = (e.clientX - box.left + 12);
+      let topPx  = (e.clientY - box.top - 12);
+
+      if (left + tw > box.width - 6) left = box.width - tw - 6;
+      if (left < 6) left = 6;
+      if (topPx + th > box.height - 6) topPx = box.height - th - 6;
+      if (topPx < 6) topPx = 6;
+
       tip.style.left = left + 'px';
       tip.style.top  = topPx + 'px';
     }
   };
   svg.onmouseleave = ()=>{
+    if (hoverLine) hoverLine.style.opacity = '0';
     if (tip) tip.classList.remove('show');
   };
 }
