@@ -238,6 +238,11 @@
     
         const pad2 = (n) => String(n).padStart(2,'0');
         const ymdLocal = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+
+        function show(el, on){
+          if (!el) return;
+          el.classList.toggle('uc-hide', !on);
+        }
     
         function setPeriodQuick(days){
           const f = state.events.filters;
