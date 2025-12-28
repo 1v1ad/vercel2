@@ -349,7 +349,7 @@ function renderActivity(activity){
   }
 
   const W = 300, H = 80;
-  const M = { top: 6, right: 44, bottom: 14, left: 3 };
+  const M = { top: 6, right: 44, bottom: 14, left: 18 };
   const plotW = W - M.left - M.right;
   const plotH = H - M.top - M.bottom;
 
@@ -427,7 +427,7 @@ function renderActivity(activity){
     const t = document.createElementNS('http://www.w3.org/2000/svg','text');
     t.setAttribute('x', String(x));
     t.setAttribute('y', String(H - 2));
-    t.setAttribute('text-anchor','middle');
+    t.setAttribute('text-anchor', (i===0 ? 'start' : (i>=n-1 ? 'end' : 'middle')));
     t.setAttribute('class', 'uc-activity-axis');
     const label = String(days[i]||'').slice(5); // MM-DD
     t.textContent = label;
@@ -575,11 +575,14 @@ function renderDonut(stakes){
     `;
     leg.appendChild(it);
   });
-
-  el.onclick = ()=>{
+  const toggle = ()=>{
     window.__ucDonutMetric = (metric === 'duels') ? 'turnover' : 'duels';
     renderDonut(stakes);
   };
+  // click anywhere on donut (Edge can be picky about bubbling from SVG)
+  el.addEventListener('click', toggle);
+  svg.addEventListener('click', (e)=>{ e.stopPropagation(); toggle(); });
+
 }
 
 })();
