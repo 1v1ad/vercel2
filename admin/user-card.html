@@ -181,6 +181,38 @@
               <button class="btn ghost sm" id="uc-events-next" type="button">→</button>
               <button class="btn ghost sm" id="uc-events-reload" type="button">⟳</button>
             </div>
+          
+          <div class="uc-filters" id="uc-events-filters">
+            <select class="input sm" id="uc-events-filter-type" title="Тип">
+              <option value="">Тип: все</option>
+              <option value="admin_topup">admin_topup</option>
+              <option value="balance_hold">balance_hold</option>
+              <option value="balance_add">balance_add</option>
+              <option value="balance_sub">balance_sub</option>
+              <option value="duel_created">duel_created</option>
+              <option value="duel_joined">duel_joined</option>
+              <option value="duel_finished">duel_finished</option>
+              <option value="duel_cancelled">duel_cancelled</option>
+            </select>
+
+            <select class="input sm" id="uc-events-filter-period" title="Период">
+              <option value="all" selected>Период: всё</option>
+              <option value="7">Период: 7 дн.</option>
+              <option value="30">Период: 30 дн.</option>
+              <option value="90">Период: 90 дн.</option>
+              <option value="custom">Период: вручную</option>
+            </select>
+
+            <input class="input sm uc-hide" id="uc-events-filter-from" type="date" />
+            <input class="input sm uc-hide" id="uc-events-filter-to" type="date" />
+
+            <input class="input sm" id="uc-events-filter-term" placeholder="Поиск (id / тип / payload / ip / ua)" />
+
+            <button class="btn ghost sm" id="uc-events-filter-apply" type="button" title="Применить">Применить</button>
+            <button class="btn ghost sm" id="uc-events-filter-reset" type="button" title="Сбросить">Сброс</button>
+          </div>
+
+
           </div>
 
           <div class="uc-block">

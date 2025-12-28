@@ -5,7 +5,7 @@
   const state = {
     userId: null,
     tab: 'overview',
-    events: { page: 1, limit: 50, total: 0, items: [], loading: false },
+    events: { page: 1, limit: 50, total: 0, items: [], loading: false, filters: { type: '', period: 'all', from: '', to: '', term: '' } },
     duels:  { page: 1, limit: 50, total: 0, items: [], loading: false, error: '', filters: { status: '', stake: '', period: 'all', from: '', to: '', term: '' } }
   };
 
@@ -228,6 +228,52 @@
     const nextBtn = document.getElementById('uc-events-next');
     const reloadBtn = document.getElementById('uc-events-reload');
 
+    const typeSel  = document.getElementById('uc-events-filter-type');
+        const periodSel= document.getElementById('uc-events-filter-period');
+        const fromInp  = document.getElementById('uc-events-filter-from');
+        const toInp    = document.getElementById('uc-events-filter-to');
+        const termInp  = document.getElementById('uc-events-filter-term');
+        const applyBtn = document.getElementById('uc-events-filter-apply');
+        const resetBtn = document.getElementById('uc-events-filter-reset');
+    
+        const pad2 = (n) => String(n).padStart(2,'0');
+        const ymdLocal = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    
+        function setPeriodQuick(days){
+          const f = state.events.filters;
+          if (!days){
+            f.from = '';
+            f.to = '';
+            if (fromInp) fromInp.value = '';
+            if (toInp) toInp.value = '';
+            return;
+          }
+          const dTo = new Date();
+          const dFrom = new Date();
+          dFrom.setDate(dFrom.getDate() - Number(days));
+          const from = ymdLocal(dFrom);
+          const to = ymdLocal(dTo);
+          f.from = from;
+          f.to = to;
+          if (fromInp) fromInp.value = from;
+          if (toInp) toInp.value = to;
+        }
+    
+        function ensureTypeOptions(items){
+          if (!typeSel) return;
+          const existing = new Set(Array.from(typeSel.options).map(o=>o.value));
+          const types = Array.from(new Set((items||[]).map(x=>String(x.event_type||x.type||'').trim()).filter(Boolean))).slice(0,50);
+          for (const t of types){
+            if (existing.has(t)) continue;
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            typeSel.appendChild(opt);
+            existing.add(t);
+          }
+        }
+    
+
     // wire buttons once
     if (prevBtn && !prevBtn.__ucWired){
       prevBtn.__ucWired = true;
@@ -242,14 +288,111 @@
       reloadBtn.addEventListener('click', ()=> loadEvents(state.events.page||1));
     }
 
+
+        // wire filters once
+        const f = state.events.filters || (state.events.filters = { type:'', period:'all', from:'', to:'', term:'' });
+    
+        if (typeSel && !typeSel.__ucWired){
+          typeSel.__ucWired = true;
+          typeSel.addEventListener('change', ()=>{ f.type = (typeSel.value||'').trim(); });
+        }
+    
+        if (periodSel && !periodSel.__ucWired){
+          periodSel.__ucWired = true;
+          periodSel.addEventListener('change', ()=>{
+            const v = (periodSel.value||'all').toString();
+            f.period = v;
+            if (v === 'custom'){
+              show(fromInp, true);
+              show(toInp, true);
+              return;
+            }
+            show(fromInp, false);
+            show(toInp, false);
+            if (v === 'all'){
+              setPeriodQuick(null);
+            } else {
+              setPeriodQuick(v);
+            }
+          });
+        }
+    
+        if (fromInp && !fromInp.__ucWired){
+          fromInp.__ucWired = true;
+          fromInp.addEventListener('change', ()=>{ f.from = (fromInp.value||'').trim(); });
+        }
+        if (toInp && !toInp.__ucWired){
+          toInp.__ucWired = true;
+          toInp.addEventListener('change', ()=>{ f.to = (toInp.value||'').trim(); });
+        }
+    
+        if (applyBtn && !applyBtn.__ucWired){
+          applyBtn.__ucWired = true;
+          applyBtn.addEventListener('click', ()=>{
+            f.type = (typeSel?.value||'').trim();
+            f.period = (periodSel?.value||'all').toString();
+            f.from = (fromInp?.value||'').trim();
+            f.to = (toInp?.value||'').trim();
+            f.term = (termInp?.value||'').trim();
+            loadEvents(1);
+          });
+        }
+    
+        if (resetBtn && !resetBtn.__ucWired){
+          resetBtn.__ucWired = true;
+          resetBtn.addEventListener('click', ()=>{
+            f.type = '';
+            f.period = 'all';
+            f.from = '';
+            f.to = '';
+            f.term = '';
+            if (typeSel) typeSel.value = '';
+            if (periodSel) periodSel.value = 'all';
+            if (termInp) termInp.value = '';
+            if (fromInp) fromInp.value = '';
+            if (toInp) toInp.value = '';
+            show(fromInp, false);
+            show(toInp, false);
+            loadEvents(1);
+          });
+        }
+    
+        if (termInp && !termInp.__ucWired){
+          termInp.__ucWired = true;
+          termInp.addEventListener('keydown', (e)=>{
+            if (e.key === 'Enter'){
+              e.preventDefault();
+              applyBtn?.click();
+            }
+          });
+        }
+    
+        // sync UI from state on each open
+        if (typeSel) typeSel.value = f.type || '';
+        if (periodSel) periodSel.value = f.period || 'all';
+        if (termInp && termInp.value !== (f.term||'')) termInp.value = f.term||'';
+        if (fromInp) fromInp.value = f.from || '';
+        if (toInp) toInp.value = f.to || '';
+        if ((f.period||'all') === 'custom'){
+          show(fromInp, true); show(toInp, true);
+        } else {
+          show(fromInp, false); show(toInp, false);
+        }
+    
+
     state.events.loading = true;
     state.events.page = page;
     renderEvents();
 
-    const url = api() + `/api/admin/user-card/events?user_id=${encodeURIComponent(userId)}`
+    let url = api() + `/api/admin/user-card/events?user_id=${encodeURIComponent(userId)}`
       + `&scope=${encodeURIComponent(scope())}`
       + `&page=${encodeURIComponent(page)}`
       + `&limit=${encodeURIComponent(state.events.limit)}`;
+
+    if (f.type) url += `&type=${encodeURIComponent(f.type)}`;
+    if (f.term) url += `&term=${encodeURIComponent(f.term)}`;
+    if (f.from) url += `&from=${encodeURIComponent(f.from)}`;
+    if (f.to)   url += `&to=${encodeURIComponent(f.to)}`;
 
     try{
       const r = await fetch(url, { headers: (window.adminHeaders ? window.adminHeaders() : {}) });
@@ -257,6 +400,8 @@
       if (!r.ok || !j?.ok) throw new Error(j?.error || `HTTP ${r.status}`);
 
       state.events.items = Array.isArray(j.items) ? j.items : [];
+      ensureTypeOptions(state.events.items);
+
       state.events.total = Number(j.total || 0);
       state.events.limit = Number(j.limit || state.events.limit);
       state.events.page  = Number(j.page || page);
