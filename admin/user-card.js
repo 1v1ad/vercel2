@@ -38,6 +38,15 @@
     return nf0.format(Math.trunc(v)) + ' ₽';
   }
 
+  function fmt$(n){
+    // alias for money formatting (some code paths use fmt$)
+    if (typeof fmtMoney === 'function') return fmtMoney(n);
+    const v = Number(n);
+    if (!Number.isFinite(v)) return '—';
+    return nf0.format(Math.trunc(v)) + ' ₽';
+  }
+
+
   function prettyTs(v){
     const s = (v ?? '').toString();
     if (!s) return '—';
