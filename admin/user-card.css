@@ -1,0 +1,38 @@
+/* User-card-only cosmetic overrides for activity chart */
+.uc-activity{
+  height: 220px !important; /* чуть выше */
+}
+
+#uc-activity-chart{
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.uc-activity-bar{
+  fill: var(--accent2) !important;
+  opacity: .90;
+}
+.uc-activity-bar:hover{
+  opacity: 1;
+}
+
+/* axis labels (SVG text) */
+.uc-activity-axis{
+  fill: rgba(230,237,243,.70) !important;
+  font-family: var(--mono);
+  font-size: 5px; /* компенсирует масштабирование viewBox */
+  dominant-baseline: middle;
+}
+.uc-activity-grid{
+  stroke: rgba(255,255,255,.10) !important;
+}
+
+/* make tooltip a bit nicer */
+.uc-activity-tip{
+  background: rgba(0,0,0,.62);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+#uc-activity-chart text{ fill: rgba(230,237,243,.70); font-family: var(--mono); font-size: 5px; }
