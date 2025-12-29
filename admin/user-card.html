@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/admin/user-card.css" />
   <script defer src="/admin/admin-auth-headers.js"></script>
   <script defer src="/admin/flags.js"></script>
-  <script defer src="/admin/user-card.js?v=20251229_0032"></script>
+  <script defer src="/admin/user-card.js?v=20251229_0128"></script>
 </head>
 <body>
   <div class="uc-page">
@@ -41,7 +41,7 @@
       <div class="card uc-body">
         <div class="uc-tabs" id="uc-tabs">
           <button class="uc-tab is-active" data-tab="overview" type="button">Обзор</button>
-          <button class="uc-tab is-disabled" type="button" disabled>Аккаунты</button>
+          <button class="uc-tab" data-tab="accounts" type="button">Аккаунты</button>
           <button class="uc-tab" data-tab="duels" type="button">Дуэли</button>
           <button class="uc-tab" data-tab="events" type="button">События</button>
           <button class="uc-tab is-disabled" type="button" disabled>Финансы</button>
@@ -102,7 +102,38 @@
           </div>
         </div>
 
-        <div class="uc-panel" id="uc-panel-duels">
+        
+        <div class="uc-panel" id="uc-panel-accounts">
+          <div class="uc-subbar">
+            <div class="uc-sub-left muted">
+              Структура аккаунтов и HUM‑семья (scope не влияет)
+            </div>
+            <div class="uc-sub-right">
+              <button class="btn ghost sm" id="uc-accounts-reload" type="button">⟳</button>
+            </div>
+          </div>
+
+          <div class="uc-acc-grid">
+            <div class="uc-block">
+              <div class="uc-block-title">Текущий user_id</div>
+              <div class="uc-block-body">
+                <div id="uc-accounts-user">Загрузка…</div>
+                <div class="uc-acc-gap"></div>
+                <div class="uc-acc-sub">auth_accounts</div>
+                <div id="uc-accounts-auth" class="uc-auth-list"></div>
+              </div>
+            </div>
+
+            <div class="uc-block">
+              <div class="uc-block-title">HUM‑семья</div>
+              <div class="uc-block-body">
+                <div id="uc-accounts-family" class="uc-family-list">Загрузка…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+<div class="uc-panel" id="uc-panel-duels">
   <div class="uc-subbar">
     <div class="uc-sub-left muted" id="uc-duels-status">Загрузка…</div>
     <div class="uc-sub-right">

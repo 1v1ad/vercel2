@@ -6,7 +6,8 @@
     userId: null,
     tab: 'overview',
     events: { page: 1, limit: 50, total: 0, items: [], loading: false, filters: { type: '', period: 'all', from: '', to: '', term: '' } },
-    duels:  { page: 1, limit: 50, total: 0, items: [], loading: false, error: '', filters: { status: '', stake: '', period: 'all', from: '', to: '', term: '' } }
+    duels:  { page: 1, limit: 50, total: 0, items: [], loading: false, error: '', filters: { status: '', stake: '', period: 'all', from: '', to: '', term: '' } },
+    accounts: { loading: false, error: '', data: null }
   };
 
   function api(){
@@ -165,9 +166,13 @@
 
     // HUM toggle should refresh current tab (потому что scope меняется)
     window.addEventListener('adminHumToggle', ()=>{
-      try { load(); } catch(_){}
+      try { load(); } catch(_){ }
       if (state.tab === 'events') {
-        try { loadEvents(1); } catch(_){}
+        try { loadEvents(1); } catch(_){ }
+      } else if (state.tab === 'duels') {
+        try { loadDuels(1); } catch(_){ }
+      } else if (state.tab === 'accounts') {
+        try { loadAccounts(); } catch(_){ }
       }
     });
   }
@@ -186,6 +191,7 @@
     // panels
     const panels = [
       { id:'uc-panel-overview', tab:'overview' },
+      { id:'uc-panel-accounts', tab:'accounts' },
       { id:'uc-panel-duels', tab:'duels' },
       { id:'uc-panel-events', tab:'events' },
     ];
@@ -199,6 +205,8 @@
       loadEvents(1);
     } else if (tab === 'duels') {
       loadDuels(1);
+    } else if (tab === 'accounts') {
+      loadAccounts();
     }
   }
 
@@ -220,7 +228,166 @@
     return s.length > 140 ? (s.slice(0, 137) + '…') : s;
   }
 
-  async function loadEvents(page){
+  
+  async function loadAccounts(){
+    const userId = state.userId;
+    if (!userId) return;
+
+    const userBox = document.getElementById('uc-accounts-user');
+    const authBox = document.getElementById('uc-accounts-auth');
+    const famBox  = document.getElementById('uc-accounts-family');
+    const reloadBtn = document.getElementById('uc-accounts-reload');
+
+    if (reloadBtn && !reloadBtn.__ucWired){
+      reloadBtn.__ucWired = true;
+      reloadBtn.addEventListener('click', ()=> loadAccounts());
+    }
+
+    if (state.accounts.loading) return;
+    state.accounts.loading = true;
+    state.accounts.error = '';
+
+    if (userBox) userBox.textContent = 'Загрузка…';
+    if (authBox) authBox.innerHTML = '';
+    if (famBox) famBox.textContent = 'Загрузка…';
+
+    const url = api() + `/api/admin/user-card/accounts?user_id=${encodeURIComponent(userId)}`;
+    let j = null;
+
+    try{
+      const r = await fetch(url, { headers: (window.adminHeaders ? window.adminHeaders() : {}) });
+      j = await r.json();
+      if (!r.ok || !j || !j.ok) {
+        const msg = (j && (j.error || j.message)) ? String(j.error || j.message) : `HTTP ${r.status}`;
+        throw new Error(msg);
+      }
+    }catch(e){
+      state.accounts.loading = false;
+      state.accounts.error = String(e?.message || e || 'Ошибка');
+      if (userBox) userBox.innerHTML = `<div class="muted">Ошибка загрузки</div><div class="mono">${esc(state.accounts.error)}</div>`;
+      if (famBox) famBox.innerHTML = `<div class="muted">—</div>`;
+      return;
+    }
+
+    state.accounts.loading = false;
+    state.accounts.data = j;
+    renderAccounts(j);
+  }
+
+  function renderAccounts(j){
+    const userId = state.userId;
+    const userBox = document.getElementById('uc-accounts-user');
+    const authBox = document.getElementById('uc-accounts-auth');
+    const famBox  = document.getElementById('uc-accounts-family');
+    if (!userBox || !authBox || !famBox) return;
+
+    const u = j.user || {};
+    const family = Array.isArray(j.family) ? j.family : [];
+    const primaryId = (j.primary_user_id != null) ? String(j.primary_user_id) : '';
+    const humId = (j.hum_id != null) ? String(j.hum_id) : '';
+
+    const ava = u.avatar_url || u.avatar || u.avatarUrl || '';
+    const name = tinyName(u.first_name || u.firstName, u.last_name || u.lastName);
+    const idStr = (u.id != null) ? String(u.id) : (userId || '—');
+
+    const isPrimary = primaryId && (String(idStr) === String(primaryId));
+    const roleTag = isPrimary ? tag('primary','primary') : tag('alt','alt');
+    const proofTag = u.merged_via_proof ? tag('proof','proof') : '';
+
+    userBox.innerHTML = `
+      <div class="uc-acc-user">
+        ${ava ? `<img class="uc-acc-ava" src="${esc(ava)}" alt="">` : `<div class="uc-acc-ava uc-acc-ava--ph"></div>`}
+        <div class="uc-acc-main">
+          <div class="uc-acc-name">${esc(name)} <span class="muted">#${esc(idStr)}</span></div>
+          <div class="uc-acc-meta mono">
+            hum_id: ${esc(humId || '—')} · primary_user_id: ${esc(primaryId || '—')}
+          </div>
+          <div class="uc-tags">${roleTag}${proofTag}${(String(userId)===String(idStr)) ? tag('current','current') : ''}</div>
+        </div>
+      </div>
+
+      <div class="uc-kv">
+        ${kv('vk_id', u.vk_id)}
+        ${kv('first_name', u.first_name)}
+        ${kv('last_name', u.last_name)}
+        ${kv('balance', (u.balance != null) ? fmtMoney(u.balance) : '—')}
+        ${kv('created_at', u.created_at ? fmtTs(u.created_at) : '—')}
+        ${kv('updated_at', u.updated_at ? fmtTs(u.updated_at) : '—')}
+      </div>
+    `;
+
+    // auth accounts pills
+    const ua = Array.isArray(u.auth_accounts) ? u.auth_accounts : [];
+    authBox.innerHTML = renderAuthPills(ua);
+
+    // family cards
+    if (!family.length){
+      famBox.innerHTML = `<div class="muted">Нет данных</div>`;
+      return;
+    }
+
+    famBox.innerHTML = family.map(m=>{
+      const mid = (m.id != null) ? String(m.id) : '';
+      const mAva = m.avatar_url || m.avatar || '';
+      const mName = tinyName(m.first_name, m.last_name);
+      const mIsPrimary = primaryId && (String(mid) === String(primaryId));
+      const mRole = mIsPrimary ? tag('primary','primary') : tag('alt','alt');
+      const mProof = m.merged_via_proof ? tag('proof','proof') : '';
+      const mCur = (String(mid) === String(userId)) ? tag('current','current') : '';
+      const mHum = (m.hum_id != null) ? String(m.hum_id) : '';
+      const metaBits = [];
+      metaBits.push(`#${mid}`);
+      if (mHum) metaBits.push(`hum:${mHum}`);
+      const prov = summarizeProviders(m.auth_accounts);
+      if (prov) metaBits.push(prov);
+      return `
+        <a class="uc-family-card" href="user-card.html?user_id=${encodeURIComponent(mid)}" title="Открыть user_id ${esc(mid)}">
+          ${mAva ? `<img class="uc-family-ava" src="${esc(mAva)}" alt="">` : `<div class="uc-family-ava uc-family-ava--ph"></div>`}
+          <div class="uc-family-main">
+            <div class="uc-family-name">${esc(mName)}</div>
+            <div class="uc-family-meta mono">${esc(metaBits.join(' · '))}</div>
+          </div>
+          <div class="uc-tags uc-tags--right">${mRole}${mProof}${mCur}</div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  function tag(text, cls){
+    return `<span class="uc-tag ${esc(cls||'')}">${esc(text)}</span>`;
+  }
+
+  function kv(k, v){
+    const val = (v == null || v === '') ? '—' : String(v);
+    return `<div class="k">${esc(k)}</div><div class="v mono">${esc(val)}</div>`;
+  }
+
+  function renderAuthPills(list){
+    if (!Array.isArray(list) || list.length === 0){
+      return `<div class="muted">—</div>`;
+    }
+    return list.map(a=>{
+      const p = (a.provider || '').toString();
+      const pid = (a.provider_user_id || a.providerUserId || '').toString();
+      const when = a.created_at ? ` · ${fmtTs(a.created_at)}` : '';
+      return `<div class="uc-auth-pill"><span class="uc-auth-prov">${esc(p || '—')}</span><span class="uc-auth-id mono">${esc(pid || '—')}</span><span class="uc-auth-when muted">${esc(when)}</span></div>`;
+    }).join('');
+  }
+
+  function summarizeProviders(list){
+    if (!Array.isArray(list) || list.length === 0) return '';
+    // show first 2 providers
+    const parts = [];
+    for (const a of list){
+      const p = (a.provider || '').toString().trim();
+      const pid = (a.provider_user_id || '').toString().trim();
+      if (!p && !pid) continue;
+      parts.push(pid ? `${p}:${pid}` : p);
+      if (parts.length >= 2) break;
+    }
+    return parts.join(', ');
+  }
+async function loadEvents(page){
     const userId = state.userId;
     if (!userId) return;
 
