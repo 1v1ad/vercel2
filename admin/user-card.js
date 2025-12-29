@@ -282,7 +282,8 @@
     if (!userBox || !authBox || !famBox) return;
 
     const u = j.user || {};
-    const family = Array.isArray(j.family) ? j.family : [];
+    const familyAll = Array.isArray(j.family) ? j.family : [];
+    const family = familyAll.filter(m => String(m && m.id) !== String((u && u.id)!=null ? u.id : userId));
     const primaryId = (j.primary_user_id != null) ? String(j.primary_user_id) : '';
     const humId = (j.hum_id != null) ? String(j.hum_id) : '';
 
@@ -320,9 +321,10 @@
     const ua = Array.isArray(u.auth_accounts) ? u.auth_accounts : [];
     authBox.innerHTML = renderAuthPills(ua);
 
-    // family cards
+    // family cards (показываем только ДРУГИЕ аккаунты из HUM-семьи — текущий уже слева)
     if (!family.length){
-      famBox.innerHTML = `<div class="muted">Нет данных</div>`;
+      const total = familyAll.length || 0;
+      famBox.innerHTML = `<div class="muted">В HUM-семье нет других аккаунтов (всего: ${total}).</div>`;
       return;
     }
 
