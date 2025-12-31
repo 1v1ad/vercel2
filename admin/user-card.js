@@ -236,6 +236,7 @@
     const userBox = document.getElementById('uc-accounts-user');
     const authBox = document.getElementById('uc-accounts-auth');
     const famBox  = document.getElementById('uc-accounts-family');
+    const devBox  = document.getElementById('uc-accounts-device-family');
     const reloadBtn = document.getElementById('uc-accounts-reload');
 
     if (reloadBtn && !reloadBtn.__ucWired){
@@ -250,6 +251,7 @@
     if (userBox) userBox.textContent = 'Загрузка…';
     if (authBox) authBox.innerHTML = '';
     if (famBox) famBox.textContent = 'Загрузка…';
+    if (devBox) devBox.textContent = 'Загрузка…';
 
     const url = api() + `/api/admin/user-card/accounts?user_id=${encodeURIComponent(userId)}`;
     let j = null;
@@ -266,6 +268,7 @@
       state.accounts.error = String(e?.message || e || 'Ошибка');
       if (userBox) userBox.innerHTML = `<div class="muted">Ошибка загрузки</div><div class="mono">${esc(state.accounts.error)}</div>`;
       if (famBox) famBox.innerHTML = `<div class="muted">—</div>`;
+      if (devBox) devBox.innerHTML = `<div class="muted">—</div>`;
       return;
     }
 
@@ -279,8 +282,8 @@
     const userBox = document.getElementById('uc-accounts-user');
     const authBox = document.getElementById('uc-accounts-auth');
     const famBox  = document.getElementById('uc-accounts-family');
-    const devBox  = document.getElementById('uc-accounts-device');
-    if (!userBox || !authBox || !famBox) return;
+    const devBox  = document.getElementById('uc-accounts-device-family');
+    if (!userBox || !authBox || !famBox || !devBox) return;
 
     const u = j.user || {};
     const familyAll = Array.isArray(j.family) ? j.family : [];
@@ -322,64 +325,114 @@
     const ua = Array.isArray(u.auth_accounts) ? u.auth_accounts : [];
     authBox.innerHTML = renderAuthPills(ua);
 
-
     // family cards (показываем только ДРУГИЕ аккаунты из HUM-семьи — текущий уже слева)
     if (!family.length){
       const total = familyAll.length || 0;
       famBox.innerHTML = `<div class="muted">В HUM-семье нет других аккаунтов (всего: ${total}).</div>`;
     } else {
       famBox.innerHTML = family.map(m=>{
-            const mid = (m.id != null) ? String(m.id) : '';
-            const mAva = m.avatar_url || m.avatar || '';
-            const mName = tinyName(m.first_name, m.last_name);
-            const mIsPrimary = primaryId && (String(mid) === String(primaryId));
-            const mRole = mIsPrimary ? tag('primary','primary') : tag('alt','alt');
-            const mProof = m.merged_via_proof ? tag('proof','proof') : '';
-            const mCur = (String(mid) === String(userId)) ? tag('current','current') : '';
-            const mHum = (m.hum_id != null) ? String(m.hum_id) : '';
-            const metaBits = [];
-            metaBits.push(`#${mid}`);
-            if (mHum) metaBits.push(`hum:${mHum}`);
-            const prov = summarizeProviders(m.auth_accounts);
-            if (prov) metaBits.push(prov);
-            return `
-              <a class="uc-family-card" href="user-card.html?user_id=${encodeURIComponent(mid)}" title="Открыть user_id ${esc(mid)}">
-                ${mAva ? `<img class="uc-family-ava" src="${esc(mAva)}" alt="">` : `<div class="uc-family-ava uc-family-ava--ph"></div>`}
-                <div class="uc-family-main">
-                  <div class="uc-family-name">${esc(mName)}</div>
-                  <div class="uc-family-meta mono">${esc(metaBits.join(' · '))}</div>
-                </div>
-                <div class="uc-tags uc-tags--right">${mRole}${mProof}${mCur}</div>
-              </a>
-            `;
-          }).join('');
+      const mid = (m.id != null) ? String(m.id) : '';
+      const mAva = m.avatar_url || m.avatar || '';
+      const mName = tinyName(m.first_name, m.last_name);
+      const mIsPrimary = primaryId && (String(mid) === String(primaryId));
+      const mRole = mIsPrimary ? tag('primary','primary') : tag('alt','alt');
+      const mProof = m.merged_via_proof ? tag('proof','proof') : '';
+      const mCur = (String(mid) === String(userId)) ? tag('current','current') : '';
+      const mHum = (m.hum_id != null) ? String(m.hum_id) : '';
+      const metaBits = [];
+      metaBits.push(`#${mid}`);
+      if (mHum) metaBits.push(`hum:${mHum}`);
+      const prov = summarizeProviders(m.auth_accounts);
+      if (prov) metaBits.push(prov);
+      return `
+        <a class="uc-family-card" href="user-card.html?user_id=${encodeURIComponent(mid)}" title="Открыть user_id ${esc(mid)}">
+          ${mAva ? `<img class="uc-family-ava" src="${esc(mAva)}" alt="">` : `<div class="uc-family-ava uc-family-ava--ph"></div>`}
+          <div class="uc-family-main">
+            <div class="uc-family-name">${esc(mName)}</div>
+            <div class="uc-family-meta mono">${esc(metaBits.join(' · '))}</div>
+          </div>
+          <div class="uc-tags uc-tags--right">${mRole}${mProof}${mCur}</div>
+        </a>
+      `;
+      }).join('');
     }
 
-    // device_family (теневая семья по device_id)
-    if (devBox){
-      const groups = Array.isArray(j.device_family) ? j.device_family : [];
-      if (!groups.length){
-        devBox.innerHTML = `<div class="muted">Нет связей по device_id.</div>`;
+    // device-family (связи по device_id из auth_accounts.meta)
+    const groups = Array.isArray(j.device_family) ? j.device_family : (Array.isArray(j.deviceFamily) ? j.deviceFamily : []);
+    devBox.innerHTML = renderDeviceFamily(groups, userId);
+  }
+
+  function renderDeviceFamily(groups, userId){
+    if (!Array.isArray(groups) || groups.length === 0){
+      return `<div class="muted">Нет связей по устройству.</div>`;
+    }
+
+    const curId = String(userId);
+    const wrap = groups.map(g => {
+      const deviceId = (g.device_id || g.deviceId || '').toString();
+      const short = shortDevice(deviceId);
+
+      // supported formats:
+      // 1) g.members: [{id, first_name, last_name, avatar_url, auth_accounts, ...}]
+      // 2) g.users: same
+      // 3) g.user_ids: [97,1]
+      const members = Array.isArray(g.members) ? g.members : (Array.isArray(g.users) ? g.users : []);
+      const ids = Array.isArray(g.user_ids) ? g.user_ids.map(String) : (Array.isArray(g.userIds) ? g.userIds.map(String) : members.map(m => String(m && m.id)));
+      const otherIds = ids.filter(id => id && id !== curId);
+
+      const accounts = Array.isArray(g.accounts)
+        ? g.accounts
+        : (Array.isArray(g.providers) ? g.providers : []);
+      const accStr = accounts.length ? accounts.join(', ') : '';
+
+      const head = `
+        <div class="uc-device-head">
+          <div class="uc-device-title mono" title="${esc(deviceId)}">device: ${esc(short)}</div>
+          <div class="uc-device-sub muted">${otherIds.length ? `другие user_id: ${otherIds.length}` : 'только текущий user_id'}</div>
+        </div>
+        ${accStr ? `<div class="uc-device-acc mono">${esc(accStr)}</div>` : ''}
+      `;
+
+      let body = '';
+      if (members.length){
+        const otherMembers = members.filter(m => String(m && m.id) !== curId);
+        body = otherMembers.length
+          ? `<div class="uc-device-members">${otherMembers.map(m => renderDeviceMember(m)).join('')}</div>`
+          : `<div class="muted">В этой группе нет других аккаунтов, кроме текущего.</div>`;
       } else {
-        devBox.innerHTML = groups.map(g=>{
-          const did = (g && g.device_id != null) ? String(g.device_id) : '';
-          const didShort = did ? (did.slice(0, 8) + '…' + did.slice(-6)) : '—';
-          const uids = Array.isArray(g.user_ids) ? g.user_ids.map(x=>String(x)) : [];
-          const accs = Array.isArray(g.accounts) ? g.accounts.map(String) : [];
-          const cnt = (g && g.user_count != null) ? String(g.user_count) : String(uids.length || 0);
-          return `
-            <div class="uc-family-card">
-              <div class="uc-family-main">
-                <div class="uc-family-name mono">device: ${esc(didShort)}</div>
-                <div class="uc-family-meta mono">${esc('user_ids: ' + (uids.join(', ') || '—'))}${accs.length ? `<br>${esc('accounts: ' + accs.join(', '))}` : ''}</div>
-              </div>
-              <div class="uc-tags uc-tags--right">${tag(cnt,'alt')}</div>
-            </div>
-          `;
-        }).join('');
+        body = otherIds.length
+          ? `<div class="uc-device-members">${otherIds.map(id => renderDeviceMember({ id })).join('')}</div>`
+          : `<div class="muted">В этой группе нет других аккаунтов, кроме текущего.</div>`;
       }
-    }
 
+      return `<div class="uc-device-group">${head}${body}</div>`;
+    }).join('');
+
+    return `<div class="uc-device-list">${wrap}</div>`;
+  }
+
+  function renderDeviceMember(m){
+    const id = (m && m.id != null) ? String(m.id) : '';
+    const ava = (m && (m.avatar_url || m.avatar || m.avatarUrl)) ? String(m.avatar_url || m.avatar || m.avatarUrl) : '';
+    const name = tinyName(m && (m.first_name || m.firstName), m && (m.last_name || m.lastName));
+    const prov = summarizeProviders(m && m.auth_accounts);
+    const meta = [id ? `#${id}` : ''];
+    if (prov) meta.push(prov);
+    return `
+      <a class="uc-family-card" href="user-card.html?user_id=${encodeURIComponent(id)}" title="Открыть user_id ${esc(id)}">
+        ${ava ? `<img class="uc-family-ava" src="${esc(ava)}" alt="">` : `<div class="uc-family-ava uc-family-ava--ph"></div>`}
+        <div class="uc-family-main">
+          <div class="uc-family-name">${esc(name || ('user ' + id))}</div>
+          <div class="uc-family-meta mono">${esc(meta.filter(Boolean).join(' · '))}</div>
+        </div>
+      </a>
+    `;
+  }
+
+  function shortDevice(id){
+    const s = (id || '').toString();
+    if (s.length <= 14) return s || '—';
+    return `${s.slice(0,8)}…${s.slice(-4)}`;
   }
 
   function tag(text, cls){
