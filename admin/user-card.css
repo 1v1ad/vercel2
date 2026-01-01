@@ -158,14 +158,6 @@
   gap:12px;
 }
 
-/* правая колонка: HUM‑семья сверху, связи по device_id — ниже */
-.uc-acc-right{
-  display:flex;
-  flex-direction: column;
-  gap:12px;
-  min-width:0;
-}
-
 .uc-block--span2{
   grid-column: 1 / -1;
 }
@@ -370,48 +362,134 @@
 .uc-tag.current{ border-color: rgba(255,255,255,0.28); opacity:.8; }
 
 
-/* --- Header cosmetics (main user page) --- */
-/* Bigger square avatar + more breathing room between: name / ids / badges */
+/* =========================================================
+   User-card header cosmetics (avatar + provider badge + stripes)
+   ========================================================= */
+
 .uc-header{
-  align-items:flex-start;
-  gap:18px;
+  position: relative;
+  overflow: hidden;
+}
+.uc-header::before{
+  content:"";
+  position:absolute;
+  inset: -80px -220px;
+  pointer-events:none;
+  z-index: 0;
+
+  /* Three thicker, brighter, but still background-only stripes */
+  background-image:
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 22%,
+      rgba(10,132,255,.32) 32%,
+      rgba(46,209,169,.30) 44%,
+      rgba(0,0,0,0) 58%,
+      rgba(0,0,0,0) 100%),
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 36%,
+      rgba(255,193,7,.26) 46%,
+      rgba(10,132,255,.26) 58%,
+      rgba(0,0,0,0) 72%,
+      rgba(0,0,0,0) 100%),
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 10%,
+      rgba(46,209,169,.22) 22%,
+      rgba(255,193,7,.22) 34%,
+      rgba(0,0,0,0) 50%,
+      rgba(0,0,0,0) 100%);
+  background-size: 220% 220%;
+  background-position: 0% 12%, 0% 52%, 0% 88%;
+  opacity: .72;
+  filter: saturate(1.15);
+  animation: ucShimmer 9.5s linear infinite;
+}
+.uc-header > *{ position: relative; z-index: 1; }
+
+@keyframes ucShimmer{
+  0%   { background-position: 0% 12%, 0% 52%, 0% 88%; }
+  100% { background-position: 120% 12%, 120% 52%, 120% 88%; }
 }
 
-.uc-header .uc-avatar{
-  width: 192px;
-  height: 192px;
-  border-radius: 18px; /* still square, just pleasantly rounded */
+/* Bigger square avatar (rounded square) + badge overlay */
+.uc-avatar{
+  width: 192px !important;
+  height: 192px !important;
+  border-radius: 22px !important;
+  overflow: visible !important; /* allow badge to hang out a bit */
+  position: relative;
 }
+.uc-avatar-frame{
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  overflow: hidden;
+  background: rgba(255,255,255,.05);
+}
+.uc-avatar-frame .uc-avatar-img,
+.uc-avatar-frame .uc-avatar-empty,
+.uc-avatar-frame .uc-avatar-skel{
+  width: 100%;
+  height: 100%;
+}
+
+.uc-avatar-badges{
+  position: absolute;
+  right: -12px;   /* slightly outside to show transparency over stripes */
+  bottom: -12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.uc-avatar-badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+
+  background: rgba(0,0,0,.38);
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 12px 26px rgba(0,0,0,.28);
+  backdrop-filter: blur(8px);
+  opacity: .80; /* semi-transparent like you liked */
+}
+.uc-avatar-badge.vk{ border-color: rgba(0,149,255,.34); }
+.uc-avatar-badge.tg{ border-color: rgba(46,209,169,.34); }
+.uc-avatar-badge.other{ border-color: rgba(255,255,255,.26); }
+
+/* A bit more breathing room between name / ids */
+.uc-name{ margin-top: 6px !important; }
+.uc-ids{ margin-top: 12px !important; }
+.uc-badges{ margin-top: 14px !important; }
 
 @media (max-width: 980px){
-  .uc-header .uc-avatar{ width: 140px; height: 140px; }
+  .uc-avatar{ width: 140px !important; height: 140px !important; }
+  .uc-avatar-badges{ right: -10px; bottom: -10px; }
 }
 @media (max-width: 560px){
-  .uc-header .uc-avatar{ width: 120px; height: 120px; }
+  .uc-avatar{ width: 116px !important; height: 116px !important; }
 }
 
-.uc-header .uc-name{ margin-top: 6px; line-height: 1.12; }
-.uc-header .uc-ids{ margin-top: 12px; }
-.uc-header .uc-badges{ margin-top: 16px; align-items:center; }
 
-/* Three subtle animated gradient stripes behind the text (keeps the “shimmer”, but calmer) */
-.uc-header .uc-main .skel{
-  background: linear-gradient(90deg,
-    rgba(10,132,255,.07),
-    rgba(78,209,169,.07),
-    rgba(255,193,7,.06),
-    rgba(10,132,255,.07)
-  );
-  background-size: 260% 100%;
-  animation: ucStripeMove 4.2s ease-in-out infinite;
-  border-radius: 999px;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.04) inset;
-}
+/* =========================================================
+   Accounts tab — place device links under HUM family (right column)
+   ========================================================= */
 
-/* Make stripes a touch thicker, so the semi-transparent VK/TG badge overlaps “halfway” */
-.uc-header .uc-main .skel-line{ height: 16px; }
+.uc-acc-grid{ grid-auto-rows: min-content; }
+.uc-acc-current{ grid-column: 1; grid-row: 1 / span 2; }
+.uc-acc-family{ grid-column: 2; grid-row: 1; }
+.uc-acc-device{ grid-column: 2; grid-row: 2; }
 
-@keyframes ucStripeMove{
-  0%{ background-position: 0% 50%; }
-  100%{ background-position: 100% 50%; }
+@media (max-width: 980px){
+  .uc-acc-current, .uc-acc-family, .uc-acc-device{ grid-column: auto; grid-row: auto; }
 }

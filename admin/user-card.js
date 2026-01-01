@@ -1040,14 +1040,19 @@ function render(data){
     const la = data.last_auth || null;
     const le = data.last_event || null;
 
-    // avatar
+    // avatar (frame + provider badge overlay)
     const hdr = $('#uc-header');
     const avaBox = hdr?.querySelector('.uc-avatar');
     if (avaBox){
       const src = p.avatar || p.avatar_url || '';
-      avaBox.innerHTML = src
+      const imgHtml = src
         ? `<img class="uc-avatar-img" src="${esc(src)}" alt="avatar" referrerpolicy="no-referrer" />`
         : `<div class="uc-avatar-empty">—</div>`;
+      // Keep avatar itself clipped, but allow badge to slightly hang outside.
+      avaBox.innerHTML = `
+        <div class="uc-avatar-frame">${imgHtml}</div>
+        <div class="uc-avatar-badges" aria-label="providers"></div>
+      `;
     }
 
     // name
@@ -1059,15 +1064,24 @@ function render(data){
     const idsEl = hdr?.querySelector('.uc-ids');
     if (idsEl) idsEl.innerHTML = `user_id: <b>${esc(p.user_id ?? '—')}</b> · HUM: <b>${esc(p.hum_id ?? '—')}</b>`;
 
-    // badges
+    // Provider badges on avatar
+    const avaBadgesEl = hdr?.querySelector('.uc-avatar-badges');
+    if (avaBadgesEl){
+      const b = [];
+      if (prov.vk) b.push(`<span class="uc-avatar-badge vk">VK</span>`);
+      if (prov.tg) b.push(`<span class="uc-avatar-badge tg">TG</span>`);
+      if (!prov.vk && !prov.tg && p.provider) b.push(`<span class="uc-avatar-badge other">${esc(fmtProvider(p.provider))}</span>`);
+      avaBadgesEl.innerHTML = b.join('');
+      avaBadgesEl.style.display = b.length ? '' : 'none';
+    }
+
+    // Line badges (leave only non-provider info here)
     const badgesEl = hdr?.querySelector('.uc-badges');
     if (badgesEl){
       const b = [];
-      if (prov.vk) b.push(badge('VK', 'vk'));
-      if (prov.tg) b.push(badge('TG', 'tg'));
-      if (!prov.vk && !prov.tg && p.provider) b.push(badge(fmtProvider(p.provider)));
-      if (p.merged_via_proof) b.push(badge('manual/proof link', 'proof'));
-      badgesEl.innerHTML = b.join(' ') || '—';
+      if (p.merged_via_proof) b.push(badge('склейка через proof', 'proof'));
+      badgesEl.innerHTML = b.join(' ');
+      badgesEl.style.display = b.length ? '' : 'none';
     }
 
     // meta chips
