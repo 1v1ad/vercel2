@@ -158,6 +158,14 @@
   gap:12px;
 }
 
+/* правая колонка: HUM‑семья сверху, связи по device_id — ниже */
+.uc-acc-right{
+  display:flex;
+  flex-direction: column;
+  gap:12px;
+  min-width:0;
+}
+
 .uc-block--span2{
   grid-column: 1 / -1;
 }
