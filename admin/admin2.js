@@ -1024,7 +1024,7 @@ function bindNav(){
 
     const KEY = 'ADMIN_SIDEBAR_COLLAPSED';
 
-    const isMobile = ()=> window.matchMedia && window.matchMedia('(max-width: 900px)').matches;
+    const isMobile = ()=> window.matchMedia && window.matchMedia('(max-width: 1100px)').matches;
 
     function setNavTitles(collapsed){
       try{
@@ -1065,10 +1065,58 @@ function bindNav(){
 
     // respond to resize (desktop <-> mobile)
     try{
-      const mq = window.matchMedia('(max-width: 900px)');
+      const mq = window.matchMedia('(max-width: 1100px)');
       mq.addEventListener ? mq.addEventListener('change', ()=>apply(localStorage.getItem(KEY)==='1'))
                           : mq.addListener(()=>apply(localStorage.getItem(KEY)==='1'));
     }catch(_){}
+  }
+
+  // Mobile: off-canvas sidebar open/close (hamburger in topbar)
+  function bindMobileSidebar(){
+    const layout = document.querySelector('.layout');
+    const btn = document.getElementById('sidebar-open');
+    const overlay = document.getElementById('sidebar-overlay');
+    const sidebar = document.querySelector('.sidebar');
+    if (!layout || !sidebar) return;
+
+    const mq = window.matchMedia ? window.matchMedia('(max-width: 1100px)') : null;
+    const isMobile = ()=> !!(mq && mq.matches);
+
+    const close = ()=> layout.classList.remove('sidebar-open');
+    const toggle = ()=> layout.classList.toggle('sidebar-open');
+
+    if (btn){
+      btn.addEventListener('click', (e)=>{
+        if (!isMobile()) return;
+        e.preventDefault();
+        toggle();
+      });
+    }
+
+    if (overlay){
+      overlay.addEventListener('click', ()=>{ close(); });
+    }
+
+    // Close on navigation click (on mobile)
+    document.addEventListener('click', (e)=>{
+      const a = e?.target?.closest ? e.target.closest('a.nav-item, a.nav-sub-item') : null;
+      if (!a) return;
+      if (isMobile()) close();
+    });
+
+    // Escape closes
+    document.addEventListener('keydown', (e)=>{
+      if (e && e.key === 'Escape') close();
+    });
+
+    // When leaving mobile breakpoint, ensure sidebar is closed
+    try{
+      if (mq){
+        const onChange = ()=>{ if (!isMobile()) close(); };
+        mq.addEventListener ? mq.addEventListener('change', onChange)
+                            : mq.addListener(onChange);
+      }
+    }catch(_){ }
   }
 
 function bindTopbar(){
@@ -2714,6 +2762,7 @@ $('#unmerge-all')?.addEventListener('change', (e)=>{
     bindNav();
     bindTitleGoto();
     bindSidebarCollapse();
+    bindMobileSidebar();
     bindTopbar();
     bindActions();
 
