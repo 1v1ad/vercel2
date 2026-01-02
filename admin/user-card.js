@@ -7,6 +7,7 @@
     tab: 'overview',
     events: { page: 1, limit: 50, total: 0, items: [], loading: false, filters: { type: '', period: 'all', from: '', to: '', term: '' } },
     duels:  { page: 1, limit: 50, total: 0, items: [], loading: false, error: '', filters: { status: '', stake: '', period: 'all', from: '', to: '', term: '' } },
+    finance: { page: 1, limit: 20, total: 0, items: [], loading: false, error: '', kpi: null, filters: { type: '', status: '', period: '30', from: '', to: '' } },
     accounts: { loading: false, error: '', data: null }
   };
 
@@ -171,6 +172,8 @@
         try { loadEvents(1); } catch(_){ }
       } else if (state.tab === 'duels') {
         try { loadDuels(1); } catch(_){ }
+      } else if (state.tab === 'finance') {
+        try { loadFinance(1); } catch(_){ }
       } else if (state.tab === 'accounts') {
         try { loadAccounts(); } catch(_){ }
       }
@@ -194,6 +197,7 @@
       { id:'uc-panel-accounts', tab:'accounts' },
       { id:'uc-panel-duels', tab:'duels' },
       { id:'uc-panel-events', tab:'events' },
+      { id:'uc-panel-finance', tab:'finance' },
     ];
     panels.forEach(p=>{
       const el = document.getElementById(p.id);
@@ -205,6 +209,8 @@
       loadEvents(1);
     } else if (tab === 'duels') {
       loadDuels(1);
+    } else if (tab === 'finance') {
+      loadFinance(1);
     } else if (tab === 'accounts') {
       loadAccounts();
     }
@@ -727,7 +733,272 @@ async function loadEvents(page){
   }
 
 
-    async function loadDuels(page){
+    
+
+  function renderFinance(){
+    const statusEl = document.getElementById('uc-finance-status');
+    const pageEl   = document.getElementById('uc-finance-page');
+    const prevBtn  = document.getElementById('uc-finance-prev');
+    const nextBtn  = document.getElementById('uc-finance-next');
+
+    const kpisEl = document.getElementById('uc-finance-kpis');
+    const noteEl = document.getElementById('uc-finance-note');
+
+    const tbl = document.getElementById('uc-finance-table');
+    const tbody = tbl?.querySelector('tbody');
+
+    const { page, limit, total, items, loading, kpi } = state.finance;
+
+    const start = total ? ((page - 1) * limit + 1) : 0;
+    const end   = Math.min(page * limit, total || 0);
+
+    if (statusEl){
+      if (loading) statusEl.textContent = 'Загрузка…';
+      else if (state.finance.error) statusEl.textContent = `Ошибка: ${state.finance.error}`;
+      else statusEl.textContent = total ? `Показано ${start}–${end} из ${total}` : 'Нет данных';
+    }
+
+    if (pageEl){
+      const pages = total ? Math.max(1, Math.ceil(total / limit)) : 1;
+      pageEl.textContent = `${page} / ${pages}`;
+    }
+    if (prevBtn) prevBtn.disabled = loading || page <= 1;
+    if (nextBtn) nextBtn.disabled = loading || (total ? (page * limit >= total) : true);
+
+    // KPIs
+    if (kpisEl){
+      const k = kpi || {};
+      const itemsK = [
+        { l:'Пополнено', v: fmtMoney(k.deposited || 0) },
+        { l:'Выведено',  v: fmtMoney(k.withdrawn || 0) },
+        { l:'Оборот',    v: fmtMoney(k.turnover || 0) },
+        { l:'Рейк',      v: fmtMoney(k.rake || 0) },
+      ];
+      kpisEl.innerHTML = itemsK.map(it => `
+        <div class="uc-kpi">
+          <div class="uc-kpi-v">${esc(it.v)}</div>
+          <div class="uc-kpi-l">${esc(it.l)}</div>
+        </div>
+      `).join('');
+    }
+    if (noteEl){
+      const pct = (state.finance.kpi && state.finance.kpi.rake_pct != null) ? String(state.finance.kpi.rake_pct) : '';
+      noteEl.textContent = pct ? `Рейк: ${pct}% от оборота` : '';
+    }
+
+    if (!tbody) return;
+    if (loading){
+      tbody.innerHTML = `<tr><td class="muted" colspan="6">Загрузка…</td></tr>`;
+      return;
+    }
+    if (!items?.length){
+      tbody.innerHTML = `<tr><td class="muted" colspan="6">Нет данных</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = items.map(tx=>{
+      const at = prettyTs(tx.created_at || tx.at || tx.createdAt || tx.ts || '');
+      const type = esc((tx.type || tx.tx_type || tx.kind || '—'));
+      const status = esc((tx.status || 'ok'));
+      const amt = (tx.amount != null && tx.amount !== '') ? fmtMoney(tx.amount) : '—';
+      const commentRaw = (tx.comment ?? (tx.meta && (tx.meta.comment ?? tx.meta.note ?? tx.meta.desc)) ?? '');
+      const comment = esc(commentRaw || '');
+      const meta = esc(shortPayload(tx.meta || tx.payload || tx.data || tx.meta_json));
+      return `
+        <tr>
+          <td class="muted">${esc(at)}</td>
+          <td class="mono">${type}</td>
+          <td class="mono muted">${status}</td>
+          <td class="mono">${esc(amt)}</td>
+          <td class="mono uc-payload" title="${comment}">${comment || '—'}</td>
+          <td class="mono uc-payload" title="${meta}">${meta}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function loadFinance(page){
+    const userId = state.userId;
+    if (!userId) return;
+
+    const prevBtn   = document.getElementById('uc-finance-prev');
+    const nextBtn   = document.getElementById('uc-finance-next');
+    const reloadBtn = document.getElementById('uc-finance-reload');
+
+    const typeSel   = document.getElementById('uc-finance-filter-type');
+    const statusSel = document.getElementById('uc-finance-filter-status');
+    const periodSel = document.getElementById('uc-finance-filter-period');
+    const fromInp   = document.getElementById('uc-finance-filter-from');
+    const toInp     = document.getElementById('uc-finance-filter-to');
+    const applyBtn  = document.getElementById('uc-finance-filter-apply');
+    const resetBtn  = document.getElementById('uc-finance-filter-reset');
+
+    const f = state.finance.filters;
+
+    const pad2 = (n) => String(n).padStart(2,'0');
+    const ymdLocal = (d) => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+
+    function show(el, on){
+      if (!el) return;
+      el.classList.toggle('uc-hide', !on);
+    }
+
+    function setPeriodQuick(days){
+      if (!days){
+        f.from = '';
+        f.to = '';
+        if (fromInp) fromInp.value = '';
+        if (toInp) toInp.value = '';
+        return;
+      }
+      const dTo = new Date();
+      const dFrom = new Date();
+      dFrom.setDate(dFrom.getDate() - Number(days));
+      const from = ymdLocal(dFrom);
+      const to = ymdLocal(dTo);
+      f.from = from;
+      f.to = to;
+      if (fromInp) fromInp.value = from;
+      if (toInp) toInp.value = to;
+    }
+
+    function ensureTypeOptions(items){
+      if (!typeSel) return;
+      const existing = new Set(Array.from(typeSel.options).map(o=>o.value));
+      const types = Array.from(new Set((items||[]).map(x=>String(x.type||x.tx_type||x.kind||'').trim()).filter(Boolean))).slice(0,80);
+      for (const t of types){
+        if (existing.has(t)) continue;
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        typeSel.appendChild(opt);
+        existing.add(t);
+      }
+    }
+
+    // wire controls once
+    if (prevBtn && !prevBtn.__ucWired){
+      prevBtn.__ucWired = true;
+      prevBtn.addEventListener('click', ()=> loadFinance(Math.max(1, (state.finance.page||1) - 1)));
+    }
+    if (nextBtn && !nextBtn.__ucWired){
+      nextBtn.__ucWired = true;
+      nextBtn.addEventListener('click', ()=> loadFinance((state.finance.page||1) + 1));
+    }
+    if (reloadBtn && !reloadBtn.__ucWired){
+      reloadBtn.__ucWired = true;
+      reloadBtn.addEventListener('click', ()=> loadFinance(state.finance.page||1));
+    }
+
+    if (applyBtn && !applyBtn.__ucWired){
+      applyBtn.__ucWired = true;
+      applyBtn.addEventListener('click', ()=>{
+        f.type = (typeSel?.value||'').trim();
+        f.status = (statusSel?.value||'').trim();
+        f.period = (periodSel?.value||'30').trim();
+
+        if (f.period === 'custom'){
+          f.from = (fromInp?.value||'').trim();
+          f.to   = (toInp?.value||'').trim();
+          show(fromInp, true);
+          show(toInp, true);
+        } else if (f.period === 'all'){
+          show(fromInp, false);
+          show(toInp, false);
+          setPeriodQuick(null);
+        } else {
+          show(fromInp, false);
+          show(toInp, false);
+          setPeriodQuick(Number(f.period));
+        }
+        loadFinance(1);
+      });
+    }
+
+    if (resetBtn && !resetBtn.__ucWired){
+      resetBtn.__ucWired = true;
+      resetBtn.addEventListener('click', ()=>{
+        f.type = '';
+        f.status = '';
+        f.period = '30';
+        f.from = '';
+        f.to = '';
+        if (typeSel) typeSel.value = '';
+        if (statusSel) statusSel.value = '';
+        if (periodSel) periodSel.value = '30';
+        show(fromInp, false);
+        show(toInp, false);
+        setPeriodQuick(30);
+        loadFinance(1);
+      });
+    }
+
+    if (periodSel && !periodSel.__ucWired){
+      periodSel.__ucWired = true;
+      periodSel.addEventListener('change', ()=>{
+        const v = (periodSel.value||'30').trim();
+        if (v === 'custom'){
+          show(fromInp, true);
+          show(toInp, true);
+          if (!fromInp?.value && f.from) fromInp.value = f.from;
+          if (!toInp?.value && f.to) toInp.value = f.to;
+        } else {
+          show(fromInp, false);
+          show(toInp, false);
+        }
+      });
+    }
+
+    // default period if empty
+    if (!f.period) f.period = '30';
+    if ((f.period === '30' || f.period === '7' || f.period === '90') && (!f.from || !f.to)){
+      setPeriodQuick(Number(f.period));
+    }
+    if (periodSel && !periodSel.value) periodSel.value = f.period;
+    if (typeSel && typeSel.value !== f.type) typeSel.value = f.type || '';
+    if (statusSel && statusSel.value !== f.status) statusSel.value = f.status || '';
+
+    state.finance.loading = true;
+    state.finance.error = '';
+    state.finance.page = Math.max(1, toInt(page, 1));
+    renderFinance();
+
+    const qs = new URLSearchParams();
+    qs.set('user_id', userId);
+    qs.set('scope', scope());
+    qs.set('page', String(state.finance.page));
+    qs.set('limit', String(state.finance.limit || 20));
+
+    if (f.from) qs.set('from', f.from);
+    if (f.to) qs.set('to', f.to);
+    if (f.type) qs.set('type', f.type);
+    if (f.status) qs.set('status', f.status);
+
+    const url = `${api()}/api/admin/user-card/finance?${qs.toString()}`;
+    try{
+      const r = await fetch(url, { headers: window.adminHeaders ? window.adminHeaders() : headers() });
+      const j = await r.json().catch(()=>({ ok:false, error:'bad json' }));
+      if (!r.ok || j.ok === false){
+        throw new Error(j.error || ('HTTP ' + r.status));
+      }
+      state.finance.loading = false;
+      state.finance.total = toInt(j.total, 0);
+      state.finance.items = Array.isArray(j.items) ? j.items : [];
+      state.finance.kpi = j.kpi || null;
+      ensureTypeOptions(state.finance.items);
+      renderFinance();
+    }catch(err){
+      state.finance.loading = false;
+      state.finance.error = (err && err.message) ? err.message : String(err || 'error');
+      state.finance.total = 0;
+      state.finance.items = [];
+      state.finance.kpi = null;
+      renderFinance();
+    }
+  }
+
+
+async function loadDuels(page){
     const userId = state.userId;
     if (!userId) return;
 

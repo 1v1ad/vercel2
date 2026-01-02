@@ -44,7 +44,7 @@
           <button class="uc-tab" data-tab="accounts" type="button">Аккаунты</button>
           <button class="uc-tab" data-tab="duels" type="button">Дуэли</button>
           <button class="uc-tab" data-tab="events" type="button">События</button>
-          <button class="uc-tab is-disabled" type="button" disabled>Финансы</button>
+          <button class="uc-tab" data-tab="finance" type="button">Финансы</button>
         </div>
 
         <div class="uc-panel is-active" id="uc-panel-overview">
@@ -273,6 +273,69 @@
             </div>
           </div>
         </div>
+
+        <div class="uc-panel" id="uc-panel-finance">
+          <div class="uc-subbar">
+            <div class="uc-sub-left muted" id="uc-finance-status">Загрузка…</div>
+            <div class="uc-sub-right">
+              <button class="btn ghost sm" id="uc-finance-prev" type="button">←</button>
+              <span class="mono" id="uc-finance-page">—</span>
+              <button class="btn ghost sm" id="uc-finance-next" type="button">→</button>
+              <button class="btn ghost sm" id="uc-finance-reload" type="button">⟳</button>
+            </div>
+          </div>
+
+          <div class="uc-filters" id="uc-finance-filters">
+            <select class="input sm" id="uc-finance-filter-type" title="Тип">
+              <option value="">Тип: все</option>
+            </select>
+
+            <select class="input sm" id="uc-finance-filter-status" title="Статус">
+              <option value="">Статус: все</option>
+              <option value="ok">ok</option>
+              <option value="pending">pending</option>
+              <option value="failed">failed</option>
+            </select>
+
+            <select class="input sm" id="uc-finance-filter-period" title="Период">
+              <option value="30" selected>Период: 30 дн.</option>
+              <option value="7">Период: 7 дн.</option>
+              <option value="90">Период: 90 дн.</option>
+              <option value="all">Период: всё</option>
+              <option value="custom">Период: вручную</option>
+            </select>
+
+            <input class="input sm uc-hide" id="uc-finance-filter-from" type="date" />
+            <input class="input sm uc-hide" id="uc-finance-filter-to" type="date" />
+
+            <button class="btn ghost sm" id="uc-finance-filter-apply" type="button" title="Применить">Применить</button>
+            <button class="btn ghost sm" id="uc-finance-filter-reset" type="button" title="Сбросить">Сброс</button>
+          </div>
+
+          <div class="uc-kpis" id="uc-finance-kpis"></div>
+          <div class="uc-finance-note muted" id="uc-finance-note"></div>
+
+          <div class="uc-block">
+            <div class="uc-block-title">Транзакции</div>
+            <div class="uc-block-body">
+              <table class="uc-table" id="uc-finance-table">
+                <thead>
+                  <tr>
+                    <th class="uc-th-time">Время</th>
+                    <th class="uc-th-type">Тип</th>
+                    <th class="uc-th-status">Статус</th>
+                    <th class="uc-th-amt">Сумма</th>
+                    <th>Комментарий</th>
+                    <th>Meta</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
       </div>
     </div>
   </div>

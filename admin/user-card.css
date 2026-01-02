@@ -493,3 +493,10 @@
 @media (max-width: 980px){
   .uc-acc-current, .uc-acc-family, .uc-acc-device{ grid-column: auto; grid-row: auto; }
 }
+
+
+/* Finance tab */
+.uc-th-type{ width: 170px; }
+.uc-th-status{ width: 110px; }
+.uc-th-amt{ width: 130px; }
+.uc-finance-note{ margin: 6px 0 14px; }
