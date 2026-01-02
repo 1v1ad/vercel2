@@ -496,6 +496,48 @@ body{
 
 .tools{display:flex; align-items:center; gap:8px}
 .input.sm{height:30px; padding:0 10px; font-size:12px}
+
+/*
+  Mobile: toolbars (search / filters) must wrap into 2–3 lines instead of
+  overflowing to the right.
+*/
+@media (max-width: 900px){
+  .panel-head{ flex-wrap: wrap; gap: 10px; }
+
+  .panel-head .tools{
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .panel-head .tools .input.sm{
+    flex: 1 1 160px;
+    min-width: 120px;
+    max-width: 100%;
+  }
+
+  /* Events toolbar is outside .panel-head but uses the same .tools class */
+  .tools.events-tools{
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  .tools.events-tools .input.sm{
+    flex: 1 1 180px;
+    min-width: 120px;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 520px){
+  .panel-head .tools .input.sm,
+  .tools.events-tools .input.sm{
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
+
 .table td.truncate{max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .table-wrap{overflow:auto; border-radius:12px; border:1px solid var(--border)}
 .table{
@@ -1069,7 +1111,17 @@ body{
   margin-bottom:10px;
   opacity:.9;
 }
-.uc-block-body{ }
+.uc-block-body{
+  /* Keep tables inside the card and enable horizontal scroll (mobile-friendly). */
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+.uc-block-body::-webkit-scrollbar{ height: 10px; }
+.uc-block-body::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.18); border-radius: 999px; }
+.uc-block-body::-webkit-scrollbar-track{ background: rgba(255,255,255,.06); border-radius: 999px; }
 
 .uc-table{
   width:100%;
@@ -1077,6 +1129,7 @@ body{
   border-spacing: 0 6px;
   font-variant-numeric: tabular-nums;
 }
+.uc-table th, .uc-table td{ white-space: nowrap; }
 .uc-table thead th{
   text-align:left;
   font-size:12px;
