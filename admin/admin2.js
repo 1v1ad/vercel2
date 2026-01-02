@@ -1752,7 +1752,18 @@ async function loadUsersAnalyticsDuels(){
     const tbody = $('#tbl-duels tbody');
     if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
 
-    const q = String($('#duels-filter')?.value || '').trim();
+        const qText = String($('#duels-filter')?.value || '').trim();
+    const qTokens = [];
+    const qUser = String($('#duels-user')?.value || '').trim();
+    const qHum  = String($('#duels-hum')?.value || '').trim();
+    const qId   = String($('#duels-id')?.value || '').trim();
+    const qStake= String($('#duels-stake')?.value || '').trim();
+    if (qId) qTokens.push(`id:${qId}`);
+    if (qUser) qTokens.push(`user:${qUser}`);
+    if (qHum) qTokens.push(`hum:${qHum}`);
+    if (qStake) qTokens.push(`stake:${qStake}`);
+    if (qText) qTokens.push(qText);
+    const q = qTokens.join(' ').trim();
     const day = String($('#duels-day')?.value || '').trim(); // YYYY-MM-DD (если пусто — не фильтруем)
 
     try{
@@ -1992,15 +2003,12 @@ async function loadMiniDuels(){
   function _readEventsFilters(){
     const f = {};
     const user = ($('#events-user')?.value || '').toString().trim();
-    const hum  = ($('#events-hum')?.value || '').toString().trim();
     const type = ($('#events-type')?.value || '').toString().trim();
     const term = ($('#events-term')?.value || '').toString().trim();
     const day  = ($('#events-day')?.value || '').toString().trim();
 
     const uid = toInt(user, 0);
-    const hid = toInt(hum, 0);
     if (uid) f.user_id = uid;
-    if (hid) f.hum_id  = hid;
     if (type) f.type = type;
     if (term) f.term = term;
     if (day)  f.day  = day.slice(0,10);
@@ -2014,7 +2022,6 @@ async function loadMiniDuels(){
     qs.set('take', String(_eventsTake));
     qs.set('skip', String(Math.max(0, toInt(skip, 0))));
     if (f.user_id) qs.set('user_id', String(f.user_id));
-    if (f.hum_id)  qs.set('hum_id', String(f.hum_id));
     if (f.type)    qs.set('type', f.type);
     if (f.term)    qs.set('term', f.term);
     if (f.day)     qs.set('day', f.day);
@@ -2030,7 +2037,6 @@ async function loadMiniDuels(){
     const f = _eventsFilters || _readEventsFilters();
     const parts = [];
     if (f.user_id) parts.push(`user:${f.user_id}`);
-    if (f.hum_id)  parts.push(`hum:${f.hum_id}`);
     if (f.type)    parts.push(`type:${f.type}`);
     if (f.term)    parts.push(`term:${f.term}`);
     if (f.day)     parts.push(`day:${f.day}`);
@@ -2502,7 +2508,6 @@ async function applyUnmergeSelected(){
     });
     $('#events-clear')?.addEventListener('click', ()=>{
       const u = $('#events-user'); if (u) u.value = '';
-      const h = $('#events-hum');  if (h) h.value = '';
       const t = $('#events-type'); if (t) t.value = '';
       const s = $('#events-term'); if (s) s.value = '';
       const d = $('#events-day');  if (d) d.value = '';
@@ -2518,7 +2523,7 @@ async function applyUnmergeSelected(){
       const next = _eventsSkip + _eventsTake;
       loadEvents({ skip: next });
     });
-    ['#events-user','#events-hum','#events-type','#events-term','#events-day'].forEach(sel=>{
+    ['#events-user','#events-type','#events-term','#events-day'].forEach(sel=>{
       $(sel)?.addEventListener('keydown', (e)=>{
         if (e.key === 'Enter'){
           e.preventDefault();
@@ -2543,6 +2548,13 @@ async function applyUnmergeSelected(){
     $('#duels-filter')?.addEventListener('keydown', (e)=>{
       if (e.key === 'Enter'){ e.preventDefault(); loadDuels(true); }
     });
+    ['#duels-user','#duels-hum','#duels-id','#duels-stake'].forEach(sel=>{
+      $(sel)?.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter'){ e.preventDefault(); loadDuels(true); }
+      });
+    });
+    $('#duels-find')?.addEventListener('click', ()=>loadDuels(true));
+
     $('#duels-day')?.addEventListener('keydown', (e)=>{
       if (e.key === 'Enter'){ e.preventDefault(); loadDuels(true); }
     });
@@ -2558,12 +2570,16 @@ async function applyUnmergeSelected(){
     $('#duels-filter')?.addEventListener('input', (e)=>{
       _duelsFilter = String(e?.target?.value || '');
       renderDuelsTable(_duelsRaw || []);
-      loadDuels(true).catch(()=>{});
     });
     $('#duels-filter-clear')?.addEventListener('click', ()=>{
       _duelsFilter = '';
-      try{ $('#duels-filter').value = ''; }catch(_){}
+      try{ $('#duels-filter').value = ''; }catch(_){ }
+      try{ $('#duels-user').value = ''; }catch(_){ }
+      try{ $('#duels-hum').value = ''; }catch(_){ }
+      try{ $('#duels-id').value = ''; }catch(_){ }
+      try{ $('#duels-stake').value = ''; }catch(_){ }
       renderDuelsTable(_duelsRaw || []);
+      loadDuels(true).catch(()=>{});
     });
     document.querySelectorAll('#tbl-duels th[data-k]').forEach(th=>{
       th.addEventListener('click', ()=>{
