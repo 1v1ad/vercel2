@@ -1159,3 +1159,21 @@ body{
 .uc-dc-7{ stroke: rgba(46, 204, 113, .95); background: rgba(46, 204, 113, .95); }
 
 .uc-donut-hint{ margin-top:8px; }
+
+/* --- Clickable titles (Summary deep links) --- */
+.card-title[data-goto-view],
+.panel-title[data-goto-view]{
+  cursor: pointer;
+  user-select: none;
+}
+.card-title[data-goto-view]:hover,
+.panel-title[data-goto-view]:hover{
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.card-title[data-goto-view]:focus-visible,
+.panel-title[data-goto-view]:focus-visible{
+  outline: 2px solid rgba(120,180,255,.55);
+  outline-offset: 3px;
+  border-radius: 8px;
+}

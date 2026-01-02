@@ -986,6 +986,36 @@ function bindNav(){
     });
   }
 
+
+  // --- Summary: click card/panel titles to jump to section ---
+  function bindTitleGoto(){
+    if (document.body && document.body.dataset && document.body.dataset.titleGotoBound === '1') return;
+    if (document.body && document.body.dataset) document.body.dataset.titleGotoBound = '1';
+
+    document.addEventListener('click', (e)=>{
+      const el = e && e.target && e.target.closest ? e.target.closest('[data-goto-view]') : null;
+      if (!el) return;
+      const view = (el.getAttribute('data-goto-view') || '').toString();
+      if (!view) return;
+      const sub = (el.getAttribute('data-goto-sub') || '').toString();
+      e.preventDefault();
+      gotoView(view, sub);
+    });
+
+    document.addEventListener('keydown', (e)=>{
+      const k = e && e.key;
+      if (k !== 'Enter' && k !== ' ' && k !== 'Spacebar') return;
+      const el = e && e.target;
+      if (!el || !el.matches || !el.matches('[data-goto-view]')) return;
+      const view = (el.getAttribute('data-goto-view') || '').toString();
+      if (!view) return;
+      const sub = (el.getAttribute('data-goto-sub') || '').toString();
+      e.preventDefault();
+      gotoView(view, sub);
+    });
+  }
+
+
   
   function bindSidebarCollapse(){
     const layout = document.querySelector('.layout');
@@ -1752,18 +1782,7 @@ async function loadUsersAnalyticsDuels(){
     const tbody = $('#tbl-duels tbody');
     if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="muted">Загрузка…</td></tr>`;
 
-        const qText = String($('#duels-filter')?.value || '').trim();
-    const qTokens = [];
-    const qUser = String($('#duels-user')?.value || '').trim();
-    const qHum  = String($('#duels-hum')?.value || '').trim();
-    const qId   = String($('#duels-id')?.value || '').trim();
-    const qStake= String($('#duels-stake')?.value || '').trim();
-    if (qId) qTokens.push(`id:${qId}`);
-    if (qUser) qTokens.push(`user:${qUser}`);
-    if (qHum) qTokens.push(`hum:${qHum}`);
-    if (qStake) qTokens.push(`stake:${qStake}`);
-    if (qText) qTokens.push(qText);
-    const q = qTokens.join(' ').trim();
+    const q = String($('#duels-filter')?.value || '').trim();
     const day = String($('#duels-day')?.value || '').trim(); // YYYY-MM-DD (если пусто — не фильтруем)
 
     try{
@@ -2548,13 +2567,6 @@ async function applyUnmergeSelected(){
     $('#duels-filter')?.addEventListener('keydown', (e)=>{
       if (e.key === 'Enter'){ e.preventDefault(); loadDuels(true); }
     });
-    ['#duels-user','#duels-hum','#duels-id','#duels-stake'].forEach(sel=>{
-      $(sel)?.addEventListener('keydown', (e)=>{
-        if (e.key === 'Enter'){ e.preventDefault(); loadDuels(true); }
-      });
-    });
-    $('#duels-find')?.addEventListener('click', ()=>loadDuels(true));
-
     $('#duels-day')?.addEventListener('keydown', (e)=>{
       if (e.key === 'Enter'){ e.preventDefault(); loadDuels(true); }
     });
@@ -2570,16 +2582,12 @@ async function applyUnmergeSelected(){
     $('#duels-filter')?.addEventListener('input', (e)=>{
       _duelsFilter = String(e?.target?.value || '');
       renderDuelsTable(_duelsRaw || []);
+      loadDuels(true).catch(()=>{});
     });
     $('#duels-filter-clear')?.addEventListener('click', ()=>{
       _duelsFilter = '';
-      try{ $('#duels-filter').value = ''; }catch(_){ }
-      try{ $('#duels-user').value = ''; }catch(_){ }
-      try{ $('#duels-hum').value = ''; }catch(_){ }
-      try{ $('#duels-id').value = ''; }catch(_){ }
-      try{ $('#duels-stake').value = ''; }catch(_){ }
+      try{ $('#duels-filter').value = ''; }catch(_){}
       renderDuelsTable(_duelsRaw || []);
-      loadDuels(true).catch(()=>{});
     });
     document.querySelectorAll('#tbl-duels th[data-k]').forEach(th=>{
       th.addEventListener('click', ()=>{
@@ -2681,6 +2689,7 @@ $('#unmerge-all')?.addEventListener('change', (e)=>{
 
   function init(){
     bindNav();
+    bindTitleGoto();
     bindSidebarCollapse();
     bindTopbar();
     bindActions();

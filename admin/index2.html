@@ -139,7 +139,7 @@
           <div class="grid cards">
             <div class="card users-card">
               <div class="card-main">
-                <div class="card-title">Пользователи</div>
+                <div class="card-title" data-goto-view="users" data-goto-sub="list" tabindex="0" role="link">Пользователи</div>
                 <div class="card-value" id="sum-users">—</div>
                 <div class="card-sub muted tiny" id="sum-users-sub">всего / новые today</div>
               </div>
@@ -154,7 +154,7 @@
             </div>
             <div class="card events-card">
               <div class="card-main">
-                <div class="card-title">События</div>
+                <div class="card-title" data-goto-view="events" tabindex="0" role="link">События</div>
                 <div class="card-value" id="sum-events">—</div>
                 <div class="card-sub muted tiny" id="sum-events-sub">всего / сегодня</div>
               </div>
@@ -168,7 +168,7 @@
               </div>
             </div>
                         <div class="card card-metrics">
-              <div class="card-title">Занесено / выведено</div>
+              <div class="card-title" data-goto-view="finance" tabindex="0" role="link">Занесено / выведено</div>
               <div class="card-value">
                 <span id="sum-deposited-all">—</span> / <span id="sum-deposited-today">—</span>
               </div>
@@ -179,7 +179,7 @@
             </div>
             <div class="card liabilities-card">
               <div class="card-main">
-                <div class="card-title">На балансах</div>
+                <div class="card-title" data-goto-view="finance" tabindex="0" role="link">На балансах</div>
                 <div class="card-value" id="sum-liabilities">—</div>
                 <div class="card-sub muted tiny">сумма на балансах пользователей</div>
               </div>
@@ -192,7 +192,7 @@
               </div>
             </div>
                         <div class="card card-metrics">
-              <div class="card-title">Дуэли: оборот / рейк</div>
+              <div class="card-title" data-goto-view="duels" tabindex="0" role="link">Дуэли: оборот / рейк</div>
               <div class="card-value">
                 <span id="sum-turnover-all">—</span> / <span id="sum-turnover-today">—</span>
               </div>
@@ -247,7 +247,7 @@
           <div class="grid two summary-charts">
             <div class="panel">
               <div class="panel-head">
-                <div class="panel-title">Дуэли: оборот / дуэли</div>
+                <div class="panel-title" data-goto-view="duels" tabindex="0" role="link">Дуэли: оборот / дуэли</div>
                 <div class="panel-actions">
                   <span class="muted tiny">c</span>
                   <input class="input input-date" id="duels-from" type="date" />
@@ -269,7 +269,7 @@
 
             <div class="panel stake-panel">
               <div class="panel-head">
-                <div class="panel-title">Ставки</div>
+                <div class="panel-title" data-goto-view="duels" tabindex="0" role="link">Ставки</div>
                 <div class="muted tiny" id="stakes-note">—</div>
               </div>
 
@@ -302,7 +302,7 @@
           <div class="grid two">
             <div class="panel">
               <div class="panel-head">
-                <div class="panel-title">Последние события</div>
+                <div class="panel-title" data-goto-view="events" tabindex="0" role="link">Последние события</div>
                 <button class="btn ghost sm" id="refresh-events-mini">Обновить</button>
               </div>
               <div class="table-wrap">
@@ -315,7 +315,7 @@
 
             <div class="panel">
               <div class="panel-head">
-                <div class="panel-title">Последние дуэли</div>
+                <div class="panel-title" data-goto-view="duels" tabindex="0" role="link">Последние дуэли</div>
                 <button class="btn ghost sm" id="refresh-duels-mini">Обновить</button>
               </div>
               <div class="table-wrap">
@@ -328,7 +328,7 @@
 
             <div class="panel">
               <div class="panel-head">
-                <div class="panel-title">Пользователи</div>
+                <div class="panel-title" data-goto-view="users" data-goto-sub="list" tabindex="0" role="link">Пользователи</div>
                 <button class="btn ghost sm" id="refresh-users-mini">Обновить</button>
               </div>
               <div class="table-wrap">
@@ -354,7 +354,7 @@
 
                         <div class="panel" id="panel-mini-topups">
               <div class="panel-head">
-                <div class="panel-title">История ручных пополнений</div>
+                <div class="panel-title" data-goto-view="topup" tabindex="0" role="link">История ручных пополнений</div>
                 <button class="btn ghost sm" id="refresh-topups-mini">Обновить</button>
               </div>
               <div class="table-wrap">
@@ -589,12 +589,7 @@
                 <div class="muted tiny">Клик по заголовку — сортировка</div>
               </div>
               <div class="tools">
-                <input class="input sm" id="duels-user" placeholder="user_id (например 97)" />
-                <input class="input sm" id="duels-hum" placeholder="HUMid (например 97)" />
-                <input class="input sm" id="duels-id" placeholder="duel_id (например 123)" />
-                <input class="input sm" id="duels-stake" placeholder="stake (например 1000)" />
-                <input class="input sm" id="duels-filter" placeholder="поиск: id/user/hum/mode/status (текст или tokens)" />
-                <button class="btn sm" id="duels-find">Найти</button>
+                <input class="input sm" id="duels-filter" placeholder="Фильтр: id:123 status:cancelled user:97 hum:1 stake:1000 creator:97 opponent:12 winner:45" />
                 <button class="btn ghost sm" id="duels-filter-clear" title="Очистить фильтр">×</button>
                 <input class="input sm input-date" id="duels-day" type="date" title="Дата (по Москве)" />
                 <button class="btn ghost sm" id="duels-prev" title="Предыдущие 100">←</button>
