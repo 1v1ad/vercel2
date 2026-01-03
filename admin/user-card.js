@@ -8,12 +8,233 @@
     events: { page: 1, limit: 50, total: 0, items: [], loading: false, filters: { type: '', period: 'all', from: '', to: '', term: '' } },
     duels:  { page: 1, limit: 50, total: 0, items: [], loading: false, error: '', filters: { status: '', stake: '', period: 'all', from: '', to: '', term: '' } },
     finance: { page: 1, limit: 20, total: 0, items: [], loading: false, error: '', kpi: null, filters: { type: '', status: '', period: '30', from: '', to: '' } },
+    duel_profit: { key: '', loading: false, error: '', days: [], totals: { profit: 0, duels: 0 } },
     accounts: { loading: false, error: '', data: null }
   };
 
   function api(){
     const raw = (window.API || localStorage.getItem('ADMIN_API') || localStorage.getItem('admin_api') || '').toString().trim();
     return raw ? raw.replace(/\/+$/,'') : location.origin;
+  }
+
+
+  // --- Duel profit chart (finance tab) ---
+  async function loadDuelProfit(key){
+    const userId = state.userId;
+    if (!userId) return;
+    const f = state.finance.filters || {};
+    if (key) state.duel_profit.key = key;
+
+    state.duel_profit.loading = true;
+    state.duel_profit.error = '';
+    renderDuelProfit();
+
+    const qs = new URLSearchParams();
+    qs.set('user_id', userId);
+    qs.set('scope', scope());
+    if (f.from) qs.set('from', f.from);
+    if (f.to) qs.set('to', f.to);
+
+    const url = `${api()}/api/admin/user-card/duel-profit?${qs.toString()}`;
+    try{
+      const r = await fetch(url, { headers: window.adminHeaders ? window.adminHeaders() : headers() });
+      const j = await r.json().catch(()=>({ ok:false, error:'bad json' }));
+      if (!r.ok || j.ok === false) throw new Error(j.error || ('HTTP ' + r.status));
+
+      state.duel_profit.loading = false;
+      state.duel_profit.days = Array.isArray(j.days) ? j.days : [];
+      state.duel_profit.totals = j.totals || { profit: 0, duels: 0 };
+      renderDuelProfit();
+    }catch(err){
+      state.duel_profit.loading = false;
+      state.duel_profit.error = (err && err.message) ? err.message : String(err || 'error');
+      state.duel_profit.days = [];
+      state.duel_profit.totals = { profit: 0, duels: 0 };
+      renderDuelProfit();
+    }
+  }
+
+  function renderDuelProfit(){
+    const svg = document.getElementById('uc-profit-chart');
+    const tip = document.getElementById('uc-profit-tip');
+    const kpis = document.getElementById('uc-profit-kpis');
+    if (!svg) return;
+
+    const wrap = svg.parentElement;
+    const clearTip = ()=>{
+      if (!tip) return;
+      tip.classList.remove('show');
+      tip.style.transform = 'translate(-9999px,-9999px)';
+      tip.innerHTML = '';
+    };
+
+    svg.innerHTML = '';
+    svg.onmousemove = null;
+    svg.onmouseleave = null;
+    clearTip();
+
+    const svgEl = (tag, attrs={})=>{
+      const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+      return el;
+    };
+
+    const msg = (text)=>{
+      const t = svgEl('text', { x: 260, y: 90, 'text-anchor':'middle', class:'uc-profit-axis' });
+      t.textContent = text;
+      svg.appendChild(t);
+    };
+
+    if (state.duel_profit.loading){
+      if (kpis) kpis.textContent = 'Загрузка профита…';
+      msg('Загрузка…');
+      return;
+    }
+    if (state.duel_profit.error){
+      if (kpis) kpis.textContent = 'Ошибка: ' + state.duel_profit.error;
+      msg('Ошибка');
+      return;
+    }
+
+    const rows = Array.isArray(state.duel_profit.days) ? state.duel_profit.days : [];
+    if (!rows.length){
+      if (kpis) kpis.textContent = 'Нет дуэлей за выбранный период.';
+      msg('Нет данных');
+      return;
+    }
+
+    const days = rows.map(r => String(r.day||''));
+    const pDay = rows.map(r => Number(r.profit_day||0));
+    const pCum = rows.map(r => Number(r.profit_cum||0));
+    const dCount = rows.map(r => Number(r.duels||0));
+
+    const totalProfit = Number(state.duel_profit.totals?.profit ?? (pCum[pCum.length-1]||0));
+    const totalDuels = Number(state.duel_profit.totals?.duels ?? dCount.reduce((a,b)=>a+b,0));
+    if (kpis) kpis.innerHTML = `Итого: <b>${esc(fmtMoney(totalProfit))}</b> · Дуэлей: <b>${esc(fmtInt(totalDuels))}</b>`;
+
+    const n = pCum.length;
+    const W = 520, H = 180;
+    const M = { l: 44, r: 10, t: 10, b: 24 };
+    const PW = W - M.l - M.r;
+    const PH = H - M.t - M.b;
+
+    const minV = Math.min(0, ...pCum);
+    const maxV = Math.max(0, ...pCum);
+    let span = maxV - minV;
+    if (span === 0) span = 1;
+
+    const niceStep = (raw)=>{
+      const p = Math.pow(10, Math.floor(Math.log10(raw)));
+      const x = raw / p;
+      const m = x <= 1 ? 1 : x <= 2 ? 2 : x <= 5 ? 5 : 10;
+      return m * p;
+    };
+
+    const step = niceStep(span / 4);
+    let y0 = Math.floor(minV / step) * step;
+    let y1 = Math.ceil(maxV / step) * step;
+    if (y0 > 0) y0 = 0;
+    if (y1 < 0) y1 = 0;
+    if (y0 === y1) { y0 -= step; y1 += step; }
+
+    const y = (v)=> M.t + (y1 - v) / (y1 - y0) * PH;
+    const x = (i)=> {
+      if (n === 1) return M.l + PW/2;
+      return M.l + (i / (n - 1)) * PW;
+    };
+
+    // y-grid + axis labels
+    for (let vv = y0; vv <= y1 + step/2; vv += step){
+      const yy = y(vv);
+      svg.appendChild(svgEl('line', { x1: M.l, x2: W - M.r, y1: yy, y2: yy, class:'uc-profit-grid' }));
+      const txt = svgEl('text', { x: 4, y: yy, class:'uc-profit-axis' });
+      txt.textContent = nf0.format(Math.trunc(vv));
+      svg.appendChild(txt);
+    }
+    // zero line
+    const yZero = y(0);
+    svg.appendChild(svgEl('line', { x1: M.l, x2: W - M.r, y1: yZero, y2: yZero, class:'uc-profit-zero' }));
+
+    // bars: duels count
+    const maxD = Math.max(1, ...dCount);
+    const barMaxH = Math.min(38, PH * 0.28);
+    const bw = Math.max(0.7, (PW / Math.max(1, n)) * 0.92);
+    for (let i=0;i<n;i++){
+      const h = (dCount[i] / maxD) * barMaxH;
+      const xx = x(i);
+      const rect = svgEl('rect', { x: xx - bw/2, y: (M.t + PH) - h, width: bw, height: h, rx: 1.2, class:'uc-profit-bar' });
+      svg.appendChild(rect);
+    }
+
+    // line: cumulative profit
+    const pts = pCum.map((v,i)=>`${x(i).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
+    svg.appendChild(svgEl('polyline', { points: pts, class:'uc-profit-line' }));
+
+    // points for hover target
+    const pointEls = [];
+    for (let i=0;i<n;i++){
+      const c = svgEl('circle', { cx: x(i), cy: y(pCum[i]), r: 1.8, class:'uc-profit-point' });
+      svg.appendChild(c);
+      pointEls.push(c);
+    }
+
+    // x labels (few)
+    const labelIdx = (()=>{
+      if (n <= 1) return [0];
+      if (n <= 6) return [...Array(n).keys()];
+      const a = [0, Math.round((n-1)*0.25), Math.round((n-1)*0.5), Math.round((n-1)*0.75), n-1];
+      return Array.from(new Set(a)).sort((a,b)=>a-b);
+    })();
+    for (const i of labelIdx){
+      const dd = days[i];
+      const lbl = dd ? dd.slice(5) : '';
+      const t = svgEl('text', { x: x(i), y: H - 6, 'text-anchor':'middle', class:'uc-profit-axis' });
+      t.textContent = lbl;
+      svg.appendChild(t);
+    }
+
+    const hoverLine = svgEl('line', { x1: -10, x2: -10, y1: M.t, y2: M.t + PH, class:'uc-profit-hoverline' });
+    svg.appendChild(hoverLine);
+
+    const clamp = (v,a,b)=> Math.max(a, Math.min(b,v));
+
+    svg.onmousemove = (e)=>{
+      const rect = svg.getBoundingClientRect();
+      const px = clamp(e.clientX - rect.left, 0, rect.width);
+      const t = rect.width ? (px / rect.width) : 0;
+      const idx = clamp(Math.round(t * (n - 1)), 0, n - 1);
+
+      const xx = x(idx);
+      hoverLine.setAttribute('x1', xx);
+      hoverLine.setAttribute('x2', xx);
+
+      if (tip && wrap){
+        const day = days[idx];
+        const cum = pCum[idx];
+        const pd = pDay[idx];
+        const dc = dCount[idx];
+        const pdSign = pd > 0 ? '+' : '';
+        const cumSign = cum > 0 ? '+' : '';
+        tip.innerHTML = `
+          <div class="mono">${esc(day)}</div>
+          <div>Кумулятивно: <b>${esc(cumSign + nf0.format(Math.trunc(cum)))} ₽</b></div>
+          <div>За день: ${esc(pdSign + nf0.format(Math.trunc(pd)))} ₽</div>
+          <div>Дуэлей: ${esc(fmtInt(dc))}</div>
+        `;
+        tip.classList.add('show');
+
+        const wr = wrap.getBoundingClientRect();
+        const xTip = clamp((e.clientX - wr.left) + 12, 8, wr.width - 220);
+        const yTip = clamp((e.clientY - wr.top) - 12, 8, wr.height - 96);
+        tip.style.transform = `translate(${xTip}px, ${yTip}px)`;
+      }
+    };
+
+    svg.onmouseleave = ()=>{
+      hoverLine.setAttribute('x1', -10);
+      hoverLine.setAttribute('x2', -10);
+      clearTip();
+    };
   }
 
   function scope(){
@@ -952,7 +1173,7 @@ async function loadEvents(page){
 
     // default period if empty
     if (!f.period) f.period = '30';
-    if ((f.period === '30' || f.period === '7' || f.period === '90') && (!f.from || !f.to)){
+    if ((f.period === '30' || f.period === '7' || f.period === '90' || f.period === '365') && (!f.from || !f.to)){
       setPeriodQuick(Number(f.period));
     }
     if (periodSel && !periodSel.value) periodSel.value = f.period;
@@ -963,6 +1184,14 @@ async function loadEvents(page){
     state.finance.error = '';
     state.finance.page = Math.max(1, toInt(page, 1));
     renderFinance();
+
+    // Duel profit chart depends only on scope + date range (not on pagination)
+    const dpKey = `${userId}|${scope()}|${f.from || ''}|${f.to || ''}`;
+    if (state.duel_profit.key !== dpKey) {
+      loadDuelProfit(dpKey);
+    } else {
+      renderDuelProfit();
+    }
 
     const qs = new URLSearchParams();
     qs.set('user_id', userId);

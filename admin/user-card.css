@@ -55,6 +55,84 @@
   height: 220px !important; /* чуть выше */
 }
 
+/* Duel profit chart (SVG) */
+.uc-profit{
+  position: relative;
+  height: 240px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+#uc-profit-chart{
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.uc-profit-bar{
+  fill: var(--accent2);
+  opacity: .18;
+}
+
+.uc-profit-line{
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.uc-profit-point{
+  fill: var(--accent);
+  opacity: .9;
+}
+
+.uc-profit-axis{
+  fill: rgba(230,237,243,.70);
+  font-family: var(--mono);
+  font-size: 5px;
+  dominant-baseline: middle;
+}
+
+.uc-profit-grid{
+  stroke: rgba(255,255,255,.10);
+}
+
+.uc-profit-zero{
+  stroke: rgba(255,255,255,.20);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.uc-profit-hoverline{
+  stroke: rgba(255,255,255,.22);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+  pointer-events: none;
+}
+
+.uc-profit-tip{
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  top: 0;
+  transform: translate(-9999px,-9999px);
+  opacity: 0;
+  pointer-events: none;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.62);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  font-size: 12px;
+}
+
+.uc-profit-tip.show{ opacity: 1; }
+
+.uc-profit-kpis{ margin-top: 8px; }
+
 #uc-activity-chart{
   width: 100%;
   height: 100%;

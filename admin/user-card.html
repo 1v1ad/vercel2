@@ -300,6 +300,7 @@
               <option value="30" selected>Период: 30 дн.</option>
               <option value="7">Период: 7 дн.</option>
               <option value="90">Период: 90 дн.</option>
+              <option value="365">Период: год</option>
               <option value="all">Период: всё</option>
               <option value="custom">Период: вручную</option>
             </select>
@@ -313,6 +314,17 @@
 
           <div class="uc-kpis" id="uc-finance-kpis"></div>
           <div class="uc-finance-note muted" id="uc-finance-note"></div>
+
+          <div class="uc-block">
+            <div class="uc-block-title">Профит в дуэлях</div>
+            <div class="uc-block-body">
+              <div class="uc-profit">
+                <svg id="uc-profit-chart" viewBox="0 0 520 180" preserveAspectRatio="none"></svg>
+                <div class="uc-profit-tip" id="uc-profit-tip"></div>
+              </div>
+              <div class="uc-profit-kpis muted" id="uc-profit-kpis"></div>
+            </div>
+          </div>
 
           <div class="uc-block">
             <div class="uc-block-title">Транзакции</div>
