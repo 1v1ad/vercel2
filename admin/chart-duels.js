@@ -13,6 +13,15 @@
   const NS = 'http://www.w3.org/2000/svg';
   const TZ_FALLBACK = 'Europe/Moscow';
 
+  const isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 720px)').matches);
+  const fmtX = (s)=>{
+    const t = (s && String(s).length >= 10) ? String(s).slice(0,10) : String(s||'');
+    if (!t) return '';
+    if (isMobile && /^\d{4}-\d{2}-\d{2}$/.test(t)) return t.slice(8,10) + '.' + t.slice(5,7);
+    return t;
+  };
+
+
   // ===== helpers =====
   function apiBase(){
     return (localStorage.getItem('ADMIN_API') || '').replace(/\/+$/,'');
@@ -152,11 +161,11 @@
     }
 
     // x labels (<=6)
-    const ticks = Math.min(6, Math.max(2, n || 0));
+    const ticks = Math.min(isMobile ? 4 : 6, Math.max(2, n || 0));
     for (let i = 0; i < ticks && n > 0; i++){
       const idx = Math.round(i * (n - 1) / (ticks - 1));
       const x = scaleX(idx);
-      const label = (xDates[idx] || '').slice(0,10);
+      const label = fmtX(xDates[idx] || '');
       const anchor = (i === 0) ? 'start' : (i === ticks - 1 ? 'end' : 'middle');
       SVG.appendChild(elt('text', { x, y: H - 6, fill:'#8fa4c6', 'font-size':11, 'text-anchor': anchor }, label));
     }
@@ -233,7 +242,7 @@
       const cv = duelsCount[idx] || 0;
       const rv = rake[idx] || 0;
       const y = yTurn(tv);
-      const label = (xDates[idx] || '').slice(0,10);
+      const label = fmtX(xDates[idx] || '');
 
       vline.setAttribute('x1', x);
       vline.setAttribute('x2', x);

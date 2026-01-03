@@ -2,14 +2,17 @@
 (function(){
   const svg = document.getElementById('chart'); if (!svg) return;
   const NS  = 'http://www.w3.org/2000/svg';
+  const isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 720px)').matches);
 
   const api = () => (localStorage.getItem('ADMIN_API') || window.API || '').replace(/\/+$/,'');
   const headers = () => (window.adminHeaders ? window.adminHeaders() : {});
 
-  const labelDM = s =>
-    (s && s.length >= 10)
-      ? s.slice(0,10)
-      : (s || '');
+  const labelDM = (s) => {
+    const t = (s && String(s).length >= 10) ? String(s).slice(0,10) : String(s||'');
+    if (!t) return '';
+    if (isMobile && /^\d{4}-\d{2}-\d{2}$/.test(t)) return t.slice(8,10) + '.' + t.slice(5,7);
+    return t;
+  };
 
   function draw(days){
     const box = svg.getBoundingClientRect();
@@ -120,14 +123,19 @@
       }
 
       // подпись даты под группой
-      const label = document.createElementNS(NS, 'text');
-      label.textContent = labelDM(d.day || d.date || '');
-      label.setAttribute('x', x0 + barWidth + innerGap / 2);
-      label.setAttribute('y', H - 8);
-      label.setAttribute('fill', '#8fa4c6');
-      label.setAttribute('font-size', '11');
-      label.setAttribute('text-anchor', 'middle');
-      svg.appendChild(label);
+      const maxLabels = isMobile ? 6 : 12;
+      const step = Math.max(1, Math.ceil(days.length / maxLabels));
+      const needLabel = !isMobile || idx === 0 || idx === days.length - 1 || (idx % step === 0);
+      if (needLabel) {
+        const label = document.createElementNS(NS, 'text');
+        label.textContent = labelDM(d.day || d.date || '');
+        label.setAttribute('x', x0 + barWidth + innerGap / 2);
+        label.setAttribute('y', H - 8);
+        label.setAttribute('fill', '#8fa4c6');
+        label.setAttribute('font-size', '11');
+        label.setAttribute('text-anchor', 'middle');
+        svg.appendChild(label);
+      }
     });
 
     // --- легенда ---

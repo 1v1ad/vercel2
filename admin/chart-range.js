@@ -54,6 +54,15 @@
     return v.toLocaleString('ru-RU');
   };
 
+  const isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 720px)').matches);
+  const fmtX = (s)=>{
+    const t = (s && String(s).length >= 10) ? String(s).slice(0,10) : String(s||'');
+    if (!t) return '';
+    if (isMobile && /^\d{4}-\d{2}-\d{2}$/.test(t)) return t.slice(8,10) + '.' + t.slice(5,7);
+    return t;
+  };
+
+
   // ===== fetch & draw =====
   async function run(){
     const API = apiBase();
@@ -135,11 +144,11 @@
     }
 
     // подписи X (не более 6)
-    const ticks = Math.min(6, Math.max(2, n || 0));
+    const ticks = Math.min(isMobile ? 4 : 6, Math.max(2, n || 0));
     for (let i = 0; i < ticks && n > 0; i++){
       const idx = Math.round(i * (n - 1) / (ticks - 1));
       const x = scaleX(idx);
-      const label = xDates[idx] || '';
+      const label = fmtX(xDates[idx] || '');
       const anchor = (i === 0) ? 'start' : (i === ticks - 1 ? 'end' : 'middle');
       const text = elt('text', {
         x, y: H - 6,
