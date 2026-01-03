@@ -212,15 +212,115 @@
       `;
     }
 
+
+// timeline
+{
+  const el = $('#dc-timeline-list');
+  if (el){
+    const items = Array.isArray(data.events) ? data.events : [];
+    const st = String(duel.status || '').toLowerCase();
+
+    const first = (type)=> items.find(x => String(x.event_type||'') === type) || null;
+    const firstOf = (type)=> {
+      const e = first(type);
+      return e ? e.created_at : null;
+    };
+    const firstHold = ()=>{
+      const h = items.find(x => String(x.event_type||'') === 'balance_hold');
+      return h ? h.created_at : null;
+    };
+
+    const tCreated = duel.created_at || null;
+    const tHold = firstHold();
+    const tJoin = firstOf('duel_joined');
+    const tFinish = duel.finished_at || firstOf('duel_finished') || null;
+    const tRake = firstOf('house_fee');
+
+    const ms = (v)=> v ? (new Date(v)).getTime() : null;
+    const dt = (a,b)=> (a!=null && b!=null) ? Math.max(0, (a-b)/1000) : null;
+
+    const createdMs = ms(tCreated);
+    const holdMs = ms(tHold);
+    const joinMs = ms(tJoin);
+    const finishMs = ms(tFinish);
+    const rakeMs = ms(tRake);
+
+    const steps = [
+      {
+        key:'create',
+        label:'создание',
+        time:tCreated,
+        sub: (st==='open' ? 'в очереди' : '')
+      },
+      {
+        key:'hold',
+        label:'hold',
+        time:tHold,
+        sub: (tHold && tCreated) ? ('через ' + fmtDur(dt(holdMs, createdMs))) : 'удержание ставки'
+      },
+      {
+        key:'join',
+        label:'join',
+        time:tJoin,
+        sub: (tJoin && tCreated) ? ('ожидание: ' + fmtDur(dt(joinMs, createdMs))) : ''
+      },
+      {
+        key:'coinflip',
+        label:'coinflip',
+        time:tFinish,
+        sub: (duel.winner_user_id!=null ? ('winner: #' + duel.winner_user_id) : '')
+      },
+      {
+        key:'payout',
+        label:'payout',
+        time:tFinish,
+        sub: (duel.payout!=null && duel.winner_user_id!=null) ? (fmtMoney(duel.payout) + ' → #' + duel.winner_user_id) : ''
+      },
+      {
+        key:'rake',
+        label:'rake',
+        time:tRake,
+        sub: (duel.rake!=null) ? (fmtMoney(duel.rake) + (tRake ? '' : '')) : ''
+      }
+    ];
+
+    // render
+    let prev = null;
+    el.innerHTML = steps.map((s,i)=>{
+      const tms = ms(s.time);
+      const done = !!s.time;
+      const delta = (prev!=null && tms!=null) ? fmtDur(dt(tms, prev)) : '';
+      if (tms!=null) prev = tms;
+      return `
+        <div class="dc-step ${done ? 'done' : 'pending'}">
+          <div class="dc-step-top">
+            <div class="dc-dot"></div>
+            <div class="dc-step-label">${escapeHtml(s.label)}</div>
+          </div>
+          <div class="dc-step-time">${s.time ? escapeHtml(fmtDT(s.time)) : '<span class="muted">—</span>'}</div>
+          <div class="dc-step-sub">
+            ${s.sub ? escapeHtml(s.sub) : ''}
+            ${delta ? `<span class="muted"> · Δ ${escapeHtml(delta)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
     // rng
     {
       
   const el = $('#dc-rng .dc-panel-body');
-  const rng = data.rng || null;
+  let rng = data.rng || null;
+  const pfMeta0 = (data.duel && data.duel.meta && typeof data.duel.meta === 'object' && data.duel.meta.pf && typeof data.duel.meta.pf === 'object') ? data.duel.meta.pf : null;
+  if (!rng && pfMeta0) rng = { method: 'coinflip', rand_source: 'provably_fair_v1', winner_user_id: (data.duel && data.duel.winner_user_id!=null ? data.duel.winner_user_id : null), provably_fair: pfMeta0 };
   if (!rng){
     el.innerHTML = `<div class="muted">Нет данных (duel_rooms.result пустой или отсутствует).</div>`;
   } else {
-    const pf = (rng && typeof rng === 'object') ? (rng.provably_fair || null) : null;
+    let pf = (rng && typeof rng === 'object') ? (rng.provably_fair || null) : null;
+    const pfMeta = (data.duel && data.duel.meta && typeof data.duel.meta === 'object' && data.duel.meta.pf && typeof data.duel.meta.pf === 'object') ? data.duel.meta.pf : null;
+    if (!pf && pfMeta) pf = pfMeta;
 
     const creatorId = duel.creator_user_id != null ? Number(duel.creator_user_id) : null;
     const opponentId = duel.opponent_user_id != null ? Number(duel.opponent_user_id) : null;

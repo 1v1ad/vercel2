@@ -140,3 +140,82 @@
 
 /* allow tables to be scrolled on narrow screens */
 #dc-events .table-wrap{ overflow:auto; }
+
+
+/* Timeline */
+#dc-timeline{ grid-column: 1 / -1; }
+
+.dc-timeline{
+  display:flex;
+  gap:14px;
+  align-items:stretch;
+  overflow:auto;
+  padding:6px 2px;
+}
+.dc-step{
+  position:relative;
+  min-width: 160px;
+  flex: 0 0 auto;
+  padding:10px 12px 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.dc-step::before{
+  content:"";
+  position:absolute;
+  left:-14px;
+  top: 22px;
+  width:14px;
+  height:2px;
+  background: rgba(255,255,255,.10);
+}
+.dc-step:first-child::before{ display:none; }
+
+.dc-step .dc-step-top{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:6px;
+}
+.dc-dot{
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background: rgba(255,255,255,.18);
+  border: 1px solid rgba(255,255,255,.18);
+  flex: 0 0 auto;
+}
+.dc-step.done .dc-dot{
+  background: rgba(78,209,169,.65);
+  border-color: rgba(78,209,169,.75);
+  box-shadow: 0 0 0 3px rgba(78,209,169,.12);
+}
+.dc-step.pending .dc-dot{
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.12);
+}
+.dc-step .dc-step-label{
+  font-weight:800;
+}
+.dc-step .dc-step-time{
+  font-variant-numeric: tabular-nums;
+  font-size:12px;
+  opacity:.92;
+}
+.dc-step .dc-step-sub{
+  margin-top:6px;
+  font-size:12px;
+  opacity:.75;
+  line-height:1.25;
+}
+@media (max-width: 720px){
+  .dc-timeline{ flex-direction:column; overflow:visible; }
+  .dc-step{ min-width: auto; }
+  .dc-step::before{
+    left: 20px;
+    top: -10px;
+    width:2px;
+    height:10px;
+  }
+}
