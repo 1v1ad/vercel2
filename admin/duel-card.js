@@ -95,13 +95,13 @@
     return `<span class="${cls}">${escapeHtml(st)}</span>`;
   }
 
-  function personCard(role, userId, u, isWinner){
+  function personCard(role, userId, u, isWinner, isLoser){
     const id = userId ? Number(userId) : null;
     const name = (u && (u.first_name || u.last_name)) ? `${u.first_name||''} ${u.last_name||''}`.trim() : '';
     const hum = (u && u.hum_id != null) ? String(u.hum_id) : '';
     const avatar = (u && u.avatar) ? String(u.avatar) : '';
 
-    const cls = isWinner ? 'dc-person win' : 'dc-person';
+    const cls = isWinner ? 'dc-person win' : (isLoser ? 'dc-person lose' : 'dc-person');
     const ava = avatar
       ? `<img src="${escapeHtml(avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
       : '';
@@ -125,7 +125,7 @@
           <div class="dc-person-ids">
             <span class="muted tiny">${escapeHtml(role)} · </span>
             <span style="font-variant-numeric:tabular-nums">${id ? '#' + escapeHtml(id) : '—'}${hum ? ' · HUM ' + escapeHtml(hum) : ''}</span>
-            ${isWinner ? ' · <span class="dc-badge">Победитель</span>' : ''}
+            ${isWinner ? ' · <span class="dc-badge dc-badge-win">Победитель</span>' : (isLoser ? ' · <span class="dc-badge dc-badge-lose">Проигравший</span>' : '')}
           </div>
           ${links}
         </div>
@@ -172,9 +172,9 @@
 
       el.innerHTML = `
         <div class="dc-people">
-          ${personCard('Создатель', cId, creator, winnerId!=null && cId!=null && winnerId===cId)}
+          ${personCard('Создатель', cId, creator, winnerId!=null && cId!=null && winnerId===cId, winnerId!=null && oId!=null && winnerId===oId)}
           <div class="dc-vs">VS</div>
-          ${personCard('Оппонент', oId, opponent, winnerId!=null && oId!=null && winnerId===oId)}
+          ${personCard('Оппонент', oId, opponent, winnerId!=null && oId!=null && winnerId===oId, winnerId!=null && cId!=null && winnerId===cId)}
         </div>
       `;
     }
@@ -198,20 +198,27 @@
     {
       const el = $('#dc-finance .dc-panel-body');
       const isCancelled = String(duel.status||'') === 'cancelled';
-      const extra = isCancelled && duel.refund != null
-        ? `<div class="k">Возврат создателю</div><div class="v">${fmtMoney(duel.refund)}</div>`
-        : '';
-      el.innerHTML = `
-        <div class="dc-kv">
-          <div class="k">stake</div><div class="v">${fmtMoney(duel.stake||0)}</div>
-          <div class="k">pot</div><div class="v">${fmtMoney(duel.pot ?? 0)}</div>
-          <div class="k">rake</div><div class="v">${fmtMoney(duel.rake ?? 0)}</div>
-          <div class="k">payout (победителю)</div><div class="v">${duel.payout!=null ? fmtMoney(duel.payout) : '—'}</div>
-          ${extra}
+
+      const finBox = (label, value)=> `
+        <div class="dc-fin-box">
+          <div class="dc-fin-label">${escapeHtml(label)}</div>
+          <div class="dc-fin-value">${value}</div>
         </div>
       `;
-    }
 
+      const boxes = [
+        finBox('stake', fmtMoney(duel.stake||0)),
+        finBox('pot', fmtMoney(duel.pot ?? 0)),
+        finBox('rake', fmtMoney(duel.rake ?? 0)),
+        finBox('payout (победителю)', (duel.payout!=null ? fmtMoney(duel.payout) : '—')),
+      ];
+
+      if (isCancelled && duel.refund != null){
+        boxes.push(finBox('refund (создателю)', fmtMoney(duel.refund)));
+      }
+
+      el.innerHTML = `<div class="dc-fin-row">${boxes.join('')}</div>`;
+    }
 
 // timeline
 {
@@ -356,15 +363,18 @@
         </div>
       `;
     } else {
-      el.innerHTML = `
-        <div class="dc-kv">
+        el.innerHTML = `
+          <div class="dc-kv">
           <div class="k">method</div><div class="v">${escapeHtml(rng.method || '—')}</div>
           <div class="k">rand_source</div><div class="v">${escapeHtml(rng.rand_source || '—')}</div>
           <div class="k">winner_user_id</div><div class="v">${winnerId!=null ? '#' + escapeHtml(winnerId) : '—'} <span class="muted">(${escapeHtml(winnerSide)})</span></div>
           <div class="k">credited_user_id</div><div class="v">${rng.credited_user_id!=null ? '#' + escapeHtml(rng.credited_user_id) : '—'}</div>
         </div>
-      `;
-    }
+          <div class="muted tiny" style="margin-top:10px; line-height:1.35">
+            Provably fair (seed/nonce/commit): нет данных для этой дуэли (скорее всего, сыграна до внедрения записи PF).
+          </div>
+        `;
+      }
   }
 }
 
