@@ -214,24 +214,59 @@
 
     // rng
     {
-      const el = $('#dc-rng .dc-panel-body');
-      const rng = data.rng || null;
-      if (!rng){
-        el.innerHTML = `<div class="muted">Нет данных (duel_rooms.result пустой или отсутствует).</div>`;
-      } else {
-        el.innerHTML = `
-          <div class="dc-kv">
-            <div class="k">method</div><div class="v">${escapeHtml(rng.method || '—')}</div>
-            <div class="k">rand_source</div><div class="v">${escapeHtml(rng.rand_source || '—')}</div>
-            <div class="k">winner_user_id</div><div class="v">${rng.winner_user_id!=null ? '#' + escapeHtml(rng.winner_user_id) : '—'}</div>
-            <div class="k">credited_user_id</div><div class="v">${rng.credited_user_id!=null ? '#' + escapeHtml(rng.credited_user_id) : '—'}</div>
-          </div>
-          <div class="note muted tiny" style="margin-top:8px">
-            Сейчас MVP хранит только итог (method/rand_source). Если захочешь «provably fair» — добавим seed/nonce/commit.
-          </div>
-        `;
-      }
+      
+  const el = $('#dc-rng .dc-panel-body');
+  const rng = data.rng || null;
+  if (!rng){
+    el.innerHTML = `<div class="muted">Нет данных (duel_rooms.result пустой или отсутствует).</div>`;
+  } else {
+    const pf = (rng && typeof rng === 'object') ? (rng.provably_fair || null) : null;
+
+    const creatorId = duel.creator_user_id != null ? Number(duel.creator_user_id) : null;
+    const opponentId = duel.opponent_user_id != null ? Number(duel.opponent_user_id) : null;
+
+    const winnerId = (rng.winner_user_id!=null) ? Number(rng.winner_user_id) : null;
+    let winnerSide = '—';
+    if (winnerId!=null && creatorId!=null && opponentId!=null){
+      if (winnerId === creatorId) winnerSide = 'creator';
+      else if (winnerId === opponentId) winnerSide = 'opponent';
     }
+
+    if (pf && !pf.legacy){
+      const reveal = (pf.server_seed && String(pf.server_seed).length > 0);
+      el.innerHTML = `
+        <div class="dc-kv">
+          <div class="k">method</div><div class="v">${escapeHtml(rng.method || 'coinflip')}</div>
+          <div class="k">rand_source</div><div class="v">${escapeHtml(rng.rand_source || 'provably_fair_v1')}</div>
+
+          <div class="k">commit</div><div class="v mono">${escapeHtml(pf.commit || '—')}</div>
+          <div class="k">nonce</div><div class="v mono">${escapeHtml(pf.nonce ?? '—')}</div>
+          <div class="k">client_seed</div><div class="v mono">${escapeHtml(pf.client_seed || '—')}</div>
+          <div class="k">server_seed</div><div class="v mono">${reveal ? escapeHtml(pf.server_seed) : '<span class="muted">скрыт (дуэль не завершена)</span>'}</div>
+
+          <div class="k">hash</div><div class="v mono">${escapeHtml(pf.hash || '—')}</div>
+          <div class="k">roll</div><div class="v mono">${escapeHtml(pf.roll || '—')}</div>
+
+          <div class="k">winner_user_id</div><div class="v">${winnerId!=null ? '#' + escapeHtml(winnerId) : '—'} <span class="muted">(${escapeHtml(winnerSide)})</span></div>
+        </div>
+
+        <div class="note muted tiny" style="margin-top:10px">
+          Проверка: sha256(<span class="mono">server_seed:client_seed:nonce</span>) → берём первые 16 hex как 64-bit число (<span class="mono">roll</span>).
+          Если <span class="mono">roll</span> чётный — побеждает creator, иначе opponent.
+        </div>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="dc-kv">
+          <div class="k">method</div><div class="v">${escapeHtml(rng.method || '—')}</div>
+          <div class="k">rand_source</div><div class="v">${escapeHtml(rng.rand_source || '—')}</div>
+          <div class="k">winner_user_id</div><div class="v">${winnerId!=null ? '#' + escapeHtml(winnerId) : '—'} <span class="muted">(${escapeHtml(winnerSide)})</span></div>
+          <div class="k">credited_user_id</div><div class="v">${rng.credited_user_id!=null ? '#' + escapeHtml(rng.credited_user_id) : '—'}</div>
+        </div>
+      `;
+    }
+  }
+}
 
     // events
     {
