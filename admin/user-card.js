@@ -8,7 +8,11 @@
     events: { page: 1, limit: 50, total: 0, items: [], loading: false, filters: { type: '', period: 'all', from: '', to: '', term: '' } },
     duels:  { page: 1, limit: 50, total: 0, items: [], loading: false, error: '', filters: { status: '', stake: '', period: 'all', from: '', to: '', term: '' } },
     finance: { page: 1, limit: 20, total: 0, items: [], loading: false, error: '', kpi: null, filters: { type: '', status: '', period: '30', from: '', to: '' } },
-    duel_profit: { key: '', loading: false, error: '', days: [], totals: { profit: 0, duels: 0 } },
+    duel_profit: {
+      key: '',
+      a: { loading: false, error: '', days: [], totals: { profit: 0, duels: 0 }, title: 'Профит в дуэлях' },
+      b: { loading: false, error: '', days: [], totals: { profit: 0, duels: 0 }, title: 'Профит в дуэлях', visible: false },
+    },
     accounts: { loading: false, error: '', data: null }
   };
 
@@ -17,21 +21,126 @@
     return raw ? raw.replace(/\/+$/,'') : location.origin;
   }
 
+  // Prevent silent prefetch (finance tab) from blocking Accounts tab UI fetch.
+  let accountsPromise = null;
 
-  // --- Duel profit chart (finance tab) ---
+
+  // --- Duel profit charts (finance tab) ---
+  function profitDom(which){
+    return {
+      block: document.getElementById(`uc-profit-block-${which}`),
+      title: document.getElementById(`uc-profit-title-${which}`),
+      svg:   document.getElementById(`uc-profit-chart-${which}`),
+      tip:   document.getElementById(`uc-profit-tip-${which}`),
+      kpis:  document.getElementById(`uc-profit-kpis-${which}`),
+    };
+  }
+
+  async function ensureAccountsDataSilent(){
+    const userId = state.userId;
+    if (!userId) return null;
+    if (state.accounts.data) return state.accounts.data;
+    if (accountsPromise) return accountsPromise;
+
+    accountsPromise = (async ()=>{
+      try{
+        const url = api() + `/api/admin/user-card/accounts?user_id=${encodeURIComponent(userId)}`;
+        const r = await fetch(url, { headers: (window.adminHeaders ? window.adminHeaders() : {}) });
+        const j = await r.json().catch(()=>({ ok:false, error:'bad json' }));
+        if (!r.ok || !j || !j.ok) throw new Error(j?.error || `HTTP ${r.status}`);
+        state.accounts.data = j;
+        return j;
+      }catch(e){
+        state.accounts.error = String(e?.message || e || 'Ошибка');
+        return null;
+      }finally{
+        accountsPromise = null;
+      }
+    })();
+
+    return accountsPromise;
+  }
+
+  function pickDeviceGroupUserIds(acc, userId){
+    const groups = Array.isArray(acc?.device_family) ? acc.device_family : [];
+    const uid = Number(userId);
+    for (const g of groups){
+      const ids = (Array.isArray(g.user_ids) ? g.user_ids : []).map(Number).filter(Boolean);
+      if (ids.includes(uid) && ids.length > 1) {
+        return { user_ids: ids, device_id: g.device_id || '' };
+      }
+    }
+    return null;
+  }
+
   async function loadDuelProfit(key){
     const userId = state.userId;
     if (!userId) return;
     const f = state.finance.filters || {};
     if (key) state.duel_profit.key = key;
 
-    state.duel_profit.loading = true;
-    state.duel_profit.error = '';
-    renderDuelProfit();
+    // decide which charts to show
+    const acc = await ensureAccountsDataSilent();
+    const fam = Array.isArray(acc?.family) ? acc.family : [];
+    const hasHumFamily = fam.length > 1;
+    const devPick = (!hasHumFamily && acc) ? pickDeviceGroupUserIds(acc, userId) : null;
+
+    const planA = hasHumFamily
+      ? { title: 'Общий профит (HUM‑семья)', scope: 'hum', user_ids: null }
+      : (devPick
+        ? { title: `Профит (user_id #${userId})`, scope: 'user', user_ids: null }
+        : { title: 'Профит в дуэлях', scope: 'user', user_ids: null });
+
+    const planB = hasHumFamily
+      ? { title: `Профит (user_id #${userId})`, scope: 'user', user_ids: null }
+      : (devPick ? { title: `Общий профит по устройству (${shortDevice(devPick.device_id)})`, scope: 'ids', user_ids: devPick.user_ids } : null);
+
+    // show/hide blocks + titles
+    const A = profitDom('a');
+    const B = profitDom('b');
+    if (A?.title) A.title.textContent = planA.title;
+    if (A?.block) A.block.classList.remove('uc-hide');
+
+    state.duel_profit.a.title = planA.title;
+    state.duel_profit.b.visible = Boolean(planB);
+
+    if (planB){
+      if (B?.title) B.title.textContent = planB.title;
+      if (B?.block) B.block.classList.remove('uc-hide');
+      state.duel_profit.b.title = planB.title;
+    } else {
+      if (B?.block) B.block.classList.add('uc-hide');
+      state.duel_profit.b.loading = false;
+      state.duel_profit.b.error = '';
+      state.duel_profit.b.days = [];
+      state.duel_profit.b.totals = { profit: 0, duels: 0 };
+      renderDuelProfitBlock('b');
+    }
+
+    // load charts (A always, B conditionally)
+    await Promise.all([
+      loadDuelProfitOne('a', planA, f),
+      planB ? loadDuelProfitOne('b', planB, f) : Promise.resolve(),
+    ]);
+  }
+
+  async function loadDuelProfitOne(which, plan, f){
+    const userId = state.userId;
+    if (!userId) return;
+    const st = state.duel_profit[which];
+    if (!st) return;
+
+    st.loading = true;
+    st.error = '';
+    renderDuelProfitBlock(which);
 
     const qs = new URLSearchParams();
     qs.set('user_id', userId);
-    qs.set('scope', scope());
+    if (plan.scope === 'hum') qs.set('scope', 'hum');
+    else qs.set('scope', 'user');
+    if (Array.isArray(plan.user_ids) && plan.user_ids.length) {
+      qs.set('user_ids', plan.user_ids.join(','));
+    }
     if (f.from) qs.set('from', f.from);
     if (f.to) qs.set('to', f.to);
 
@@ -41,24 +150,35 @@
       const j = await r.json().catch(()=>({ ok:false, error:'bad json' }));
       if (!r.ok || j.ok === false) throw new Error(j.error || ('HTTP ' + r.status));
 
-      state.duel_profit.loading = false;
-      state.duel_profit.days = Array.isArray(j.days) ? j.days : [];
-      state.duel_profit.totals = j.totals || { profit: 0, duels: 0 };
-      renderDuelProfit();
+      st.loading = false;
+      st.days = Array.isArray(j.days) ? j.days : [];
+      st.totals = j.totals || { profit: 0, duels: 0 };
+      renderDuelProfitBlock(which);
     }catch(err){
-      state.duel_profit.loading = false;
-      state.duel_profit.error = (err && err.message) ? err.message : String(err || 'error');
-      state.duel_profit.days = [];
-      state.duel_profit.totals = { profit: 0, duels: 0 };
-      renderDuelProfit();
+      st.loading = false;
+      st.error = (err && err.message) ? err.message : String(err || 'error');
+      st.days = [];
+      st.totals = { profit: 0, duels: 0 };
+      renderDuelProfitBlock(which);
     }
   }
 
+  function shortDevice(deviceId){
+    const s = String(deviceId || '').trim();
+    if (!s) return 'device';
+    if (s.length <= 12) return s;
+    return s.slice(0, 6) + '…' + s.slice(-4);
+  }
+
   function renderDuelProfit(){
-    const svg = document.getElementById('uc-profit-chart');
-    const tip = document.getElementById('uc-profit-tip');
-    const kpis = document.getElementById('uc-profit-kpis');
-    if (!svg) return;
+    renderDuelProfitBlock('a');
+    renderDuelProfitBlock('b');
+  }
+
+  function renderDuelProfitBlock(which){
+    const st = state.duel_profit[which];
+    const { svg, tip, kpis } = profitDom(which);
+    if (!svg || !st) return;
 
     const wrap = svg.parentElement;
     const clearTip = ()=>{
@@ -85,18 +205,18 @@
       svg.appendChild(t);
     };
 
-    if (state.duel_profit.loading){
+    if (st.loading){
       if (kpis) kpis.textContent = 'Загрузка профита…';
       msg('Загрузка…');
       return;
     }
-    if (state.duel_profit.error){
-      if (kpis) kpis.textContent = 'Ошибка: ' + state.duel_profit.error;
+    if (st.error){
+      if (kpis) kpis.textContent = 'Ошибка: ' + st.error;
       msg('Ошибка');
       return;
     }
 
-    const rows = Array.isArray(state.duel_profit.days) ? state.duel_profit.days : [];
+    const rows = Array.isArray(st.days) ? st.days : [];
     if (!rows.length){
       if (kpis) kpis.textContent = 'Нет дуэлей за выбранный период.';
       msg('Нет данных');
@@ -108,8 +228,8 @@
     const pCum = rows.map(r => Number(r.profit_cum||0));
     const dCount = rows.map(r => Number(r.duels||0));
 
-    const totalProfit = Number(state.duel_profit.totals?.profit ?? (pCum[pCum.length-1]||0));
-    const totalDuels = Number(state.duel_profit.totals?.duels ?? dCount.reduce((a,b)=>a+b,0));
+    const totalProfit = Number(st.totals?.profit ?? (pCum[pCum.length-1]||0));
+    const totalDuels = Number(st.totals?.duels ?? dCount.reduce((a,b)=>a+b,0));
     if (kpis) kpis.innerHTML = `Итого: <b>${esc(fmtMoney(totalProfit))}</b> · Дуэлей: <b>${esc(fmtInt(totalDuels))}</b>`;
 
     const n = pCum.length;
@@ -171,11 +291,9 @@
     svg.appendChild(svgEl('polyline', { points: pts, class:'uc-profit-line' }));
 
     // points for hover target
-    const pointEls = [];
     for (let i=0;i<n;i++){
       const c = svgEl('circle', { cx: x(i), cy: y(pCum[i]), r: 1.8, class:'uc-profit-point' });
       svg.appendChild(c);
-      pointEls.push(c);
     }
 
     // x labels (few)

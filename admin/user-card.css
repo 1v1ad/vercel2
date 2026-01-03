@@ -620,3 +620,6 @@
 .uc-th-status{ width: 110px; }
 .uc-th-amt{ width: 130px; }
 .uc-finance-note{ margin: 6px 0 14px; }
+
+/* Finance tab: visually separate stacked cards (profit charts vs transactions) */
+#uc-panel-finance .uc-block + .uc-block{ margin-top: 14px; }
