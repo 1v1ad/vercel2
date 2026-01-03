@@ -378,46 +378,45 @@
       const deviceId = (g.device_id || g.deviceId || '').toString();
       const short = shortDevice(deviceId);
 
-      // supported formats:
-      // 1) g.members: [{id, first_name, last_name, avatar_url, auth_accounts, ...}]
-      // 2) g.users: same
-      // 3) g.user_ids: [97,1]
-      const members = Array.isArray(g.members) ? g.members : (Array.isArray(g.users) ? g.users : []);
-      const ids = Array.isArray(g.user_ids) ? g.user_ids.map(String) : (Array.isArray(g.userIds) ? g.userIds.map(String) : members.map(m => String(m && m.id)));
-      const otherIds = ids.filter(id => id && id !== curId);
+      const userIdsRaw = Array.isArray(g.user_ids) ? g.user_ids : (Array.isArray(g.userIds) ? g.userIds : []);
+      const userIds = userIdsRaw.map(v => String(v)).filter(Boolean);
+      const otherIds = userIds.filter(id => id !== curId);
 
-      const accounts = Array.isArray(g.accounts)
-        ? g.accounts
-        : (Array.isArray(g.providers) ? g.providers : []);
-      const accStr = accounts.length ? accounts.join(', ') : '';
+      // optionally enriched on backend (members: [{id, first_name,...}])
+      const membersRaw = Array.isArray(g.members) ? g.members : (Array.isArray(g.users) ? g.users : []);
+      const members = membersRaw.filter(Boolean);
 
-      const head = `
-        <div class="uc-device-head">
-          <div class="uc-device-title mono" title="${esc(deviceId)}">device: ${esc(short)}</div>
-          <div class="uc-device-sub muted">${otherIds.length ? `другие user_id: ${otherIds.length}` : 'только текущий user_id'}</div>
-        </div>
-        ${accStr ? `<div class="uc-device-acc mono">${esc(accStr)}</div>` : ''}
-      `;
+      const usersStr = userIds.length ? userIds.map(id => `#${id}`).join(', ') : '—';
+      const devicePillTitle = `device_id: ${deviceId}${userIds.length ? ` · users: ${userIds.join(', ')}` : ''}`;
+      const devicePill = `<span class="uc-pill mono" title="${esc(devicePillTitle)}">device_id: ${esc(short)} · users: ${esc(usersStr)}</span>`;
 
-      let body = '';
-      if (members.length){
-        const otherMembers = members.filter(m => String(m && m.id) !== curId);
-        body = otherMembers.length
-          ? `<div class="uc-device-members">${otherMembers.map(m => renderDeviceMember(m)).join('')}</div>`
-          : `<div class="muted">В этой группе нет других аккаунтов, кроме текущего.</div>`;
+      // shadow pill: first non-current user_id (rest shows as +N)
+      let shadowPill = '';
+      if (!otherIds.length){
+        shadowPill = `<span class="uc-pill mono"><span class="muted">теневой:</span> —</span>`;
       } else {
-        body = otherIds.length
-          ? `<div class="uc-device-members">${otherIds.map(id => renderDeviceMember({ id })).join('')}</div>`
-          : `<div class="muted">В этой группе нет других аккаунтов, кроме текущего.</div>`;
+        const firstId = otherIds[0];
+        const firstMember = members.find(m => String(m && m.id) === String(firstId)) || { id:firstId };
+        const nm = tinyName(firstMember.first_name || firstMember.firstName, firstMember.last_name || firstMember.lastName);
+        const extra = otherIds.length > 1 ? ` +${otherIds.length - 1}` : '';
+        const label = `${otherIds.length > 1 ? 'теневые' : 'теневой'}: #${firstId}${nm ? ' ' + nm : ''}${extra}`;
+        shadowPill = `<a class="uc-pill mono" href="user-card.html?user_id=${encodeURIComponent(firstId)}" title="Открыть user_id ${esc(firstId)}">${esc(label)}</a>`;
       }
 
-      return `<div class="uc-device-group">${head}${body}</div>`;
+      return `
+        <div class="uc-device-group">
+          <div class="uc-device-body">
+            <div class="uc-tags">${devicePill}${shadowPill}</div>
+          </div>
+        </div>
+      `;
     }).join('');
 
     return `<div class="uc-device-list">${wrap}</div>`;
   }
 
-  function renderDeviceMember(m){
+
+function renderDeviceMember(m){
     const id = (m && m.id != null) ? String(m.id) : '';
     const ava = (m && (m.avatar_url || m.avatar || m.avatarUrl)) ? String(m.avatar_url || m.avatar || m.avatarUrl) : '';
     const name = tinyName(m && (m.first_name || m.firstName), m && (m.last_name || m.lastName));

@@ -1,57 +1,11 @@
-PATCH: vercel2 — Admin v2: вкладка «Ручное пополнение» как в старой админке
+GGRoom vercel2 patch: user-card Accounts tab improvements
 
-Что сделано:
-- В Admin v2 (admin/index2.html) во вкладке «Ручное пополнение» добавлен лог последних 100 событий типа admin_topup.
-- Суммы показываются «плашками»: зелёные для +, красные для -, серые для 0.
-- Кнопка «Обновить историю» + сортировка по клику на заголовки.
-- После успешного пополнения история и Summary обновляются, amount/comment очищаются.
+Changed:
+- admin/user-card.js
+  * 'Связи по устройству' rendering: now shows two pills inside each device group:
+    - device_id + list of user_ids seen on that device
+    - separate pill for the first shadow (non-current) user_id (+N if more)
+  * Shadow pill is clickable (opens user-card for that user_id).
 
-Файлы:
-- admin/index2.html
-- admin/admin2.js
-- admin/admin2.css
-2025-12-25
-- Summary: в пустую карточку под «Последние дуэли» добавлена мини-таблица «История ручных пополнений» (последние 6 записей, +/- с цветными метками).
-- Ручное пополнение: в основной таблице добавлен фильтр (по user_id / HUMid / admin / сумме / комментарию), сортировка по клику остаётся по всем столбцам включая «Админ».
-Файлы:
-- admin/index2.html
-- admin/admin2.js
-- admin/admin2.css
-
-
-[2025-12-25] Admin v2: Duels tab upgrades
-- Duels: added created_at column, avatars + names for creator/opponent/winner, status badges (incl. cancelled).
-- Duels: client-side filter + sorting across all columns.
-- Duels: switched to /api/admin/duels (new backend endpoint).
-
-
-[2025-12-25] Admin v2: Users → Аналитика
-- Добавлена подвкладка «Аналитика» во вкладке «Пользователи».
-- Таблица «Самый активный в дуэлях»: топ-10 по числу участий (создатель + участник) за весь период.
-Файлы:
-- admin/index2.html
-- admin/admin2.js
-- admin/admin2.css
-[2025-12-25 18:41] Admin v2: Summary hover cards + Users sidebar sub-menu (Список/Аналитика) with hash routing
-[2025-12-25] Admin v2: hover-эффект для всех panel на Summary + синхронизация подсветки подменю Пользователи (Список/Аналитика) с сабтабами.
-
-[2025-12-25] Admin v2 Summary: sparkline tooltip stays below topbar (no overlap)
-
-[2025-12-25] Admin v2 Summary: sparkline tooltip above chart again (not clipped by topbar)
-- Tooltip for mini-sparklines (users/events/liabilities) is now rendered with position:fixed in <body> so it won't be clipped by sticky topbar / transformed cards.
-- Tooltip is anchored to hovered dot and clamped into viewport.
-Файлы:
-- admin/index2.html
-- admin/admin2.js
-- admin/admin2.css
-
-[2025-12-25] Admin v2: Users sub-tabs routing fix
-- Кнопки «Список/Аналитика» внутри вкладки «Пользователи» теперь используют общий hash-роутер (#users/list, #users/analytics), чтобы после F5 переход «Список» всегда триггерил загрузку.
-- Бамп версии admin2.css/js для надёжного обновления кэша.
-Файлы:
-- admin/index2.html
-- admin/admin2.js
-
-[2025-12-25 22:12:31] Admin v2: Users Analytics – visual separator between tables (active vs successful); bump assets v=20251226a
-
-[2025-12-25 22:52] Admin v2: вернул кнопку сворачивания сайдбара (иконки-only) + сохранение состояния.
+Deploy:
+- Replace admin/user-card.js in frontend repo and redeploy.
