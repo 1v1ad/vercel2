@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GGRoom — Карточка дуэли</title>
+
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="stylesheet" href="/admin/admin2.css" />
+  <link rel="stylesheet" href="/admin/duel-card.css" />
+
+  <script defer src="/admin/admin-auth-headers.js"></script>
+  <script defer src="/admin/flags.js"></script>
+  <script defer src="/admin/duel-card.js?v=20260103_2240"></script>
+</head>
+<body>
+  <div class="uc-page">
+    <div class="uc-topbar">
+      <a class="uc-back" href="/admin/index2.html#duels">← Назад</a>
+      <div class="uc-topbar-title">Карточка дуэли</div>
+      <div class="uc-topbar-right" id="dc-top-right"></div>
+    </div>
+
+    <div class="uc-wrap">
+      <div class="card dc-head" id="dc-head">
+        <div class="dc-head-main">
+          <div class="dc-title skel skel-line"></div>
+          <div class="dc-sub skel skel-line"></div>
+        </div>
+        <div class="dc-head-kpis" id="dc-head-kpis">
+          <div class="uc-chip skel skel-line"></div>
+          <div class="uc-chip skel skel-line"></div>
+          <div class="uc-chip skel skel-line"></div>
+          <div class="uc-chip skel skel-line"></div>
+        </div>
+      </div>
+
+      <div class="dc-grid">
+        <div class="card dc-panel" id="dc-participants">
+          <div class="dc-panel-title">Участники</div>
+          <div class="dc-panel-body">Загрузка…</div>
+        </div>
+
+        <div class="card dc-panel" id="dc-timings">
+          <div class="dc-panel-title">Временные промежутки</div>
+          <div class="dc-panel-body">Загрузка…</div>
+        </div>
+
+        <div class="card dc-panel" id="dc-finance">
+          <div class="dc-panel-title">Финансы дуэли</div>
+          <div class="dc-panel-body">Загрузка…</div>
+        </div>
+
+        <div class="card dc-panel" id="dc-rng">
+          <div class="dc-panel-title">ГСЧ / coinflip</div>
+          <div class="dc-panel-body">Загрузка…</div>
+        </div>
+      </div>
+
+      <div class="card dc-panel" id="dc-events">
+        <div class="dc-panel-title">События дуэли</div>
+        <div class="dc-panel-body">
+          <div class="table-wrap">
+            <table class="table" id="dc-events-table">
+              <thead>
+                <tr>
+                  <th style="width:160px">Время</th>
+                  <th style="width:160px">Тип</th>
+                  <th style="width:140px">user_id</th>
+                  <th class="right" style="width:120px">amount</th>
+                  <th>payload / meta</th>
+                </tr>
+              </thead>
+              <tbody><tr><td colspan="5" class="muted">Загрузка…</td></tr></tbody>
+            </table>
+          </div>
+
+          <details class="dc-raw" id="dc-raw" style="margin-top:10px">
+            <summary>Raw: duel_rooms.result / запись дуэли</summary>
+            <pre class="out" id="dc-raw-json">—</pre>
+          </details>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

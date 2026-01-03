@@ -1,0 +1,94 @@
+/* admin/duel-card.css — Duel Card page */
+
+.dc-head{
+  display:flex;
+  gap:14px;
+  align-items:stretch;
+}
+.dc-head-main{ flex:1; min-width:260px; }
+.dc-title{ font-size:22px; font-weight:800; margin-top:2px; }
+.dc-sub{ margin-top:6px; opacity:.8; font-variant-numeric: tabular-nums; }
+
+.dc-head-kpis{ display:flex; flex-wrap:wrap; gap:8px; align-content:flex-start; justify-content:flex-end; min-width: 280px; }
+
+.dc-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:12px;
+}
+@media (max-width: 980px){
+  .dc-head{ flex-direction:column; }
+  .dc-head-kpis{ justify-content:flex-start; }
+  .dc-grid{ grid-template-columns: 1fr; }
+}
+
+.dc-panel{ padding:12px; }
+.dc-panel-title{ font-weight:800; margin-bottom:10px; }
+
+.dc-people{
+  display:grid;
+  grid-template-columns: 1fr 64px 1fr;
+  gap:10px;
+  align-items:center;
+}
+@media (max-width: 720px){
+  .dc-people{ grid-template-columns: 1fr; }
+  .dc-vs{ display:none; }
+}
+
+.dc-person{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  border-radius:16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.dc-person.win{ border-color: rgba(78,209,169,.45); box-shadow: 0 0 0 1px rgba(78,209,169,.15) inset; }
+.dc-person.lose{ opacity:.9; }
+
+.dc-ava{ width:44px; height:44px; border-radius:14px; overflow:hidden; flex:0 0 44px; background: rgba(255,255,255,.06); }
+.dc-ava img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+.dc-person-meta{ min-width:0; }
+.dc-person-name{ font-weight:800; }
+.dc-person-ids{ margin-top:4px; font-variant-numeric: tabular-nums; opacity:.85; }
+.dc-person-links{ margin-top:6px; display:flex; gap:10px; flex-wrap:wrap; }
+.dc-person-links a{ color: var(--text); opacity:.85; text-decoration:none; border-bottom:1px dashed rgba(255,255,255,.2); }
+.dc-person-links a:hover{ opacity:1; border-bottom-color: rgba(255,255,255,.4); }
+
+.dc-vs{
+  width:64px; height:64px;
+  border-radius:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+  letter-spacing:.6px;
+  background: rgba(10,132,255,.10);
+  border: 1px solid rgba(10,132,255,.22);
+}
+
+.dc-kv{ display:grid; grid-template-columns: 180px 1fr; gap:8px 12px; }
+.dc-kv .k{ opacity:.75; }
+.dc-kv .v{ font-variant-numeric: tabular-nums; }
+@media (max-width: 720px){
+  .dc-kv{ grid-template-columns: 1fr; }
+  .dc-kv .k{ opacity:.7; }
+}
+
+.dc-badge{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 10px;
+  border-radius:999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  font-variant-numeric: tabular-nums;
+}
+
+.dc-raw summary{ cursor:pointer; }
+
+/* allow tables to be scrolled on narrow screens */
+#dc-events .table-wrap{ overflow:auto; }

@@ -1811,7 +1811,7 @@ async function loadUsersAnalyticsDuels(){
 
     tbody.innerHTML = rows.map(r=>{
       return `<tr>
-        <td>${escapeHtml(String(r.id ?? ''))}</td>
+        <td><a class="muted-link" href="/admin/duel-card.html?duel_id=${encodeURIComponent(String(r.id ?? ''))}" target="_blank" rel="noopener">${escapeHtml(String(r.id ?? ''))}</a></td>
         <td>${escapeHtml(r.mode || '—')}</td>
         <td class="muted">${escapeHtml(fmtDTMsk(r.created_at))}</td>
         <td class="right">${fmtInt(r.stake || 0)}</td>
