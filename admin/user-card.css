@@ -65,7 +65,8 @@
   border: 1px solid rgba(255,255,255,.06);
 }
 
-#uc-profit-chart{
+/* Ensure both profit SVGs (A/B) always fill the container. */
+.uc-profit svg{
   width: 100%;
   height: 100%;
   display: block;
@@ -132,6 +133,21 @@
 .uc-profit-tip.show{ opacity: 1; }
 
 .uc-profit-kpis{ margin-top: 8px; }
+
+/* Desktop: the chart becomes very wide, so we add a bit more vertical room
+   to make bars (duels count) and x-labels readable. */
+@media (min-width: 1024px){
+  .uc-profit{ height: 300px; }
+  .uc-profit-axis{ font-size: 6px; }
+  .uc-profit-bar{ opacity: .24; }
+}
+
+/* Desktop: make the vertical scale a bit taller so duel-count bars and date labels are readable. */
+@media (min-width: 1024px){
+  .uc-profit{ height: 300px; }
+  .uc-profit-axis{ font-size: 6px; }
+  .uc-profit-bar{ opacity: .24; }
+}
 
 #uc-activity-chart{
   width: 100%;
