@@ -12,6 +12,16 @@
 .uc-sub-right{ display:flex; gap:8px; align-items:center; }
 .uc-sub-left{ flex:1; min-width: 0; }
 
+/* Mobile: let status (“Показано …”) and controls breathe instead of pushing content sideways. */
+@media (max-width: 720px){
+  .uc-subbar{ flex-wrap: wrap; align-items:flex-start; }
+  .uc-sub-left{ flex: 1 1 100%; width:100%; }
+  .uc-sub-right{ flex: 1 1 100%; width:100%; justify-content:flex-start; }
+
+  /* In case filters are (accidentally) placed inside subbar, make them full-width too. */
+  .uc-subbar .uc-filters{ flex: 1 1 100%; width:100%; }
+}
+
 .uc-th-ip{ width: 160px; }
 .uc-th-ua{ width: 260px; }
 
@@ -97,6 +107,29 @@
 }
 .uc-filters .input.sm{ height: 34px; }
 .uc-filters .btn.sm{ height: 34px; }
+
+/* Mobile: filters/search like the main “Дуэли” page (stacked controls + buttons row). */
+@media (max-width: 720px){
+  .uc-filters{ gap:10px; }
+
+  /* stack selects/inputs full width */
+  .uc-filters .input.sm{
+    flex: 1 1 100%;
+    width:100%;
+    min-width: 0;
+  }
+
+  /* keep Apply/Reset as a neat 2-column row */
+  .uc-filters .btn.sm{
+    flex: 1 1 calc(50% - 6px);
+    min-width: 140px;
+  }
+
+  /* Overview: donut must not force horizontal overflow */
+  .uc-donut-row{ flex-direction:column; align-items:stretch; }
+  .uc-donut{ margin: 0 auto; }
+  .uc-donut-legend{ min-width: 0; width:100%; }
+}
 
 .uc-hide{ display:none !important; }
 
