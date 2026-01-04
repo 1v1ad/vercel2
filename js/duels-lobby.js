@@ -46,9 +46,16 @@
     var img = document.createElement('img');
     img.alt = alt || 'avatar';
     img.loading = 'lazy';
-    if (url) img.src = url;
-    else img.src = ''; // будет серый фон (css)
-    img.onerror = function(){ img.src = ''; };
+
+    // Плейсхолдер, чтобы не было "битой" иконки при пустом src
+    var placeholder = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">' +
+      '<rect width="100%" height="100%" rx="14" ry="14" fill="rgba(255,255,255,0.06)"/>' +
+      '</svg>'
+    );
+
+    img.src = url ? url : placeholder;
+    img.onerror = function(){ img.src = placeholder; };
     return img;
   }
 
@@ -147,16 +154,6 @@
     }, 4500);
   }
 
-    function fmtWait(ms){
-    if (!ms || ms < 0) return '—';
-    var s = Math.floor(ms/1000);
-    if (s < 60) return s + 'с';
-    var m = Math.floor(s/60);
-    if (m < 60) return m + 'м';
-    var h = Math.floor(m/60);
-    return h + 'ч';
-  }
-
   function renderOpen(items){
     var list = byId('duels-list');
     if (!list) return;
@@ -170,85 +167,45 @@
       return;
     }
 
-    var now = Date.now();
-
     for (var i=0;i<items.length;i++){
       var it = items[i];
 
       var row = document.createElement('div');
-      row.className = 'live-row';
-      row.tabIndex = 0;
+      row.className = 'duel-item';
+      row.style.cursor = 'pointer';
       row.onclick = (function(id){
-        return function(){ showDuelDetails(id); };
+        return function(ev){
+          if (ev && ev.target && ev.target.tagName === 'BUTTON') return;
+          showDuelDetails(id);
+        };
       })(it.id);
 
-      // --- names / avatars ---
-      var cName = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
-      var oName = fullName(it.opponent_first_name, it.opponent_last_name, it.opponent_user_id || '—');
+      var left = document.createElement('div');
+      left.className = 'duel-left';
 
-      var main = document.createElement('div');
-      main.className = 'live-main';
+      var who = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
+      var img = makeAvatarImg(it.creator_avatar, who);
 
-      var av = document.createElement('div');
-      av.className = 'live-avatars';
-      av.appendChild(makeAvatarImg(it.creator_avatar, cName));
-      av.appendChild(makeAvatarImg(it.opponent_avatar, oName));
-      main.appendChild(av);
-
-      var info = document.createElement('div');
-      info.className = 'live-info';
+      var txt = document.createElement('div');
+      txt.className = 'duel-text';
 
       var title = document.createElement('div');
-      title.className = 'live-title';
-
-      var mode = (it.room_type || it.mode || it.type || '1v1');
-      var stake = Number(it.stake || 0);
-
-      title.textContent = '#' + it.id + ' · ' + mode + ' · ' + fmtRub(stake);
+      title.className = 'duel-title';
+      title.textContent = fmtRub(it.stake||0) + ' · ' + who;
 
       var sub = document.createElement('div');
-      sub.className = 'live-sub';
-
-      var dt = it.created_at ? new Date(it.created_at) : (it.updated_at ? new Date(it.updated_at) : null);
+      sub.className = 'duel-sub';
+      // время + комиссия
+      var dt = it.created_at ? new Date(it.created_at) : null;
       var tstr = dt ? (String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
-      var feeBps = Number(it.fee_bps || 0);
-      var feePct = (feeBps/100).toFixed(2).replace('.00','');
-      sub.textContent = (cName ? ('Создал ' + cName) : 'Создал') + (tstr ? (' · ' + tstr) : '') + ' · комиссия ' + feePct + '%';
+      sub.textContent = 'Комната #' + it.id + (tstr ? (' · ' + tstr) : '') + ' · комиссия ' + (it.fee_bps||0)/100 + '%';
 
-      info.appendChild(title);
-      info.appendChild(sub);
-      main.appendChild(info);
+      txt.appendChild(title);
+      txt.appendChild(sub);
 
-      // --- pot / fee ---
-      var potCol = document.createElement('div');
-      potCol.className = 'live-pot';
+      left.appendChild(img);
+      left.appendChild(txt);
 
-      var pot = stake * 2;
-      var fee = Math.round(pot * feeBps / 10000);
-
-      var potLine = document.createElement('div');
-      potLine.innerHTML = '<strong>' + fmtRub(pot) + '</strong> <span class="muted">pot</span>';
-
-      var feeLine = document.createElement('div');
-      feeLine.className = 'muted';
-      feeLine.textContent = fmtRub(fee) + ' fee';
-
-      potCol.appendChild(potLine);
-      potCol.appendChild(feeLine);
-
-      // --- wait ---
-      var waitCol = document.createElement('div');
-      waitCol.className = 'live-wait';
-      var ms = dt ? (now - dt.getTime()) : 0;
-      var w1 = document.createElement('div');
-      w1.textContent = fmtWait(ms);
-      var w2 = document.createElement('div');
-      w2.className = 'muted';
-      w2.textContent = 'в очереди';
-      waitCol.appendChild(w1);
-      waitCol.appendChild(w2);
-
-      // --- actions ---
       var actions = document.createElement('div');
       actions.className = 'duel-actions';
 
@@ -267,19 +224,18 @@
             await withCoin(async function(){
               await joinDuel(id);
             });
+            // после join — обновим всё (open и историю)
             await pollOpenOnce();
             await loadHistory();
+            await refreshBalance();
           }
         };
       })(it.id, isMine);
 
       actions.appendChild(btn);
 
-      row.appendChild(main);
-      row.appendChild(potCol);
-      row.appendChild(waitCol);
+      row.appendChild(left);
       row.appendChild(actions);
-
       list.appendChild(row);
     }
   }
