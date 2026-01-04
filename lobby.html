@@ -246,6 +246,71 @@
     .duel-sub{ font-size:12px; color:var(--muted); }
     .duel-actions{ display:flex; align-items:center; gap:8px; }
 
+    /* --- live list (open rooms) --- */
+    .lobby-sec{ margin-top:0; }
+    .live-head{
+      display:grid;
+      grid-template-columns: minmax(320px, 1fr) 140px 120px 120px;
+      gap:10px;
+      padding:8px 12px;
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+      letter-spacing:.35px;
+      text-transform:uppercase;
+    }
+    .duels-list.live-list{ gap:8px; margin-top:6px; }
+
+    .live-row{
+      display:grid;
+      grid-template-columns: minmax(320px, 1fr) 140px 120px 120px;
+      gap:10px;
+      align-items:center;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#0c1018;
+      cursor:pointer;
+    }
+    .live-row:hover{ border-color:rgba(84,169,255,.35); background:rgba(12,16,24,.85); }
+
+    .live-main{ display:flex; align-items:center; gap:12px; min-width:0; }
+    .live-avatars{ display:flex; align-items:center; flex:0 0 auto; }
+    .live-avatars img{
+      width:34px; height:34px;
+      border-radius:12px;
+      object-fit:cover;
+      background:#222;
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .live-avatars img+img{ margin-left:-10px; }
+
+    .live-info{ min-width:0; }
+    .live-title{ font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .live-sub{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .live-pot strong{ font-weight:900; }
+    .live-pot .muted{ font-size:12px; color:var(--muted); }
+
+    .live-wait{ text-align:right; }
+    .live-wait .muted{ font-size:12px; }
+
+    @media (max-width: 900px){
+      .live-head{ display:none; }
+      .live-row{
+        grid-template-columns: 1fr auto;
+        grid-template-areas:
+          "main act"
+          "pot act"
+          "wait act";
+        align-items:start;
+      }
+      .live-main{ grid-area:main; }
+      .live-pot{ grid-area:pot; }
+      .live-wait{ grid-area:wait; text-align:left; }
+      .duel-actions{ grid-area:act; justify-content:flex-end; }
+    }
+
     .toast{
       position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
       background:#0f1219; border:1px solid var(--border); border-radius:14px;
@@ -380,6 +445,7 @@
           </div>
         </div>
 
+        <section id="sec-stakes" class="lobby-sec" data-sec="stakes">
         <div class="duels-create">
           <div class="muted" style="font-size:13px">
             Создай комнату со ставкой — второй игрок заходит, и система честно кидает монету (coinflip).
@@ -415,12 +481,27 @@
           </div>
           <div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
         </div>
+        </div>
+      </section>
 
+      <section id="sec-live" class="lobby-sec" data-sec="live">
         <div id="live"></div>
-   <div class="duels-list" id="duels-list">
+        <div class="section-title" style="margin-top:12px">
+          <div class="h3">Live</div>
+          <div class="muted">открытые комнаты</div>
+        </div>
+        <div class="live-head" aria-hidden="true">
+          <div>Комната</div>
+          <div>Pot / fee</div>
+          <div>Ожидание</div>
+          <div></div>
+        </div>
+   <div class="duels-list live-list" id="duels-list">
   <div class="muted">Загружаю комнаты…</div>
 </div>
+      </section>
 
+      <section id="sec-archive" class="lobby-sec" data-sec="archive">
 <div id="archive"></div>
    <div class="section-title">
   <div class="h3">История</div>
@@ -429,6 +510,7 @@
 <div class="history-list" id="history-list">
   <div class="muted">Загружаю историю…</div>
 </div>
+      </section>
       </div>
 
         </div>
@@ -495,7 +577,7 @@
   <script src="/js/lobby-balance-fix.js"></script>
 
   <!-- Дуэли 1v1: список, создание, join/cancel -->
-  <script src="/js/duels-lobby.js?v=6"></script>
+  <script src="/js/duels-lobby.js?v=7"></script>
 
 
   <script>
@@ -508,6 +590,26 @@
         const h = norm(location.hash || '#stakes');
         topLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
         sideLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
+
+        // секции (внутри карточки дуэлей)
+        const sStakes = document.getElementById('sec-stakes');
+        const sLive = document.getElementById('sec-live');
+        const sArchive = document.getElementById('sec-archive');
+        if (sStakes && sLive && sArchive){
+          if (h === '#archive'){
+            sStakes.style.display = 'none';
+            sLive.style.display = 'none';
+            sArchive.style.display = '';
+          } else if (h === '#live'){
+            sStakes.style.display = 'none';
+            sLive.style.display = '';
+            sArchive.style.display = 'none';
+          } else { // #stakes
+            sStakes.style.display = '';
+            sLive.style.display = '';
+            sArchive.style.display = 'none';
+          }
+        }
       }
       window.addEventListener('hashchange', update);
       update();
