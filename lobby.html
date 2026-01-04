@@ -52,8 +52,27 @@
 
 .hdr-nav{
   display:flex; align-items:center; justify-content:center;
-  gap:8px; flex:1;
+  gap:10px; flex:1;
   min-width:180px;
+}
+.hdr-nav-group{
+  display:flex; align-items:center; gap:6px;
+  padding:6px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(18,22,33,.28);
+}
+.hdr-nav-label{
+  font-size:10px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  padding:0 6px 0 4px;
+  font-weight:900;
+}
+.hdr-nav-group a{
+  border:1px solid transparent;
+  background:transparent;
 }
 .hdr-nav a{
   display:inline-flex; align-items:center; justify-content:center;
@@ -169,7 +188,10 @@
 
     .side-card{ padding:14px; }
     .side-title{ font-weight:900; margin:0 0 10px; font-size:14px; letter-spacing:.2px; color:var(--text); }
-    .side-nav{ display:flex; flex-direction:column; gap:8px; }
+    .side-nav{ display:flex; flex-direction:column; gap:14px; }
+    .side-group{ display:flex; flex-direction:column; gap:8px; }
+    .side-label{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:900; margin:0 10px; }
+
     .side-link{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
       padding:10px 12px;
@@ -431,11 +453,16 @@
   </div>
 
   <nav class="hdr-nav" aria-label="Навигация">
-    <a href="#stakes" class="is-active">Ставки</a>
-    <a href="#live">Live</a>
-    <a href="#archive">Архив</a>
-  <span class="hdr-sep" aria-hidden="true"></span>
-    <a href="#lottery">Розыгрыши</a>
+    <div class="hdr-nav-group" data-group="duels">
+      <span class="hdr-nav-label">Дуэли</span>
+      <a href="#stakes" class="is-active">Ставки</a>
+      <a href="#live">Live</a>
+      <a href="#archive">Архив</a>
+    </div>
+    <div class="hdr-nav-group" data-group="lottery">
+      <span class="hdr-nav-label">Розыгрыши</span>
+      <a href="#lottery">Розыгрыши</a>
+    </div>
   </nav>
 
   <div class="hdr-right">
@@ -465,10 +492,17 @@
         <div class="card side-card">
           <h3 class="side-title">Навигация</h3>
           <nav class="side-nav">
-            <a class="side-link" href="#stakes">Ставки <span>создать</span></a>
-            <a class="side-link" href="#live">Live <span>комнаты</span></a>
-            <a class="side-link" href="#archive">Архив <span>история</span></a>
-          <a class="side-link" href="#lottery">Розыгрыши <span>призы</span></a>
+            <div class="side-group">
+              <div class="side-label">Дуэли</div>
+              <a class="side-link" href="#stakes">Ставки <span>создать</span></a>
+              <a class="side-link" href="#live">Live <span>комнаты</span></a>
+              <a class="side-link" href="#archive">Архив <span>история</span></a>
+            </div>
+
+            <div class="side-group">
+              <div class="side-label">Розыгрыши</div>
+              <a class="side-link" href="#lottery">Розыгрыши <span>призы</span></a>
+            </div>
           </nav>
         </div>
 
@@ -483,6 +517,9 @@
 
       <main class="main" aria-label="Основной контент">
         <div class="grid">
+
+      <div id="hub-duels">
+
 
       <div class="card">
         <p style="margin:0">Добро пожаловать в лобби.</p>
@@ -560,6 +597,10 @@
       </div>
 
 
+
+      </div>
+
+      <div id="hub-lottery" style="display:none">
 <div class="card" id="lottery-card" style="margin-top:14px">
   <div id="lottery" class="duels-head">
     <h2 style="margin:0">Розыгрыши</h2>
@@ -597,6 +638,8 @@
     </div>
   </div>
 </div>
+      </div>
+
 
         </div>
       </main>
@@ -732,16 +775,29 @@
 
 
   <script>
-    // Подсветка активной вкладки (topbar + sidebar) по hash
+    <script>
+    // Подсветка активной вкладки (topbar + sidebar) по hash + переключение разделов
     (function(){
       const topLinks = Array.from(document.querySelectorAll('.hdr-nav a'));
       const sideLinks = Array.from(document.querySelectorAll('.side-nav a'));
+      const hubDuels = document.getElementById('hub-duels');
+      const hubLottery = document.getElementById('hub-lottery');
+
       function norm(h){ return (h && h.startsWith('#')) ? h : '#stakes'; }
+
       function update(){
         const h = norm(location.hash || '#stakes');
+
+        // активные пункты меню
         topLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
         sideLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
+
+        // разделы: Дуэли vs Розыгрыши
+        const isLottery = (h === '#lottery');
+        if (hubDuels) hubDuels.style.display = isLottery ? 'none' : '';
+        if (hubLottery) hubLottery.style.display = isLottery ? '' : 'none';
       }
+
       window.addEventListener('hashchange', update);
       update();
     })();
