@@ -67,6 +67,23 @@
   white-space:nowrap;
 }
 .hdr-nav a:hover{ filter:brightness(1.08); }
+
+.hdr-sep{
+  width:1px; height:22px;
+  background:var(--border);
+  border-radius:1px;
+  opacity:.9;
+  margin:0 4px;
+}
+.lotteries{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:10px;
+  margin-top:12px;
+}
+@media (max-width: 980px){ .lotteries{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+@media (max-width: 560px){ .lotteries{ grid-template-columns:repeat(1, minmax(0,1fr)); } }
+.lottery-card[aria-disabled="true"]{ cursor:default; }
 .hdr-nav a.is-active{
   color:var(--text);
   border-color:rgba(45,212,191,.35);
@@ -417,6 +434,8 @@
     <a href="#stakes" class="is-active">Ставки</a>
     <a href="#live">Live</a>
     <a href="#archive">Архив</a>
+  <span class="hdr-sep" aria-hidden="true"></span>
+    <a href="#lottery">Розыгрыши</a>
   </nav>
 
   <div class="hdr-right">
@@ -449,6 +468,7 @@
             <a class="side-link" href="#stakes">Ставки <span>создать</span></a>
             <a class="side-link" href="#live">Live <span>комнаты</span></a>
             <a class="side-link" href="#archive">Архив <span>история</span></a>
+          <a class="side-link" href="#lottery">Розыгрыши <span>призы</span></a>
           </nav>
         </div>
 
@@ -539,6 +559,45 @@
 </div>
       </div>
 
+
+<div class="card" id="lottery-card" style="margin-top:14px">
+  <div id="lottery" class="duels-head">
+    <h2 style="margin:0">Розыгрыши</h2>
+    <div class="right">
+      <span class="pill" style="background:rgba(18,22,33,.55); border:1px solid var(--border); color:var(--muted); font-weight:800;">
+        Скоро
+      </span>
+    </div>
+  </div>
+
+  <div class="muted" style="font-size:13px; margin-top:8px">
+    Розыгрыши — отдельный раздел GGRoom (айфон/авто/кеш и т.д.). Сейчас готовим UI и механику билетов.
+  </div>
+
+  <div class="lotteries">
+    <div class="stake-chip lottery-card" aria-disabled="true">
+      <div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">iPhone</span></div>
+      <div class="amt">iPhone 17 Pro</div>
+      <div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
+      <button class="btn ghost" type="button" disabled style="margin-top:10px; opacity:.6; cursor:not-allowed">Скоро</button>
+    </div>
+
+    <div class="stake-chip lottery-card" aria-disabled="true">
+      <div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">Авто</span></div>
+      <div class="amt">Largus</div>
+      <div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
+      <button class="btn ghost" type="button" disabled style="margin-top:10px; opacity:.6; cursor:not-allowed">Скоро</button>
+    </div>
+
+    <div class="stake-chip lottery-card" aria-disabled="true">
+      <div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">Cash</span></div>
+      <div class="amt">Денежный приз</div>
+      <div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
+      <button class="btn ghost" type="button" disabled style="margin-top:10px; opacity:.6; cursor:not-allowed">Скоро</button>
+    </div>
+  </div>
+</div>
+
         </div>
       </main>
 
@@ -599,8 +658,7 @@
         <button type="button" class="is-active" data-mode="duel_1v1_public">1v1</button>
         <button type="button" data-mode="duel_invite">Invite <span class="badge-soon" style="margin-left:6px">soon</span></button>
         <button type="button" data-mode="duel_multi">3/6/10 <span class="badge-soon" style="margin-left:6px">soon</span></button>
-        <button type="button" data-mode="lottery">Лотерея <span class="badge-soon" style="margin-left:6px">soon</span></button>
-      </div>
+</div>
 
       <div class="mode-pane is-active" data-pane="duel_1v1_public">
         <div style="font-weight:900; margin-top:2px;">Публичная дуэль 1v1</div>
@@ -635,20 +693,6 @@
         </div>
       </div>
 
-      <div class="mode-pane" data-pane="lottery">
-        <div style="font-weight:900; margin-top:2px;">Лотереи / розыгрыши</div>
-        <div class="muted" style="font-size:13px; margin-top:6px;">
-          Розыгрыш призов (айфон, авто, кеш и т.д.). Позже подключим отдельный раздел и карточку розыгрыша.
-        </div>
-        <div class="field">
-          <label for="lottery-prize">Приз (текстом)</label>
-          <input id="lottery-prize" type="text" placeholder="например: iPhone 17 Pro">
-        </div>
-        <div class="field">
-          <label for="lottery-ticket">Цена билета (₽)</label>
-          <input id="lottery-ticket" type="number" min="1" step="1" placeholder="например: 100">
-        </div>
-      </div>
     </div>
 
     <div class="modal-foot">
@@ -725,8 +769,6 @@
 
       const inviteInput = $('#invite-user-id');
       const multiSize = $('#multi-size');
-      const lotPrize = $('#lottery-prize');
-      const lotTicket = $('#lottery-ticket');
 
       const LS_KEY = 'ggroom_create_mode_v1';
 
@@ -749,7 +791,11 @@
       function getMode(){
         try{
           const raw = localStorage.getItem(LS_KEY);
-          if(raw) return JSON.parse(raw);
+          if(raw){
+            const m = JSON.parse(raw);
+            if(m && m.type === 'lottery') return { type:'duel_1v1_public' };
+            return m;
+          }
         }catch(e){}
         return { type:'duel_1v1_public' };
       }
@@ -770,8 +816,7 @@
           duel_1v1_public: { tag:'1v1', text:'Публичная дуэль' },
           duel_invite: { tag:'INV', text:`Приглашение${m.invite_user_id ? `: #${m.invite_user_id}` : ''}` },
           duel_multi: { tag:'MULTI', text:`Комната на ${m.seats || 3}` },
-          lottery: { tag:'LOT', text:`Лотерея${m.lottery_prize ? `: ${m.lottery_prize}` : ''}` },
-        };
+};
         const x = map[m.type] || map.duel_1v1_public;
         pillMode.innerHTML = `<span class="tag">${x.tag}</span> ${x.text}`;
         setActiveMode(m.type);
@@ -817,12 +862,6 @@
         if(type === 'duel_multi'){
           const seats = parseInt(multiSize.value || '3', 10);
           m.seats = Number.isFinite(seats) ? seats : 3;
-        }
-        if(type === 'lottery'){
-          const prize = (lotPrize.value || '').trim();
-          if(prize) m.lottery_prize = prize;
-          const ticket = parseInt(lotTicket.value || '', 10);
-          if(Number.isFinite(ticket) && ticket > 0) m.lottery_ticket = ticket;
         }
         return m;
       }
