@@ -101,8 +101,37 @@
   }
 
   var myUserId = null;
+  var myLinked = null;
   var lastMyOpenIds = {}; // map id->true
   var pollTimer = null;
+
+  function setKpi(id, val){
+    var el = byId(id);
+    if (!el) return;
+    if (val === null || val === undefined || val === '') el.textContent = '—';
+    else el.textContent = String(val);
+  }
+
+  function updateLinksKpi(){
+    if (!myLinked){
+      setKpi('kpi-links', '—');
+      return;
+    }
+    var parts = [];
+    if (myLinked.vk) parts.push('VK');
+    if (myLinked.tg) parts.push('TG');
+    setKpi('kpi-links', parts.length ? parts.join('+') : '—');
+  }
+
+  function setSelectedStake(v){
+    var pills = document.querySelectorAll('[data-stake]');
+    for (var i=0;i<pills.length;i++){
+      var s = pills[i].getAttribute('data-stake');
+      if (String(s) === String(v)) pills[i].classList.add('is-selected');
+      else pills[i].classList.remove('is-selected');
+    }
+  }
+
 
   function setPollEnabled(enabled){
     if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
@@ -235,9 +264,41 @@
       var cName = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
       var oName = fullName(it.opponent_first_name, it.opponent_last_name, it.opponent_user_id || '—');
 
+      // аватары + заголовок как "строка" (ближе к покеру/лобби)
+      var avatars = document.createElement('div');
+      avatars.className = 'history-avatars';
+      avatars.appendChild(makeAvatarImg(it.creator_avatar, cName));
+      avatars.appendChild(makeAvatarImg(it.opponent_avatar, oName));
+
+      var info = document.createElement('div');
+      info.className = 'history-info';
+
+      var titleRow = document.createElement('div');
+      titleRow.className = 'history-title-row';
+
       var title = document.createElement('div');
       title.className = 'duel-title';
       title.textContent = fmtRub(it.stake||0) + ' · ' + cName + ' vs ' + oName;
+
+      // outcome-плашка (если это "моя" дуэль)
+      var pillText = '';
+      var pillClass = '';
+      try{
+        var st = String(it.status||'');
+        if (st === 'finished' && it.winner_user_id && myUserId &&
+            (Number(it.creator_user_id)===Number(myUserId) || Number(it.opponent_user_id)===Number(myUserId))){
+          if (Number(it.winner_user_id) === Number(myUserId)){ pillText = 'победа'; pillClass = 'win'; }
+          else { pillText = 'поражение'; pillClass = 'lose'; }
+        } else if (st === 'cancelled'){ pillText = 'отмена'; pillClass = 'lose'; }
+      }catch(_){}
+
+      titleRow.appendChild(title);
+      if (pillText){
+        var pill = document.createElement('span');
+        pill.className = 'pill ' + pillClass;
+        pill.textContent = pillText;
+        titleRow.appendChild(pill);
+      }
 
       var sub = document.createElement('div');
       sub.className = 'duel-sub';
@@ -265,16 +326,15 @@
       }
       sub.textContent = (it.status||'') + (tstr?(' · '+tstr):'') + w;
 
-      var r1 = document.createElement('div');
-      r1.className = 'duel-title';
-      r1.textContent = 'pot ' + fmtRub(pot||0);
+      info.appendChild(titleRow);
+      info.appendChild(sub);
 
-      var r2 = document.createElement('div');
-      r2.className = 'duel-sub';
-      r2.textContent = 'fee ' + fmtRub(fee||0);
+      var top = document.createElement('div');
+      top.className = 'history-top';
+      top.appendChild(avatars);
+      top.appendChild(info);
 
-      left.appendChild(title);
-      left.appendChild(sub);
+      left.appendChild(top);
 
       right.appendChild(r1);
       right.appendChild(r2);
@@ -293,10 +353,22 @@ async function loadOpen(){
     var res = await apiJson(q);
     if (!res.r.ok || !res.j || !res.j.ok){
       renderOpen([]);
+      try{ setKpi('kpi-open', 0); setKpi('kpi-myopen', 0); }catch(_){ }
       return [];
     }
     var items = res.j.items || [];
     renderOpen(items);
+
+    // KPI: сколько комнат открыто и сколько из них мои
+    try{
+      setKpi('kpi-open', items.length);
+      var myOpen = 0;
+      if (myUserId){
+        for (var i=0;i<items.length;i++) if (Number(items[i].creator_user_id) === Number(myUserId)) myOpen++;
+      }
+      setKpi('kpi-myopen', myOpen);
+    }catch(_){ }
+
     return items;
   }
 
@@ -307,9 +379,12 @@ async function loadOpen(){
     var res = await apiJson('/api/duels/history?limit=10');
     if (!res.r.ok || !res.j || !res.j.ok){
       renderHistory([]);
+      try{ setKpi('kpi-history', 0); }catch(_){ }
       return;
     }
-    renderHistory(res.j.items || []);
+    var items = res.j.items || [];
+    renderHistory(items);
+    try{ setKpi('kpi-history', items.length); }catch(_){ }
   }
 
   async function refreshBalance(){
@@ -461,8 +536,14 @@ async function loadOpen(){
     for (var i=0;i<pills.length;i++){
       pills[i].onclick = function(){
         if (!stakeInput) return;
-        stakeInput.value = this.getAttribute('data-stake');
+        var v = this.getAttribute('data-stake');
+        stakeInput.value = v;
+        setSelectedStake(v);
       };
+    }
+    if (stakeInput){
+      stakeInput.addEventListener('input', function(){ setSelectedStake(this.value); });
+      setSelectedStake(stakeInput.value || '100');
     }
 
     // refresh button
@@ -490,6 +571,8 @@ async function loadOpen(){
       var me = await apiJson('/api/me');
       if (me.r.ok && me.j && me.j.ok && me.j.user){
         myUserId = Number(me.j.user.id || me.j.user.user_id || 0) || null;
+        myLinked = (me.j.user.linked) ? me.j.user.linked : null;
+        updateLinksKpi();
 
         // шапка
         var nm = fullName(me.j.user.first_name, me.j.user.last_name, myUserId||'');

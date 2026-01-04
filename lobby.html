@@ -206,8 +206,26 @@
     .btn.danger{ border-color:rgba(255,59,59,.35); color:#ffb3b3; }
 
     .duels-create{ border-top:1px dashed var(--border); margin-top:12px; padding-top:12px; }
-    .stakes{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 10px; }
-    .stake-chip{ padding:7px 10px; border-radius:999px; border:1px solid var(--border); background:#121621; color:#e8eaf0; cursor:pointer; font-weight:700; }
+    .stakes{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
+@media (max-width: 980px){ .stakes{ grid-template-columns:repeat(3, minmax(0,1fr)); } }
+@media (max-width: 560px){ .stakes{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
+
+.stake-chip{
+  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  padding:12px 12px;
+  border-radius:14px; border:1px solid var(--border);
+  background:rgba(18,22,33,.55);
+  color:var(--text); cursor:pointer;
+  text-align:left;
+  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.stake-chip:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+.stake-chip .amt{ font-weight:900; font-size:16px; letter-spacing:.2px; }
+.stake-chip .meta{ font-size:12px; color:var(--muted); line-height:1.15; }
+.stake-chip.is-selected{
+  border-color: rgba(244,216,138,.55);
+  box-shadow: 0 0 0 3px rgba(244,216,138,.12) inset, 0 12px 22px rgba(0,0,0,.22);
+}
     .stake-chip:hover{ filter:brightness(1.06); }
 
     .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
@@ -254,6 +272,12 @@
 .history-item{ cursor:pointer; padding:10px 12px; border-radius:14px; border:1px solid var(--border); background:#0c1018; display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .history-left{ display:flex; flex-direction:column; gap:2px; }
 .history-right{ text-align:right; display:flex; flex-direction:column; gap:2px; }
+.history-top{ display:flex; align-items:center; gap:10px; min-width:0; }
+.history-avatars{ display:flex; gap:8px; align-items:center; flex:0 0 auto; }
+.history-avatars img{ width:28px; height:28px; border-radius:10px; object-fit:cover; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); }
+.history-info{ min-width:0; }
+.history-title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.history-title-row .duel-title{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pill{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px; color:var(--muted); }
 .pill.win{ color:#4ed1a9; border-color:rgba(78,209,169,.35); }
 .pill.lose{ color:#ff6b6b; border-color:rgba(255,107,107,.35); }
@@ -362,11 +386,27 @@
           </div>
 
           <div class="stakes" aria-label="Быстрые ставки">
-            <button class="stake-chip" data-stake="100" type="button">₽100</button>
-            <button class="stake-chip" data-stake="250" type="button">₽250</button>
-            <button class="stake-chip" data-stake="500" type="button">₽500</button>
-            <button class="stake-chip" data-stake="1000" type="button">₽1 000</button>
-            <button class="stake-chip" data-stake="2500" type="button">₽2 500</button>
+
+            <button class="stake-chip is-selected" data-stake="100" type="button">
+              <div class="amt">₽100</div>
+              <div class="meta">pot ₽200 • fee ~₽10</div>
+            </button>
+            <button class="stake-chip" data-stake="250" type="button">
+              <div class="amt">₽250</div>
+              <div class="meta">pot ₽500 • fee ~₽25</div>
+            </button>
+            <button class="stake-chip" data-stake="500" type="button">
+              <div class="amt">₽500</div>
+              <div class="meta">pot ₽1 000 • fee ~₽50</div>
+            </button>
+            <button class="stake-chip" data-stake="1000" type="button">
+              <div class="amt">₽1 000</div>
+              <div class="meta">pot ₽2 000 • fee ~₽100</div>
+            </button>
+            <button class="stake-chip" data-stake="2500" type="button">
+              <div class="amt">₽2 500</div>
+              <div class="meta">pot ₽5 000 • fee ~₽250</div>
+            </button>
           </div>
 
           <div class="row">
@@ -405,10 +445,14 @@
 
         <div class="card" style="margin-top:14px">
           <h3>Статус</h3>
-          <div class="small">Пока без лишних цифр. Позже сюда добавим онлайн / активные дуэли / частоту игр.</div>
-          <div class="kpi" aria-hidden="true">
-            <div class="k"><div class="t">Онлайн</div><div class="v">—</div></div>
-            <div class="k"><div class="t">Live</div><div class="v">—</div></div>
+
+          <div class="small">Коротко о лобби прямо сейчас — чтобы не гадать, живо ли оно.</div>
+
+          <div class="kpi">
+            <div class="k"><div class="t">Открытых</div><div class="v" id="kpi-open">—</div></div>
+            <div class="k"><div class="t">Моих open</div><div class="v" id="kpi-myopen">—</div></div>
+            <div class="k"><div class="t">Архив</div><div class="v" id="kpi-history">—</div></div>
+            <div class="k"><div class="t">Связи</div><div class="v" id="kpi-links">—</div></div>
           </div>
         </div>
       </aside>
