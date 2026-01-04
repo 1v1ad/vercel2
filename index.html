@@ -98,10 +98,7 @@
           <div class="badge">Ethereum</div>
           <div class="badge">Solana</div>
         </div>
-        <div class="card-media">
-          <img class="fade-sides" src="assets/Bitcoin2.webp?v=2025-10-25_20-30-59" alt="Bitcoin" loading="lazy" decoding="async" style="display:block;width:100%;height:auto;object-fit:contain" />
-        </div>
-      </div>
+</div>
     </section>
   </main>
 
@@ -221,8 +218,6 @@
             s.textContent = 'Авторизация';
             const badges = document.querySelector('.badges');
             if (badges) badges.innerHTML = '<div class="badge">Bitcoin</div><div class="badge">Ethereum</div><div class="badge">Solana</div>';
-            const img = document.querySelector('.card-media img');
-            if (img) { img.src = 'assets/Bitcoin2.webp?v=mask-final'; img.classList.add('fade-sides'); }
           }
         } catch(e){}
       }
