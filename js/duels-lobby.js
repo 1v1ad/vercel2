@@ -343,6 +343,11 @@
 
       left.appendChild(top);
 
+      var r1 = document.createElement('div');
+      r1.textContent = 'pot ' + String(pot||0);
+      var r2 = document.createElement('div');
+      r2.textContent = 'fee ' + String(fee||0);
+
       right.appendChild(r1);
       right.appendChild(r2);
 
