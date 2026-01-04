@@ -18,59 +18,117 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
   <link rel="manifest" href="/assets/site.webmanifest">
 
+  <!-- UI tokens (единая палитра/радиусы/тени) -->
+  <link rel="stylesheet" href="/css/ui-tokens.css">
+
   <style>
-    :root{ --bg:#0b0d12; --card:#0f1219; --text:#e8eaf0; --muted:#98a2b3; --gold:#f4d88a; --border:rgba(255,255,255,.08); }
     *{box-sizing:border-box}
-    body{ margin:0; background:#0b0d12; color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+    body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
 
-    .hdr{
-      display:grid; grid-template-columns:auto 1fr auto; grid-template-areas:
-      "back brand cta" "user user user";
-      align-items:center; gap:12px; padding:14px 16px;
-      border-bottom:1px solid var(--border);
-      background:linear-gradient(180deg,#0f131b,#0b0d12);
-    }
-    .hdr .btn{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 12px; border-radius:10px;
-      border:1px solid var(--border);
-      background:#121621; color:#e8eaf0; text-decoration:none; white-space:nowrap;
-      cursor:pointer;
-    }
-    .hdr-back{ grid-area:back; }
-    .hdr-cta{ grid-area:cta; }
-    .hdr .brand{ grid-area:brand; font-weight:800; color:var(--gold); text-align:center; }
-    .hdr .brand .gg{ background:linear-gradient(90deg,#ff3b3b,#23d160); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    /* =========================
+   TopBar (покерный стиль)
+   ========================= */
+.hdr{
+  position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px;
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(15,19,27,.96), rgba(11,13,18,.96));
+  backdrop-filter: blur(10px);
+}
+.hdr-left{ display:flex; align-items:center; gap:12px; min-width:0; }
+.hdr-brand{
+  display:flex; align-items:baseline; gap:8px;
+  font-weight:900; letter-spacing:.3px;
+  white-space:nowrap;
+}
+.hdr-brand .gg{
+  background:linear-gradient(90deg,#ff3b3b,#2dd4bf);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hdr-brand .room{ color:var(--text); opacity:.92; }
+.hdr-title{ color:var(--muted); font-weight:700; white-space:nowrap; }
 
-    .hdr-user{ grid-area:user; display:flex; align-items:center; gap:10px; min-height:44px; }
-    .hdr-user img{ width:40px; height:40px; border-radius:50%; object-fit:cover; background:#222; }
+.hdr-nav{
+  display:flex; align-items:center; justify-content:center;
+  gap:8px; flex:1;
+  min-width:180px;
+}
+.hdr-nav a{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  color:var(--muted);
+  text-decoration:none;
+  background:rgba(18,22,33,.55);
+  font-weight:700;
+  white-space:nowrap;
+}
+.hdr-nav a:hover{ filter:brightness(1.08); }
+.hdr-nav a.is-active{
+  color:var(--text);
+  border-color:rgba(45,212,191,.35);
+  background:rgba(45,212,191,.10);
+}
 
-    .hdr-user-name{
-      display:flex;
-      align-items:center;
-      gap:6px;
-      font-weight:700;
-    }
-    .hdr-user-name .flag{
-      font-size:18px;
-      line-height:1;
-    }
+.hdr-right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
 
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px;
-      background:#121621; border:1px solid var(--border);
-      color:#e8eaf0; font-weight:700
-    }
+/* Base UI */
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#121621;
+  color:var(--text);
+  text-decoration:none;
+  white-space:nowrap;
+  cursor:pointer;
+  user-select:none;
+}
+.btn:hover{ filter:brightness(1.06); }
+.btn.primary{
+  background:linear-gradient(180deg,#1b2234,#121621);
+  border-color:rgba(244,216,138,.35);
+  color:var(--gold);
+}
+.btn.ghost{
+  background:rgba(18,22,33,.55);
+}
 
-    @media (max-width:480px){
-      .hdr{ gap:10px; padding:12px }
-      .hdr .brand{ font-size:clamp(16px,5vw,18px) }
-      .hdr .btn{ padding:6px 10px; font-size:14px }
-      .hdr-user img{ width:36px; height:36px }
-      .pill{ padding:6px 10px; font-size:14px }
-    }
-    @media (max-width:360px){ .hdr .btn .label{ display:none } }
+.pill{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:rgba(18,22,33,.55);
+  color:var(--text);
+  font-weight:800;
+}
+.hdr-user{
+  display:flex; align-items:center; gap:10px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:rgba(18,22,33,.55);
+  min-width:0;
+}
+.hdr-user img{ width:34px; height:34px; border-radius:50%; object-fit:cover; background:#222; }
+.hdr-user .name{ display:flex; flex-direction:column; min-width:0; }
+.hdr-user .name strong{ font-size:13px; line-height:1.1; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.hdr-user .name span{ font-size:12px; color:var(--muted); line-height:1.1; }
+
+@media (max-width: 980px){
+  .hdr{ flex-wrap:wrap; }
+  .hdr-nav{ order:3; width:100%; justify-content:flex-start; }
+  .hdr-right{ width:100%; justify-content:space-between; }
+  .hdr-user .name strong{ max-width:160px; }
+}
+@media (max-width: 420px){
+  .hdr-title{ display:none; }
+}
 
     .wrap{ max-width:980px; margin:0 auto; padding:20px 16px }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px }
@@ -162,27 +220,43 @@
 </head>
 <body>
   <header class="hdr">
-    <a class="btn hdr-back" href="/index.html"><span aria-hidden="true">←</span> <span class="label">На главную</span></a>
-    <div class="brand"><span class="gg">GG</span> ROOM — Лобби</div>
-
-    <a class="btn hdr-cta" href="#" id="topup-btn" title="Пополнить баланс">
-      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 7h-2V6a2 2 0 0 0-2-2H6a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Zm-4-1v1H6a1 1 0 0 1 0-2h8a1 1 0 0 1 1 1Zm4 11H6a1 1 0 0 1-1-1V9h15v8a1 1 0 0 1-1 1Zm-3-6.5a1.5 1.5 0 1 0 0 3h2v-3h-2Z"/></svg>
-      <span class="label">Пополнить</span>
+  <div class="hdr-left">
+    <a class="btn hdr-back" href="/index.html" title="На главную">
+      <span aria-hidden="true">←</span>
+      <span class="label">На главную</span>
     </a>
 
-    <div class="hdr-user">
-      <img id="user-avatar" src="" alt="Аватар" />
-      <div id="user-name" class="hdr-user-name">
-        <span id="user-flag" class="flag" aria-hidden="true"></span>
-        <span id="user-name-text">Гость</span>
-      </div>
-      <span id="user-balance" class="pill">₿ <span class="balance-amount" data-balance>0</span></span>
-
-      <!-- единственные живые кнопки линковки -->
-      <button id="link-tg" class="btn" style="display:none">Связать Telegram</button>
-      <button id="link-vk" class="btn" style="display:none">Связать ВКонтакте</button>
+    <div class="hdr-brand" aria-label="GGROOM">
+      <span class="gg">GG</span><span class="room">ROOM</span>
     </div>
-  </header>
+    <div class="hdr-title">Лобби</div>
+  </div>
+
+  <nav class="hdr-nav" aria-label="Навигация">
+    <a href="#stakes" class="is-active">Ставки</a>
+    <a href="#live">Live</a>
+    <a href="#archive">Архив</a>
+  </nav>
+
+  <div class="hdr-right">
+    <span class="pill" id="user-balance">
+      ₿ <span class="balance-amount" data-balance="">0</span>
+    </span>
+
+    <a class="btn primary" href="#" id="topup-btn" title="Пополнить баланс">Пополнить</a>
+
+    <button class="btn ghost" id="link-tg" style="display:none" type="button">Связать Telegram</button>
+    <button class="btn ghost" id="link-vk" style="display:none" type="button">Связать ВКонтакте</button>
+
+    <div class="hdr-user">
+      <img id="user-avatar" alt="avatar" referrerpolicy="no-referrer" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' rx='40' fill='%23222'/%3E%3Ctext x='40' y='48' text-anchor='middle' font-size='28' fill='%23aaa' font-family='Arial'%3EGG%3C/text%3E%3C/svg%3E">
+      <div class="name">
+        <strong id="user-name-text">Гость</strong>
+        <span>Профиль</span>
+      </div>
+    </div>
+  </div>
+</header>
 
   <div class="wrap">
     <div class="grid">
@@ -192,7 +266,7 @@
       </div>
 
       <div class="card" id="duels-card">
-        <div class="duels-head">
+        <div id="stakes" class="duels-head">
           <h2 style="margin:0">Дуэли 1v1</h2>
           <div class="right">
             <button class="btn" id="duels-refresh" type="button">Обновить</button>
@@ -219,11 +293,13 @@
           <div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
         </div>
 
-        <div class="duels-list" id="duels-list">
+        <div id="live"></div>
+   <div class="duels-list" id="duels-list">
   <div class="muted">Загружаю комнаты…</div>
 </div>
 
-<div class="section-title">
+<div id="archive"></div>
+   <div class="section-title">
   <div class="h3">История</div>
   <div class="muted">последние игры</div>
 </div>
