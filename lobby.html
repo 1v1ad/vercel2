@@ -70,6 +70,8 @@
   padding:0 6px 0 4px;
   font-weight:900;
 }
+.hdr-nav-label.is-click, .side-label.is-click{cursor:pointer;}
+.hdr-nav-label.is-click:hover, .side-label.is-click:hover{color:var(--text);}
 .hdr-nav-group a{
   border:1px solid transparent;
   background:transparent;
@@ -460,7 +462,7 @@
       <a href="#archive">Архив</a>
     </div>
     <div class="hdr-nav-group" data-group="lottery">
-      <span class="hdr-nav-label">Розыгрыши</span>
+      <span class="hdr-nav-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</span>
       <a href="#lottery">Розыгрыши</a>
     </div>
   </nav>
@@ -500,7 +502,7 @@
             </div>
 
             <div class="side-group">
-              <div class="side-label">Розыгрыши</div>
+              <div class="side-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</div>
               <a class="side-link" href="#lottery">Розыгрыши <span>призы</span></a>
             </div>
           </nav>
@@ -645,7 +647,7 @@
       </main>
 
       <aside class="rail" aria-label="Правая панель">
-        <div class="card">
+        <div class="card" id="rail-duels-pf">
           <h3>Provably fair</h3>
           <div class="small">
             Каждая дуэль имеет проверяемую «монетку»: commit → reveal → вычисление winner.
@@ -653,16 +655,33 @@
           </div>
         </div>
 
-        <div class="card" style="margin-top:14px">
-          <h3>Статус</h3>
+        <div class="card" id="rail-lottery-pf" style="display:none">
+          <h3>Честность розыгрышей</h3>
+          <div class="small">
+            Розыгрыши будут отдельным режимом: прозрачные правила, публичные результаты,
+            и проверяемый механизм выбора победителя (по аналогии с provably fair).
+          </div>
+        </div>
 
+        <div class="card" id="rail-duels-status" style="margin-top:14px">
+          <h3>Статус дуэлей</h3>
           <div class="small">Коротко о лобби прямо сейчас — чтобы не гадать, живо ли оно.</div>
-
           <div class="kpi">
             <div class="k"><div class="t">Открытых</div><div class="v" id="kpi-open">—</div></div>
             <div class="k"><div class="t">Моих open</div><div class="v" id="kpi-myopen">—</div></div>
             <div class="k"><div class="t">Архив</div><div class="v" id="kpi-history">—</div></div>
             <div class="k"><div class="t">Связи</div><div class="v" id="kpi-links">—</div></div>
+          </div>
+        </div>
+
+        <div class="card" id="rail-lottery-status" style="margin-top:14px; display:none">
+          <h3>Статус розыгрышей</h3>
+          <div class="small">Здесь появятся активные розыгрыши и прогресс по билетам.</div>
+          <div class="kpi">
+            <div class="k"><div class="t">Активных</div><div class="v" id="kpi-lot-active">Скоро</div></div>
+            <div class="k"><div class="t">Ближайший</div><div class="v" id="kpi-lot-next">Скоро</div></div>
+            <div class="k"><div class="t">Мои билеты</div><div class="v" id="kpi-lot-mine">—</div></div>
+            <div class="k"><div class="t">Призы</div><div class="v" id="kpi-lot-prizes">iPhone · авто · cash</div></div>
           </div>
         </div>
       </aside>
@@ -780,22 +799,51 @@
     (function(){
       const topLinks = Array.from(document.querySelectorAll('.hdr-nav a'));
       const sideLinks = Array.from(document.querySelectorAll('.side-nav a'));
+
       const hubDuels = document.getElementById('hub-duels');
       const hubLottery = document.getElementById('hub-lottery');
 
-      function norm(h){ return (h && h.startsWith('#')) ? h : '#stakes'; }
+      const railDuelsPF = document.getElementById('rail-duels-pf');
+      const railLotteryPF = document.getElementById('rail-lottery-pf');
+      const railDuelsStatus = document.getElementById('rail-duels-status');
+      const railLotteryStatus = document.getElementById('rail-lottery-status');
+
+      // Кликабельные заголовки-группы (чтобы по слову «Розыгрыши» тоже открывалось)
+      const labelLinks = Array.from(document.querySelectorAll('[data-hash].is-click'));
+      labelLinks.forEach(el=>{
+        el.addEventListener('click', ()=>{ location.hash = el.dataset.hash; });
+        el.addEventListener('keydown', (e)=>{
+          if(e.key === 'Enter' || e.key === ' '){
+            e.preventDefault();
+            location.hash = el.dataset.hash;
+          }
+        });
+      });
+
+      function norm(h){
+        if(!h) return '#stakes';
+        if(!h.startsWith('#')) return '#stakes';
+        return h;
+      }
 
       function update(){
-        const h = norm(location.hash || '#stakes');
+        const h = norm(location.hash);
 
         // активные пункты меню
         topLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
         sideLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
 
         // разделы: Дуэли vs Розыгрыши
-        const isLottery = (h === '#lottery');
+        const isLottery = (h === '#lottery' || h.startsWith('#lottery'));
+
         if (hubDuels) hubDuels.style.display = isLottery ? 'none' : '';
         if (hubLottery) hubLottery.style.display = isLottery ? '' : 'none';
+
+        // правая панель тоже меняется
+        if (railDuelsPF) railDuelsPF.style.display = isLottery ? 'none' : '';
+        if (railDuelsStatus) railDuelsStatus.style.display = isLottery ? 'none' : '';
+        if (railLotteryPF) railLotteryPF.style.display = isLottery ? '' : 'none';
+        if (railLotteryStatus) railLotteryStatus.style.display = isLottery ? '' : 'none';
       }
 
       window.addEventListener('hashchange', update);
