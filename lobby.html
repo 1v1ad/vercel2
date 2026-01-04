@@ -300,6 +300,103 @@
 .coin{ width:90px; height:90px; margin:10px auto 12px; border-radius:50%; border:2px solid rgba(255,215,0,.55); background:radial-gradient(circle at 30% 30%, rgba(255,215,0,.95), rgba(255,215,0,.25)); animation: coinFlip 1.05s linear infinite; }
 .coin-text{ font-size:15px; color:var(--muted); }
 @keyframes coinFlip{ 0%{ transform:rotateY(0deg) rotateX(0deg); } 50%{ transform:rotateY(180deg) rotateX(14deg); } 100%{ transform:rotateY(360deg) rotateX(0deg); } }
+
+/* ===== Step 1.5: режимы создания комнат ===== */
+.mode-line{
+  margin-top:10px;
+  display:flex; align-items:center; gap:8px;
+  flex-wrap:wrap;
+  font-size:13px;
+}
+.mode-pill{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(18,22,33,.55);
+  color:var(--text);
+  font-weight:800;
+}
+.mode-pill .tag{
+  font-weight:900;
+  font-size:11px;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(45,212,191,.35);
+  background:rgba(45,212,191,.10);
+  color:#8ff3df;
+}
+.mode-link{
+  color:var(--muted);
+  text-decoration:none;
+  border-bottom:1px dashed rgba(255,255,255,.18);
+}
+.mode-link:hover{ color:var(--text); }
+
+.split-btn{
+  display:inline-flex; gap:8px; align-items:center;
+}
+.btn.icon{
+  width:40px; justify-content:center; padding:8px 0;
+  border-radius:12px;
+}
+
+/* create-mode modal */
+.seg{
+  display:flex; gap:8px; flex-wrap:wrap;
+  margin:6px 0 14px;
+}
+.seg button{
+  padding:9px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:rgba(18,22,33,.55);
+  color:var(--muted);
+  font-weight:900;
+  cursor:pointer;
+}
+.seg button:hover{ filter:brightness(1.06); }
+.seg button.is-active{
+  color:var(--text);
+  border-color:rgba(244,216,138,.50);
+  box-shadow:0 0 0 3px rgba(244,216,138,.10) inset;
+}
+.mode-pane{ display:none; }
+.mode-pane.is-active{ display:block; }
+
+.field{
+  display:flex; flex-direction:column; gap:6px;
+  margin-top:10px;
+}
+.field label{ font-size:12px; color:var(--muted); font-weight:800; }
+.field input, .field select{
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#0b0f18;
+  color:var(--text);
+  outline:none;
+}
+.field input:focus, .field select:focus{ border-color:rgba(244,216,138,.45); }
+
+.modal-foot{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:14px 16px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.modal-foot .left{ color:var(--muted); font-size:12px; }
+.modal-foot .actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.badge-soon{
+  display:inline-flex; align-items:center;
+  padding:2px 8px;
+  border-radius:999px;
+  border:1px solid rgba(255,107,107,.35);
+  background:rgba(255,107,107,.08);
+  color:#ffb3b3;
+  font-weight:900;
+  font-size:11px;
+}
+
 </style>
 </head>
 <body>
@@ -409,11 +506,22 @@
             </button>
           </div>
 
-          <div class="row">
-            <input id="stake-input" inputmode="numeric" type="number" min="10" max="1000000" step="10" value="100" />
-            <button class="btn primary" id="duels-create" type="button">Создать комнату</button>
-          </div>
-          <div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
+          
+<div class="row">
+  <input id="stake-input" inputmode="numeric" type="number" min="10" max="1000000" step="10" value="100" />
+  <span class="split-btn">
+    <button class="btn primary" id="duels-create" type="button">Создать комнату</button>
+    <button class="btn ghost icon" id="create-mode-btn" type="button" title="Режим комнаты" aria-label="Режим комнаты">⚙</button>
+  </span>
+</div>
+
+<div class="mode-line" aria-label="Режим создания">
+  <span class="muted">Режим:</span>
+  <span class="mode-pill" id="create-mode-pill"><span class="tag">1v1</span> Публичная дуэль</span>
+  <a class="mode-link" href="#" id="create-mode-link">изменить</a>
+</div>
+
+<div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
         </div>
 
         <div id="live"></div>
@@ -474,6 +582,87 @@
   </div>
 </div>
 
+
+<!-- Создание комнаты (режимы) -->
+<div class="modal-backdrop" id="create-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Создать комнату</div>
+      <button class="modal-close" id="create-modal-close" type="button">Закрыть</button>
+    </div>
+    <div class="modal-body">
+      <div class="muted" style="font-size:13px; line-height:1.4">
+        Выбери формат. Сейчас полноценно работает только <b>публичная дуэль 1v1</b> — остальные режимы уже «на рельсах», но появятся чуть позже.
+      </div>
+
+      <div class="seg" role="tablist" aria-label="Режим комнаты">
+        <button type="button" class="is-active" data-mode="duel_1v1_public">1v1</button>
+        <button type="button" data-mode="duel_invite">Invite <span class="badge-soon" style="margin-left:6px">soon</span></button>
+        <button type="button" data-mode="duel_multi">3/6/10 <span class="badge-soon" style="margin-left:6px">soon</span></button>
+        <button type="button" data-mode="lottery">Лотерея <span class="badge-soon" style="margin-left:6px">soon</span></button>
+      </div>
+
+      <div class="mode-pane is-active" data-pane="duel_1v1_public">
+        <div style="font-weight:900; margin-top:2px;">Публичная дуэль 1v1</div>
+        <div class="muted" style="font-size:13px; margin-top:6px;">
+          Комната попадёт в Live. Победитель определяется coinflip. Детали будут в карточке дуэли.
+        </div>
+      </div>
+
+      <div class="mode-pane" data-pane="duel_invite">
+        <div style="font-weight:900; margin-top:2px;">Приглашение конкретного игрока</div>
+        <div class="muted" style="font-size:13px; margin-top:6px;">
+          Приватная комната: видна только вам двоим, по приглашению. Отлично для «вызова».
+        </div>
+        <div class="field">
+          <label for="invite-user-id">Кого приглашаем (user_id)</label>
+          <input id="invite-user-id" type="number" min="1" placeholder="например: 97">
+        </div>
+      </div>
+
+      <div class="mode-pane" data-pane="duel_multi">
+        <div style="font-weight:900; margin-top:2px;">Комнаты на несколько участников</div>
+        <div class="muted" style="font-size:13px; margin-top:6px;">
+          Формат «на компанию»: 3 / 6 / 10 человек. Механика будет похожа, но с иным распределением побед.
+        </div>
+        <div class="field">
+          <label for="multi-size">Количество участников</label>
+          <select id="multi-size">
+            <option value="3">3</option>
+            <option value="6">6</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mode-pane" data-pane="lottery">
+        <div style="font-weight:900; margin-top:2px;">Лотереи / розыгрыши</div>
+        <div class="muted" style="font-size:13px; margin-top:6px;">
+          Розыгрыш призов (айфон, авто, кеш и т.д.). Позже подключим отдельный раздел и карточку розыгрыша.
+        </div>
+        <div class="field">
+          <label for="lottery-prize">Приз (текстом)</label>
+          <input id="lottery-prize" type="text" placeholder="например: iPhone 17 Pro">
+        </div>
+        <div class="field">
+          <label for="lottery-ticket">Цена билета (₽)</label>
+          <input id="lottery-ticket" type="number" min="1" step="1" placeholder="например: 100">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <div class="left">Подготовительный UI-шаг: сохраняем выбор, но создаём пока только 1v1.</div>
+      <div class="actions">
+        <button class="btn" id="create-modal-cancel" type="button">Отмена</button>
+        <button class="btn primary" id="create-modal-save" type="button">Сохранить режим</button>
+        <button class="btn primary" id="create-modal-create" type="button">Создать сейчас</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <!-- Монетка (3–4 секунды) -->
 <div class="coin-overlay" id="coin-overlay">
   <div class="coin-card">
@@ -513,6 +702,171 @@
       update();
     })();
   </script>
+
+
+  <script>
+    // ===== Step 1.5: режимы комнат (UI-слой, без изменения логики 1v1) =====
+    (function(){
+      const $ = (s, r=document) => r.querySelector(s);
+
+      const btnCreate = $('#duels-create');
+      const btnMode = $('#create-mode-btn');
+      const linkMode = $('#create-mode-link');
+      const pillMode = $('#create-mode-pill');
+
+      const modal = $('#create-modal');
+      const closeBtn = $('#create-modal-close');
+      const cancelBtn = $('#create-modal-cancel');
+      const saveBtn = $('#create-modal-save');
+      const createNowBtn = $('#create-modal-create');
+
+      const segBtns = Array.from(modal.querySelectorAll('.seg button[data-mode]'));
+      const panes = Array.from(modal.querySelectorAll('.mode-pane[data-pane]'));
+
+      const inviteInput = $('#invite-user-id');
+      const multiSize = $('#multi-size');
+      const lotPrize = $('#lottery-prize');
+      const lotTicket = $('#lottery-ticket');
+
+      const LS_KEY = 'ggroom_create_mode_v1';
+
+      function toast(title, body){
+        // Если в проекте уже есть showToast — используем его.
+        if (typeof window.showToast === 'function') return window.showToast(title, body);
+
+        const t = $('#toast'); const tt = $('#toast-title'); const tb = $('#toast-body');
+        if(!t || !tt || !tb) return;
+        tt.textContent = title || '';
+        tb.textContent = body || '';
+        t.classList.add('show');
+        clearTimeout(window.__gg_toast_timer);
+        window.__gg_toast_timer = setTimeout(()=>t.classList.remove('show'), 3800);
+      }
+
+      function openModal(){ modal.style.display='flex'; }
+      function closeModal(){ modal.style.display='none'; }
+
+      function getMode(){
+        try{
+          const raw = localStorage.getItem(LS_KEY);
+          if(raw) return JSON.parse(raw);
+        }catch(e){}
+        return { type:'duel_1v1_public' };
+      }
+
+      function setMode(m){
+        try{ localStorage.setItem(LS_KEY, JSON.stringify(m)); }catch(e){}
+        renderMode();
+      }
+
+      function setActiveMode(type){
+        segBtns.forEach(b => b.classList.toggle('is-active', b.dataset.mode === type));
+        panes.forEach(p => p.classList.toggle('is-active', p.dataset.pane === type));
+      }
+
+      function renderMode(){
+        const m = getMode();
+        const map = {
+          duel_1v1_public: { tag:'1v1', text:'Публичная дуэль' },
+          duel_invite: { tag:'INV', text:`Приглашение${m.invite_user_id ? `: #${m.invite_user_id}` : ''}` },
+          duel_multi: { tag:'MULTI', text:`Комната на ${m.seats || 3}` },
+          lottery: { tag:'LOT', text:`Лотерея${m.lottery_prize ? `: ${m.lottery_prize}` : ''}` },
+        };
+        const x = map[m.type] || map.duel_1v1_public;
+        pillMode.innerHTML = `<span class="tag">${x.tag}</span> ${x.text}`;
+        setActiveMode(m.type);
+
+        // Если режим не 1v1 — меняем лейбл кнопки (но не лезем в расчёты/запросы)
+        if(m.type !== 'duel_1v1_public'){
+          btnCreate.classList.remove('primary');
+          btnCreate.classList.add('danger');
+          btnCreate.textContent = 'Создать (скоро)';
+        } else {
+          btnCreate.classList.remove('danger');
+          btnCreate.classList.add('primary');
+          btnCreate.textContent = 'Создать комнату';
+        }
+      }
+
+      // переключение табов в модалке
+      segBtns.forEach(b => b.addEventListener('click', ()=>{
+        const type = b.dataset.mode;
+        setActiveMode(type);
+      }));
+
+      // открыть модалку
+      function openFromUI(e){ e.preventDefault(); openModal(); }
+      btnMode.addEventListener('click', openFromUI);
+      linkMode.addEventListener('click', openFromUI);
+
+      // закрытие
+      closeBtn.addEventListener('click', closeModal);
+      cancelBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+      document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
+
+      function collectSelected(){
+        const active = segBtns.find(b=>b.classList.contains('is-active'));
+        const type = active ? active.dataset.mode : 'duel_1v1_public';
+        const m = { type };
+
+        if(type === 'duel_invite'){
+          const v = parseInt(inviteInput.value || '', 10);
+          if(Number.isFinite(v) && v > 0) m.invite_user_id = v;
+        }
+        if(type === 'duel_multi'){
+          const seats = parseInt(multiSize.value || '3', 10);
+          m.seats = Number.isFinite(seats) ? seats : 3;
+        }
+        if(type === 'lottery'){
+          const prize = (lotPrize.value || '').trim();
+          if(prize) m.lottery_prize = prize;
+          const ticket = parseInt(lotTicket.value || '', 10);
+          if(Number.isFinite(ticket) && ticket > 0) m.lottery_ticket = ticket;
+        }
+        return m;
+      }
+
+      saveBtn.addEventListener('click', ()=>{
+        const m = collectSelected();
+        setMode(m);
+        closeModal();
+
+        if(m.type !== 'duel_1v1_public'){
+          toast('Режим сохранён', 'Этот формат пока в разработке. Сейчас создаём только публичные дуэли 1v1.');
+        } else {
+          toast('Режим сохранён', 'Публичная дуэль 1v1.');
+        }
+      });
+
+      createNowBtn.addEventListener('click', ()=>{
+        const m = collectSelected();
+        setMode(m);
+        closeModal();
+
+        if(m.type !== 'duel_1v1_public'){
+          toast('Скоро', 'Этот формат появится чуть позже. Сейчас доступна только публичная дуэль 1v1.');
+          return;
+        }
+        // Важно: НЕ трогаем логику создания — просто жмём существующую кнопку.
+        btnCreate.click();
+      });
+
+      // блокируем создание, если выбран неподдерживаемый режим (без правок duels-lobby.js)
+      btnCreate.addEventListener('click', (e)=>{
+        const m = getMode();
+        if(m.type !== 'duel_1v1_public'){
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          toast('Скоро', 'Выбранный режим пока не активен. Переключи на «Публичная дуэль 1v1».');
+        }
+      }, true);
+
+      // init
+      renderMode();
+    })();
+  </script>
+
 
   <script defer src="/gg-linker.js"></script>
 </body>
