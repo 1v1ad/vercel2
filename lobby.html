@@ -130,8 +130,68 @@
   .hdr-title{ display:none; }
 }
 
-    .wrap{ max-width:980px; margin:0 auto; padding:20px 16px }
+    .wrap{ max-width:1280px; margin:0 auto; padding:18px 16px }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px }
+    /* =========================
+       Layout (Sidebar / Main / Right rail)
+       ========================= */
+    html{ scroll-behavior:smooth; }
+
+    .layout{
+      display:grid;
+      grid-template-columns: 260px minmax(0,1fr) 320px;
+      gap:14px;
+      align-items:start;
+    }
+    .sidebar, .rail{
+      position:sticky;
+      top:74px; /* высота topbar + небольшой отступ */
+      align-self:start;
+    }
+    .main{ min-width:0; }
+
+    .side-card{ padding:14px; }
+    .side-title{ font-weight:900; margin:0 0 10px; font-size:14px; letter-spacing:.2px; color:var(--text); }
+    .side-nav{ display:flex; flex-direction:column; gap:8px; }
+    .side-link{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:rgba(18,22,33,.55);
+      color:var(--text);
+      text-decoration:none;
+      font-weight:800;
+    }
+    .side-link span{ color:var(--muted); font-weight:700; }
+    .side-link:hover{ filter:brightness(1.06); }
+    .side-link.is-active{
+      border-color:rgba(45,212,191,.35);
+      background:rgba(45,212,191,.10);
+    }
+
+    .rail .card{ padding:14px; }
+    .rail h3{ margin:0 0 8px; font-size:14px; font-weight:900; letter-spacing:.2px; }
+    .rail .small{ font-size:13px; color:var(--muted); line-height:1.4; }
+    .rail .kpi{
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .rail .kpi .k{ padding:10px 12px; border-radius:14px; border:1px solid var(--border); background:#0c1018; }
+    .rail .kpi .k .t{ font-size:12px; color:var(--muted); }
+    .rail .kpi .k .v{ font-size:16px; font-weight:900; margin-top:4px; }
+
+    @media (max-width: 1180px){
+      .layout{ grid-template-columns: 240px minmax(0,1fr); }
+      .rail{ position:static; }
+    }
+    @media (max-width: 900px){
+      .layout{ grid-template-columns: 1fr; }
+      .sidebar{ position:static; }
+      .rail{ position:static; }
+    }
+
 
     /* --- duels (1v1) --- */
     .grid{ display:grid; grid-template-columns:1fr; gap:14px; }
@@ -258,8 +318,31 @@
   </div>
 </header>
 
+
   <div class="wrap">
-    <div class="grid">
+    <div class="layout">
+      <aside class="sidebar" aria-label="Боковая панель">
+        <div class="card side-card">
+          <h3 class="side-title">Навигация</h3>
+          <nav class="side-nav">
+            <a class="side-link" href="#stakes">Ставки <span>создать</span></a>
+            <a class="side-link" href="#live">Live <span>комнаты</span></a>
+            <a class="side-link" href="#archive">Архив <span>история</span></a>
+          </nav>
+        </div>
+
+        <div class="card side-card" style="margin-top:14px">
+          <h3 class="side-title">Подсказка</h3>
+          <div class="muted" style="font-size:13px; line-height:1.45">
+            Выбирай ставку → создай комнату → дождись соперника.
+            Победителя определяет coinflip. Детали дуэли можно открыть по клику в истории.
+          </div>
+        </div>
+      </aside>
+
+      <main class="main" aria-label="Основной контент">
+        <div class="grid">
+
       <div class="card">
         <p style="margin:0">Добро пожаловать в лобби.</p>
         <p id="provider-note" style="margin:8px 0 0; color:var(--muted)"></p>
@@ -307,11 +390,34 @@
   <div class="muted">Загружаю историю…</div>
 </div>
       </div>
+
+        </div>
+      </main>
+
+      <aside class="rail" aria-label="Правая панель">
+        <div class="card">
+          <h3>Provably fair</h3>
+          <div class="small">
+            Каждая дуэль имеет проверяемую «монетку»: commit → reveal → вычисление winner.
+            В карточке дуэли можно увидеть seed/nonce/commit и повторить расчёт.
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3>Статус</h3>
+          <div class="small">Пока без лишних цифр. Позже сюда добавим онлайн / активные дуэли / частоту игр.</div>
+          <div class="kpi" aria-hidden="true">
+            <div class="k"><div class="t">Онлайн</div><div class="v">—</div></div>
+            <div class="k"><div class="t">Live</div><div class="v">—</div></div>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 
 
 <!-- Детали дуэли -->
+
 <div class="modal-backdrop" id="duel-modal">
   <div class="modal">
     <div class="modal-head">
@@ -346,6 +452,23 @@
 
   <!-- Дуэли 1v1: список, создание, join/cancel -->
   <script src="/js/duels-lobby.js?v=6"></script>
+
+
+  <script>
+    // Подсветка активной вкладки (topbar + sidebar) по hash
+    (function(){
+      const topLinks = Array.from(document.querySelectorAll('.hdr-nav a'));
+      const sideLinks = Array.from(document.querySelectorAll('.side-nav a'));
+      function norm(h){ return (h && h.startsWith('#')) ? h : '#stakes'; }
+      function update(){
+        const h = norm(location.hash || '#stakes');
+        topLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
+        sideLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
+      }
+      window.addEventListener('hashchange', update);
+      update();
+    })();
+  </script>
 
   <script defer src="/gg-linker.js"></script>
 </body>

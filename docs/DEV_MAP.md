@@ -27,6 +27,8 @@
 - `gg-linker.js` — фон: генерирует стабильный `device_id` → `/api/link/bind`.
 - `index.html`, `lobby.html` — подключение `gg-linker.js`; виджеты VK/TG.
 - `css/ui-tokens.css` — UI‑токены (палитра/радиусы/тени) для пользовательского интерфейса.
+
+- `lobby.html` — лобби: TopBar + якоря `#stakes/#live/#archive`, раскладка 3‑колонки (sidebar/main/rail).
 - `admin/index.html`
   - [GG:ANCHOR admin-proposals-actions] — тут кнопка «Ручная расклейка».
   - Чекбокс «учесть аналитику» для графиков.
