@@ -132,7 +132,11 @@
     setKpi('kpi-links', parts.length ? parts.join('+') : '—');
   }
 
-  function setSelectedStake(v){
+    function isNumericStake(v){
+    return /^\d+$/.test(String(v||''));
+  }
+
+function setSelectedStake(v){
     selectedStake = String(v || selectedStake || '100');
     try{ localStorage.setItem('ggroom_selected_stake_v1', selectedStake); }catch(_){ }
     var cards = document.querySelectorAll('.stake-card[data-stake]');
@@ -614,7 +618,7 @@ async function loadOpen(){
     // stake cards + actions (GGPoker-style)
     try{
       var saved = localStorage.getItem('ggroom_selected_stake_v1');
-      if (saved) selectedStake = String(saved);
+      if (saved && isNumericStake(saved)) selectedStake = String(saved);
     }catch(_){ }
     setSelectedStake(selectedStake);
 
@@ -623,7 +627,9 @@ async function loadOpen(){
     for (var i=0;i<cards.length;i++){
       cards[i].addEventListener('click', function(ev){
         if (ev && ev.target && ev.target.closest && ev.target.closest('button')) return;
+        if (this.getAttribute('data-disabled') === '1') return;
         var v = this.getAttribute('data-stake');
+        if (!isNumericStake(v)) return;
         setSelectedStake(v);
       });
     }

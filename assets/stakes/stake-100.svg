@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360" viewBox="0 0 600 360" fill="none">
+<defs>
+  <radialGradient id="gGold" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(260 120) rotate(90) scale(180)">
+    <stop stop-color="#FFF2B3"/>
+    <stop offset="0.55" stop-color="#F3D37D"/>
+    <stop offset="1" stop-color="#B68114"/>
+  </radialGradient>
+  <linearGradient id="gGoldEdge" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#FFE6A1"/>
+    <stop offset="1" stop-color="#B67D12"/>
+  </linearGradient>
+  <linearGradient id="gSteel" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#3B465A"/>
+    <stop offset="1" stop-color="#121A28"/>
+  </linearGradient>
+  <filter id="fSoftShadow" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.35"/>
+  </filter>
+  <filter id="fGlow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="10" result="b"/>
+    <feColorMatrix in="b" type="matrix"
+      values="1 0 0 0 0.96  0 1 0 0 0.82  0 0 1 0 0.36  0 0 0 0.35 0" result="c"/>
+    <feMerge><feMergeNode in="c"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<ellipse cx="300" cy="300" rx="240" ry="46" fill="#F3D37D" opacity="0.08" filter="url(#fGlow)"/>
+<g transform="translate(300 280)" filter="url(#fSoftShadow)">
+<ellipse cx="0" cy="0.0" rx="57.0" ry="16.15" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-1.9" rx="52.440000000000005" ry="13.242999999999999" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-9.5" rx="57.0" ry="16.15" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-11.4" rx="52.440000000000005" ry="13.242999999999999" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-19.0" rx="57.0" ry="16.15" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-20.9" rx="52.440000000000005" ry="13.242999999999999" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-28.5" rx="57.0" ry="16.15" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-30.4" rx="52.440000000000005" ry="13.242999999999999" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-38.0" rx="57.0" ry="16.15" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-39.9" rx="52.440000000000005" ry="13.242999999999999" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-44.65" rx="51.300000000000004" ry="11.304999999999998" fill="#FFF2B3" opacity="0.35"/>
+</g>
+<g transform="translate(180 260) rotate(-12)" filter="url(#fSoftShadow)">
+  <circle cx="0" cy="0" r="23.1" fill="url(#gGold)"/>
+  <circle cx="0" cy="0" r="18.942" fill="rgba(0,0,0,0.10)"/>
+  <circle cx="0" cy="0" r="18.018" fill="url(#gGold)"/>
+  <circle cx="0" cy="0" r="14.322000000000001" fill="rgba(0,0,0,0.12)"/>
+  <path d="M -6.468000000000001 -4.158 H 2.7720000000000002 C 6.930000000000001 -4.158 8.316 -1.3860000000000001 8.316 0.462 C 8.316 2.7720000000000002 6.468000000000001 4.62 3.2340000000000004 4.62 H -0.462 V 7.854000000000001 H 3.696 C 9.702 7.854000000000001 12.474000000000002 3.696 12.474000000000002 -0.462 C 12.474000000000002 -5.082000000000001 9.24 -7.854000000000001 2.7720000000000002 -7.854000000000001 H -6.468000000000001 Z"
+        fill="#0E1420" opacity="0.92"/>
+  <path d="M -1.3860000000000001 -0.924 H 3.696 V 1.3860000000000001 H -1.3860000000000001 V 5.5440000000000005 H 5.5440000000000005 V 7.854000000000001 H -1.3860000000000001 Z"
+        fill="#0E1420" opacity="0.92"/>
+</g>
+<g transform="translate(420 270) rotate(18)" filter="url(#fSoftShadow)">
+  <circle cx="0" cy="0" r="20.16" fill="url(#gGold)"/>
+  <circle cx="0" cy="0" r="16.5312" fill="rgba(0,0,0,0.10)"/>
+  <circle cx="0" cy="0" r="15.7248" fill="url(#gGold)"/>
+  <circle cx="0" cy="0" r="12.4992" fill="rgba(0,0,0,0.12)"/>
+  <path d="M -5.644800000000001 -3.6288 H 2.4192 C 6.048 -3.6288 7.2576 -1.2096 7.2576 0.4032 C 7.2576 2.4192 5.644800000000001 4.032 2.8224000000000005 4.032 H -0.4032 V 6.854400000000001 H 3.2256 C 8.4672 6.854400000000001 10.8864 3.2256 10.8864 -0.4032 C 10.8864 -4.4352 8.064 -6.854400000000001 2.4192 -6.854400000000001 H -5.644800000000001 Z"
+        fill="#0E1420" opacity="0.92"/>
+  <path d="M -1.2096 -0.8064 H 3.2256 V 1.2096 H -1.2096 V 4.8384 H 4.8384 V 6.854400000000001 H -1.2096 Z"
+        fill="#0E1420" opacity="0.92"/>
+</g>
+</svg>

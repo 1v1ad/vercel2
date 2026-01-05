@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360" viewBox="0 0 600 360" fill="none">
+<defs>
+  <radialGradient id="gGold" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(260 120) rotate(90) scale(180)">
+    <stop stop-color="#FFF2B3"/>
+    <stop offset="0.55" stop-color="#F3D37D"/>
+    <stop offset="1" stop-color="#B68114"/>
+  </radialGradient>
+  <linearGradient id="gGoldEdge" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#FFE6A1"/>
+    <stop offset="1" stop-color="#B67D12"/>
+  </linearGradient>
+  <linearGradient id="gSteel" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#3B465A"/>
+    <stop offset="1" stop-color="#121A28"/>
+  </linearGradient>
+  <filter id="fSoftShadow" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.35"/>
+  </filter>
+  <filter id="fGlow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="10" result="b"/>
+    <feColorMatrix in="b" type="matrix"
+      values="1 0 0 0 0.96  0 1 0 0 0.82  0 0 1 0 0.36  0 0 0 0.35 0" result="c"/>
+    <feMerge><feMergeNode in="c"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<defs>
+  <linearGradient id="gVip" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#D5B3FF"/>
+    <stop offset="0.55" stop-color="#8F63FF"/>
+    <stop offset="1" stop-color="#F3D37D"/>
+  </linearGradient>
+</defs>
+<ellipse cx="300" cy="300" rx="240" ry="46" fill="#8F63FF" opacity="0.08" filter="url(#fGlow)"/>
+<g filter="url(#fSoftShadow)">
+  <path d="M300 86 L418 154 L372 300 L300 336 L228 300 L182 154 Z" fill="url(#gVip)" opacity="0.95"/>
+  <path d="M300 112 L392 166 L356 286 L300 312 L244 286 L208 166 Z" fill="rgba(0,0,0,0.18)"/>
+  <path d="M300 86 L300 336" stroke="rgba(255,255,255,0.35)" stroke-width="3" opacity="0.6"/>
+  <path d="M182 154 L418 154" stroke="rgba(255,255,255,0.35)" stroke-width="3" opacity="0.6"/>
+  <circle cx="300" cy="206" r="34" fill="rgba(14,20,32,0.75)"/>
+  <text x="300" y="218" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial" font-weight="900" font-size="22" fill="#FFF2B3">VIP</text>
+</g>
+</svg>

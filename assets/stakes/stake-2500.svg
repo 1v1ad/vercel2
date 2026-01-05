@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360" viewBox="0 0 600 360" fill="none">
+<defs>
+  <radialGradient id="gGold" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(260 120) rotate(90) scale(180)">
+    <stop stop-color="#FFF2B3"/>
+    <stop offset="0.55" stop-color="#F3D37D"/>
+    <stop offset="1" stop-color="#B68114"/>
+  </radialGradient>
+  <linearGradient id="gGoldEdge" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#FFE6A1"/>
+    <stop offset="1" stop-color="#B67D12"/>
+  </linearGradient>
+  <linearGradient id="gSteel" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#3B465A"/>
+    <stop offset="1" stop-color="#121A28"/>
+  </linearGradient>
+  <filter id="fSoftShadow" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#000" flood-opacity="0.35"/>
+  </filter>
+  <filter id="fGlow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="10" result="b"/>
+    <feColorMatrix in="b" type="matrix"
+      values="1 0 0 0 0.96  0 1 0 0 0.82  0 0 1 0 0.36  0 0 0 0.35 0" result="c"/>
+    <feMerge><feMergeNode in="c"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<ellipse cx="300" cy="300" rx="240" ry="46" fill="#F3D37D" opacity="0.08" filter="url(#fGlow)"/>
+<g transform="translate(230 246)" filter="url(#fSoftShadow)">
+<rect x="-74.10000000000001" y="-26.520000000000003" width="148.20000000000002" height="93.60000000000001" rx="14.040000000000001" fill="url(#gSteel)"/>
+<rect x="-74.10000000000001" y="-26.520000000000003" width="148.20000000000002" height="93.60000000000001" rx="14.040000000000001" fill="rgba(0,0,0,0.18)"/>
+<rect x="-74.10000000000001" y="0.0" width="148.20000000000002" height="9.36" rx="4.68" fill="url(#gGoldEdge)" opacity="0.95"/>
+<rect x="-61.620000000000005" y="-26.520000000000003" width="9.36" height="93.60000000000001" rx="4.68" fill="url(#gGoldEdge)" opacity="0.75"/>
+<rect x="52.260000000000005" y="-26.520000000000003" width="9.36" height="93.60000000000001" rx="4.68" fill="url(#gGoldEdge)" opacity="0.75"/>
+<rect x="-14.040000000000001" y="7.800000000000001" width="28.080000000000002" height="34.32" rx="7.800000000000001" fill="url(#gGold)"/>
+<circle cx="0" cy="23.400000000000002" r="5.46" fill="#0E1420" opacity="0.85"/>
+<path d="M -74.10000000000001 -26.520000000000003 L 74.10000000000001 -26.520000000000003 L 61.620000000000005 -62.400000000000006 L -61.620000000000005 -62.400000000000006 Z" fill="url(#gSteel)"/>
+<path d="M -61.620000000000005 -62.400000000000006 L 61.620000000000005 -62.400000000000006 L 47.58000000000001 -73.32000000000001 L -47.58000000000001 -73.32000000000001 Z" fill="rgba(255,255,255,0.06)"/>
+<path d="M -58.50000000000001 -68.64 L 58.50000000000001 -68.64" stroke="url(#gGoldEdge)" stroke-width="7.800000000000001" stroke-linecap="round" opacity="0.8"/>
+</g>
+<g transform="translate(330 238)" filter="url(#fSoftShadow)">
+<rect x="-83.6" y="-29.919999999999998" width="167.2" height="105.6" rx="15.84" fill="url(#gSteel)"/>
+<rect x="-83.6" y="-29.919999999999998" width="167.2" height="105.6" rx="15.84" fill="rgba(0,0,0,0.18)"/>
+<rect x="-83.6" y="0.0" width="167.2" height="10.56" rx="5.28" fill="url(#gGoldEdge)" opacity="0.95"/>
+<rect x="-69.52" y="-29.919999999999998" width="10.56" height="105.6" rx="5.28" fill="url(#gGoldEdge)" opacity="0.75"/>
+<rect x="58.959999999999994" y="-29.919999999999998" width="10.56" height="105.6" rx="5.28" fill="url(#gGoldEdge)" opacity="0.75"/>
+<rect x="-15.84" y="8.8" width="31.68" height="38.72" rx="8.8" fill="url(#gGold)"/>
+<circle cx="0" cy="26.4" r="6.16" fill="#0E1420" opacity="0.85"/>
+<path d="M -83.6 -29.919999999999998 L 83.6 -29.919999999999998 L 69.52 -70.4 L -69.52 -70.4 Z" fill="url(#gSteel)"/>
+<path d="M -69.52 -70.4 L 69.52 -70.4 L 53.67999999999999 -82.72 L -53.67999999999999 -82.72 Z" fill="rgba(255,255,255,0.06)"/>
+<path d="M -66.0 -77.44 L 66.0 -77.44" stroke="url(#gGoldEdge)" stroke-width="8.8" stroke-linecap="round" opacity="0.8"/>
+</g>
+<g transform="translate(430 252)" filter="url(#fSoftShadow)">
+<rect x="-93.1" y="-33.31999999999999" width="186.2" height="117.6" rx="17.64" fill="url(#gSteel)"/>
+<rect x="-93.1" y="-33.31999999999999" width="186.2" height="117.6" rx="17.64" fill="rgba(0,0,0,0.18)"/>
+<rect x="-93.1" y="0.0" width="186.2" height="11.76" rx="5.88" fill="url(#gGoldEdge)" opacity="0.95"/>
+<rect x="-77.41999999999999" y="-33.31999999999999" width="11.76" height="117.6" rx="5.88" fill="url(#gGoldEdge)" opacity="0.75"/>
+<rect x="65.66" y="-33.31999999999999" width="11.76" height="117.6" rx="5.88" fill="url(#gGoldEdge)" opacity="0.75"/>
+<rect x="-17.64" y="9.8" width="35.28" height="43.12" rx="9.8" fill="url(#gGold)"/>
+<circle cx="0" cy="29.4" r="6.859999999999999" fill="#0E1420" opacity="0.85"/>
+<path d="M -93.1 -33.31999999999999 L 93.1 -33.31999999999999 L 77.41999999999999 -78.4 L -77.41999999999999 -78.4 Z" fill="url(#gSteel)"/>
+<path d="M -77.41999999999999 -78.4 L 77.41999999999999 -78.4 L 59.779999999999994 -92.12 L -59.779999999999994 -92.12 Z" fill="rgba(255,255,255,0.06)"/>
+<path d="M -73.5 -86.24 L 73.5 -86.24" stroke="url(#gGoldEdge)" stroke-width="9.8" stroke-linecap="round" opacity="0.8"/>
+</g>
+<g transform="translate(170 306)" filter="url(#fSoftShadow)">
+<ellipse cx="0" cy="0.0" rx="40.800000000000004" ry="11.56" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-1.36" rx="37.53600000000001" ry="9.4792" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-6.800000000000001" rx="40.800000000000004" ry="11.56" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-8.16" rx="37.53600000000001" ry="9.4792" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-13.600000000000001" rx="40.800000000000004" ry="11.56" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-14.96" rx="37.53600000000001" ry="9.4792" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-20.400000000000002" rx="40.800000000000004" ry="11.56" fill="url(#gGoldEdge)" opacity="0.88"/>
+<ellipse cx="0" cy="-21.76" rx="37.53600000000001" ry="9.4792" fill="url(#gGold)" opacity="0.95"/>
+<ellipse cx="0" cy="-25.160000000000004" rx="36.720000000000006" ry="8.092" fill="#FFF2B3" opacity="0.35"/>
+</g>
+<g transform="translate(510 304) rotate(14)" filter="url(#fSoftShadow)">
+  <circle cx="0" cy="0" r="17.64" fill="url(#gGold)"/>
+  <circle cx="0" cy="0" r="14.4648" fill="rgba(0,0,0,0.10)"/>
+  <circle cx="0" cy="0" r="13.759200000000002" fill="url(#gGold)"/>
+  <circle cx="0" cy="0" r="10.9368" fill="rgba(0,0,0,0.12)"/>
+  <path d="M -4.9392000000000005 -3.1752 H 2.1168 C 5.292 -3.1752 6.3504 -1.0584 6.3504 0.3528 C 6.3504 2.1168 4.9392000000000005 3.5280000000000005 2.4696000000000002 3.5280000000000005 H -0.3528 V 5.9976 H 2.8224 C 7.4088 5.9976 9.5256 2.8224 9.5256 -0.3528 C 9.5256 -3.8808000000000002 7.056000000000001 -5.9976 2.1168 -5.9976 H -4.9392000000000005 Z"
+        fill="#0E1420" opacity="0.92"/>
+  <path d="M -1.0584 -0.7056 H 2.8224 V 1.0584 H -1.0584 V 4.2336 H 4.2336 V 5.9976 H -1.0584 Z"
+        fill="#0E1420" opacity="0.92"/>
+</g>
+</svg>
