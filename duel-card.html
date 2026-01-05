@@ -76,20 +76,57 @@
       </article>
 
       <article class="dc-card">
-        <div class="dc-card-h">Таймлайн</div>
+        <div class="dc-card-h">Финансы дуэли</div>
         <div class="dc-kv">
-          <div class="dc-k">Создано</div><div class="dc-v" id="tCreated">—</div>
-          <div class="dc-k">Обновлено</div><div class="dc-v" id="tUpdated">—</div>
-          <div class="dc-k">Завершено</div><div class="dc-v" id="tFinished">—</div>
+          <div class="dc-k">Ставка</div><div class="dc-v" id="finStake">—</div>
+          <div class="dc-k">Pot</div><div class="dc-v" id="finPot">—</div>
+          <div class="dc-k">Fee</div><div class="dc-v" id="finFee">—</div>
+          <div class="dc-k">Payout</div><div class="dc-v" id="finPayout">—</div>
+          <div class="dc-k">Профит победителя</div><div class="dc-v" id="finProfit">—</div>
+        </div>
+        <div class="dc-split" id="finSplit">
+          <div class="dc-split-row"><span class="muted">Создатель</span><span class="mono" id="finCreator">—</span></div>
+          <div class="dc-split-row"><span class="muted">Оппонент</span><span class="mono" id="finOpponent">—</span></div>
         </div>
       </article>
 
-      <article class="dc-card dc-card-wide">
+
+            <article class="dc-card">
+        <div class="dc-card-h">Таймлайн дуэли</div>
+        <div class="dc-kv">
+          <div class="dc-k">Создано</div><div class="dc-v" id="tCreated">—</div>
+          <div class="dc-k">Вход соперника</div><div class="dc-v" id="tJoined">—</div>
+          <div class="dc-k">Coinflip</div><div class="dc-v" id="tCoinflip">—</div>
+          <div class="dc-k">Выплата</div><div class="dc-v" id="tPayout">—</div>
+        </div>
+        <div class="dc-mini" id="tDur">—</div>
+        <details class="dc-details dc-details-tight" id="tRawDetails">
+          <summary>Служебно</summary>
+          <div class="dc-kv">
+            <div class="dc-k">updated_at</div><div class="dc-v mono" id="tUpdated">—</div>
+            <div class="dc-k">finished_at</div><div class="dc-v mono" id="tFinished">—</div>
+          </div>
+        </details>
+      </article>
+
+            <article class="dc-card dc-card-wide">
         <div class="dc-card-h">Честность (PF)</div>
-        <div class="dc-muted" id="pfHint">Скоро здесь будет проверка честности как в админке: commit / nonce / seeds + кнопка “Проверить”.</div>
+
+        <div class="dc-kv">
+          <div class="dc-k">commit</div><div class="dc-v mono" id="pfCommit">—</div>
+          <div class="dc-k">nonce</div><div class="dc-v mono" id="pfNonce">—</div>
+          <div class="dc-k">client_seed</div><div class="dc-v mono" id="pfClientSeed">—</div>
+        </div>
+
+        <div class="dc-pf-bar">
+          <button class="ui-btn ui-btn-primary" id="pfVerifyBtn" type="button">Проверить</button>
+          <div class="dc-pf-res" id="pfResult">—</div>
+        </div>
+
         <details class="dc-details" id="pfDetails">
           <summary>Показать детали</summary>
           <div class="dc-kv" id="pfKv"></div>
+          <div class="dc-muted dc-tiny" id="pfNote"></div>
         </details>
       </article>
     </section>

@@ -313,3 +313,57 @@ body{
   }
   .dc-vs{ display:block; }
 }
+
+
+
+/* --- Step 4.1 additions --- */
+.mono{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.dc-mini{
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.dc-tiny{ font-size: 12px; line-height: 1.35; }
+
+.dc-split{
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dc-split-row{
+  display:flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dc-split-row .mono{
+  color: rgba(255,255,255,.92);
+}
+
+.dc-pf-bar{
+  margin-top: 10px;
+  display:flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dc-pf-res{
+  color: rgba(255,255,255,.92);
+  font-size: 13px;
+}
+.dc-details-tight summary{
+  font-size: 12px;
+}
+
+.dc-player.is-win{
+  border: 1px solid rgba(46,209,169,.35);
+  box-shadow: 0 0 0 1px rgba(46,209,169,.15), 0 12px 28px rgba(0,0,0,.28);
+}
+.dc-player.is-lose{
+  border: 1px solid rgba(255,105,97,.26);
+}
