@@ -51,52 +51,31 @@
 .hdr-title{ color:var(--muted); font-weight:700; white-space:nowrap; }
 
 .hdr-nav{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  flex:1;
-  min-width:220px;
+  display:flex; align-items:center; justify-content:center;
+  gap:10px; flex:1;
+  min-width:180px;
 }
-
-/* Main tabs (Дуэли / Розыгрыши) */
-.hdr-main{
+.hdr-nav-group{
   display:flex; align-items:center; gap:6px;
-  padding:6px;
+  padding:6px 8px;
   border-radius:999px;
   border:1px solid rgba(255,255,255,.08);
   background:rgba(18,22,33,.28);
 }
-.hdr-main-tab{
-  border:1px solid var(--border);
-  background:rgba(18,22,33,.55);
+.hdr-nav-label{
+  font-size:10px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
   color:var(--muted);
-  padding:8px 12px;
-  border-radius:999px;
+  padding:0 6px 0 4px;
   font-weight:900;
-  cursor:pointer;
-  user-select:none;
-  white-space:nowrap;
 }
-.hdr-main-tab:hover{ filter:brightness(1.06); }
-.hdr-main-tab.is-active{
-  color:var(--text);
-  border-color:rgba(244,216,138,.40);
-  background:rgba(244,216,138,.08);
+.hdr-nav-label.is-click, .side-label.is-click{cursor:pointer;}
+.hdr-nav-label.is-click:hover, .side-label.is-click:hover{color:var(--text);}
+.hdr-nav-group a{
+  border:1px solid transparent;
+  background:transparent;
 }
-
-/* Second-level sub-nav */
-.hdr-sub{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
-  flex-wrap:wrap;
-}
-
-.side-label.is-click{cursor:pointer;}
-.side-label.is-click:hover{color:var(--text);}
 .hdr-nav a{
   display:inline-flex; align-items:center; justify-content:center;
   padding:7px 10px;
@@ -130,12 +109,6 @@
 /* lottery tabs */
 .lot-tabs{ margin-top:12px; }
 .lot-tabs button{ padding:8px 12px; }
-
-/* Вкладки розыгрышей переезжают в topbar sub-nav (чтобы было как «второй режим продукта»).
-   Внутри карточки оставляем только на мобильных как fallback. */
-@media (min-width: 981px){
-  #lottery-card .lot-tabs{ display:none; }
-}
 .lot-pane{ display:none; }
 .lot-pane.is-active{ display:block; }
 .lot-empty{ padding:14px; border-radius:16px; border:1px dashed rgba(255,255,255,.14); background:rgba(18,22,33,.35); }
@@ -201,8 +174,7 @@
 
 @media (max-width: 980px){
   .hdr{ flex-wrap:wrap; }
-  .hdr-nav{ order:3; width:100%; align-items:flex-start; }
-  .hdr-sub{ justify-content:flex-start; }
+  .hdr-nav{ order:3; width:100%; justify-content:flex-start; }
   .hdr-right{ width:100%; justify-content:space-between; }
   .hdr-user .name strong{ max-width:160px; }
 }
@@ -595,23 +567,15 @@
   </div>
 
   <nav class="hdr-nav" aria-label="Навигация">
-    <!-- main tabs (Дуэли / Розыгрыши) -->
-    <div class="hdr-main" role="tablist" aria-label="Основные разделы">
-      <button type="button" class="hdr-main-tab is-active is-click" data-main="duels" data-hash="#stakes">Дуэли</button>
-      <button type="button" class="hdr-main-tab is-click" data-main="lottery" data-hash="#lottery">Розыгрыши</button>
-    </div>
-
-    <!-- sub-nav (второй уровень) -->
-    <div class="hdr-sub" id="hdr-sub-duels" aria-label="Дуэли: подразделы">
+    <div class="hdr-nav-group" data-group="duels">
+      <span class="hdr-nav-label">Дуэли</span>
       <a href="#stakes" class="is-active">Ставки</a>
       <a href="#live">Live</a>
       <a href="#archive">Архив</a>
     </div>
-
-    <div class="hdr-sub" id="hdr-sub-lottery" aria-label="Розыгрыши: подразделы" style="display:none">
-      <a href="#lottery" data-lot-jump="active">Активные</a>
-      <a href="#lottery" data-lot-jump="archive">Архив</a>
-      <a href="#lottery" data-lot-jump="mine">Мои билеты</a>
+    <div class="hdr-nav-group" data-group="lottery">
+      <span class="hdr-nav-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</span>
+      <a href="#lottery">Розыгрыши</a>
     </div>
   </nav>
 
@@ -1056,10 +1020,6 @@
       const topLinks = Array.from(document.querySelectorAll('.hdr-nav a'));
       const sideLinks = Array.from(document.querySelectorAll('.side-nav a'));
 
-      const mainTabs = Array.from(document.querySelectorAll('.hdr-main-tab[data-main]'));
-      const hdrSubDuels = document.getElementById('hdr-sub-duels');
-      const hdrSubLottery = document.getElementById('hdr-sub-lottery');
-
       const hubDuels = document.getElementById('hub-duels');
       const hubLottery = document.getElementById('hub-lottery');
 
@@ -1086,26 +1046,14 @@ if(lotSideLinks.length){
   });
 }
 
-      // Кликабельные заголовки-группы/кнопки (чтобы по «Дуэли/Розыгрыши» всегда открывалось)
+      // Кликабельные заголовки-группы (чтобы по слову «Розыгрыши» тоже открывалось)
       const labelLinks = Array.from(document.querySelectorAll('[data-hash].is-click'));
       labelLinks.forEach(el=>{
-        el.addEventListener('click', ()=>{
-          const t = el.dataset.hash;
-          if(!t) return;
-          if(location.hash === t){
-            // hash не меняется → браузер не всегда делает что-то заметное
-            try{ window.dispatchEvent(new HashChangeEvent('hashchange')); }catch(_){ /* noop */ }
-            const anchor = document.querySelector(t);
-            if(anchor) anchor.scrollIntoView({ behavior:'smooth', block:'start' });
-            return;
-          }
-          location.hash = t;
-        });
+        el.addEventListener('click', ()=>{ location.hash = el.dataset.hash; });
         el.addEventListener('keydown', (e)=>{
           if(e.key === 'Enter' || e.key === ' '){
             e.preventDefault();
-            const t = el.dataset.hash;
-            if(t) location.hash = t;
+            location.hash = el.dataset.hash;
           }
         });
       });
@@ -1126,11 +1074,6 @@ if(lotSideLinks.length){
         // разделы: Дуэли vs Розыгрыши
         const isLottery = (h === '#lottery' || h.startsWith('#lottery'));
 
-        // верхняя навигация в 2 уровня: (Дуэли/Розыгрыши) + (подраздел)
-        mainTabs.forEach(b => b.classList.toggle('is-active', b.dataset.main === (isLottery ? 'lottery' : 'duels')));
-        if(hdrSubDuels) hdrSubDuels.style.display = isLottery ? 'none' : '';
-        if(hdrSubLottery) hdrSubLottery.style.display = isLottery ? '' : 'none';
-
 if(lotSub) lotSub.style.display = isLottery ? '' : 'none';
 if(isLottery){
   const t = (typeof window.__gg_getLotteryTab === 'function')
@@ -1148,6 +1091,10 @@ if(isLottery){
         if (railLotteryPF) railLotteryPF.style.display = isLottery ? '' : 'none';
         if (railLotteryStatus) railLotteryStatus.style.display = isLottery ? '' : 'none';
       }
+
+      // expose + respond to lottery subtab changes (hash may not change)
+      window.__gg_syncNavActive = update;
+      window.addEventListener('ggroom:lottery-tab', update);
 
       window.addEventListener('hashchange', update);
       update();
@@ -1167,6 +1114,14 @@ if(isLottery){
           btns.forEach(b => b.classList.toggle('is-active', b.dataset.lotTab === t));
           panes.forEach(p => p.classList.toggle('is-active', p.dataset.lotPane === t));
           try{ localStorage.setItem(LS_KEY, t); }catch(e){}
+
+          // сообщаем навигации обновиться даже если hash не менялся
+          try{
+            window.dispatchEvent(new CustomEvent('ggroom:lottery-tab', { detail:{ tab:t }}));
+          }catch(e){
+            window.dispatchEvent(new Event('ggroom:lottery-tab'));
+          }
+          if(typeof window.__gg_syncNavActive === 'function') window.__gg_syncNavActive();
         }
 
         btns.forEach(b => b.addEventListener('click', ()=> setTab(b.dataset.lotTab)));
