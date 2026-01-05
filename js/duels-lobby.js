@@ -111,6 +111,8 @@
   var myLinked = null;
   var lastMyOpenIds = {}; // map id->true
   var pollTimer = null;
+  var selectedStake = '100';
+  var lastOpenItems = [];
 
   function setKpi(id, val){
     var el = byId(id);
@@ -131,16 +133,44 @@
   }
 
   function setSelectedStake(v){
-    var pills = document.querySelectorAll('[data-stake]');
-    for (var i=0;i<pills.length;i++){
-      var s = pills[i].getAttribute('data-stake');
-      if (String(s) === String(v)) pills[i].classList.add('is-selected');
-      else pills[i].classList.remove('is-selected');
+    selectedStake = String(v || selectedStake || '100');
+    try{ localStorage.setItem('ggroom_selected_stake_v1', selectedStake); }catch(_){ }
+    var cards = document.querySelectorAll('.stake-card[data-stake]');
+    for (var i=0;i<cards.length;i++){
+      var s = cards[i].getAttribute('data-stake');
+      if (String(s) === String(selectedStake)) cards[i].classList.add('is-selected');
+      else cards[i].classList.remove('is-selected');
     }
   }
 
 
-  function setPollEnabled(enabled){
+  
+  function updateStakeCounts(items){
+    items = items || [];
+    var map = {};
+    for (var i=0;i<items.length;i++){
+      var it = items[i];
+      var st = String(it.stake || '');
+      if (!st) continue;
+      map[st] = (map[st]||0) + 1;
+    }
+    var els = document.querySelectorAll('[data-open-count]');
+    for (var j=0;j<els.length;j++){
+      var k = String(els[j].getAttribute('data-open-count')||'');
+      els[j].textContent = (map[k] != null) ? String(map[k]) : '0';
+    }
+  }
+
+  async function createWithSelectedStake(){
+    var m = Number(selectedStake||0);
+    if (!m || m <= 0){ toast('Ошибка', 'Не выбрана ставка'); return; }
+    await createDuel(m);
+    await pollOpenOnce();
+  }
+
+  window.__gg_duels_create_selected = createWithSelectedStake;
+
+function setPollEnabled(enabled){
     if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
     if (!enabled) return;
 
@@ -361,15 +391,19 @@ async function loadOpen(){
     var list = byId('duels-list');
     if (list) list.innerHTML = '<div class="muted">Загружаю комнаты…</div>';
 
-    var q = '/api/duels?status=open&order=queue&limit=10';
+    var q = '/api/duels?status=open&order=queue&limit=100';
     var res = await apiJson(q);
     if (!res.r.ok || !res.j || !res.j.ok){
+      lastOpenItems = [];
+      updateStakeCounts([]);
       renderOpen([]);
       try{ setKpi('kpi-open', 0); setKpi('kpi-myopen', 0); }catch(_){ }
       return [];
     }
     var items = res.j.items || [];
-    renderOpen(items);
+    lastOpenItems = items;
+    updateStakeCounts(items);
+    renderOpen(items.slice(0, 10));
 
     // KPI: сколько комнат открыто и сколько из них мои
     try{
@@ -463,6 +497,41 @@ async function loadOpen(){
     return res.j || null;
   }
 
+
+
+  async function quickMatch(stake){
+    stake = Number(stake||0);
+    if (!stake || stake <= 0){ toast('Ошибка', 'Некорректная ставка'); return; }
+
+    // если список ещё не загружен — подгрузим
+    if (!lastOpenItems || !lastOpenItems.length){
+      try{ await loadOpen(); }catch(_){ }
+    }
+
+    var target = null;
+    var items = lastOpenItems || [];
+    for (var i=0;i<items.length;i++){
+      var it = items[i];
+      if (String(it.status||'') !== 'open') continue;
+      if (Number(it.stake||0) !== stake) continue;
+      if (myUserId && Number(it.creator_user_id) === Number(myUserId)) continue; // не прыгаем в свою же
+      target = it;
+      break;
+    }
+
+    if (target){
+      toast('Подключаюсь', 'Вхожу в открытую комнату…');
+      await joinDuel(target.id);
+      await pollOpenOnce();
+      await loadHistory();
+      return;
+    }
+
+    toast('Поиск', 'Открытых комнат нет — создаю свою…');
+    await createDuel(stake);
+    await pollOpenOnce();
+  }
+
   async function cancelDuel(id){
     var res = await apiJson('/api/duels/' + id + '/cancel', { method:'POST' });
     if (!res.r.ok || !res.j || !res.j.ok){
@@ -542,21 +611,46 @@ async function loadOpen(){
     var modal = byId('duel-modal');
     if (modal) modal.onclick = function(ev){ if (ev && ev.target === modal) hideModal(); };
 
-    // quick stake buttons (data-stake)
-    var stakeInput = byId('stake-input');
-    var pills = document.querySelectorAll('[data-stake]');
-    for (var i=0;i<pills.length;i++){
-      pills[i].onclick = function(){
-        if (!stakeInput) return;
+    // stake cards + actions (GGPoker-style)
+    try{
+      var saved = localStorage.getItem('ggroom_selected_stake_v1');
+      if (saved) selectedStake = String(saved);
+    }catch(_){ }
+    setSelectedStake(selectedStake);
+
+    // клики по карточке — выбор ставки
+    var cards = document.querySelectorAll('.stake-card[data-stake]');
+    for (var i=0;i<cards.length;i++){
+      cards[i].addEventListener('click', function(ev){
+        if (ev && ev.target && ev.target.closest && ev.target.closest('button')) return;
         var v = this.getAttribute('data-stake');
-        stakeInput.value = v;
         setSelectedStake(v);
-      };
+      });
     }
-    if (stakeInput){
-      stakeInput.addEventListener('input', function(){ setSelectedStake(this.value); });
-      setSelectedStake(stakeInput.value || '100');
-    }
+
+    // кнопки в карточках: быстрый матч / создать
+    document.addEventListener('click', async function(ev){
+      var btn = ev && ev.target && ev.target.closest && ev.target.closest('[data-action]');
+      if (!btn) return;
+      var act = btn.getAttribute('data-action');
+      if (act !== 'quick' && act !== 'create') return;
+
+      ev.preventDefault();
+      var v = btn.getAttribute('data-stake') || (btn.closest('.stake-card') && btn.closest('.stake-card').getAttribute('data-stake')) || selectedStake;
+      setSelectedStake(v);
+
+      if (btn.disabled) return;
+
+      if (act === 'create'){
+        await createDuel(v);
+        await pollOpenOnce();
+        return;
+      }
+      if (act === 'quick'){
+        await quickMatch(v);
+        return;
+      }
+    }, false);
 
     // refresh button
     var refreshBtn = byId('duels-refresh');
@@ -564,17 +658,6 @@ async function loadOpen(){
       refreshBtn.onclick = async function(){
         await pollOpenOnce();
         await loadHistory();
-      };
-    }
-
-    // create button
-    var createBtn = byId('duels-create');
-    if (createBtn){
-      createBtn.onclick = async function(){
-        var v = stakeInput ? Number(stakeInput.value||0) : 0;
-        if (!v || v<=0){ toast('Ставка', 'Укажи сумму'); return; }
-        await createDuel(v);
-        await pollOpenOnce(); // после create включит polling если комната моя
       };
     }
 

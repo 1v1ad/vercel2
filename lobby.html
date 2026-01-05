@@ -265,33 +265,61 @@
 @media (max-width: 980px){ .stakes{ grid-template-columns:repeat(3, minmax(0,1fr)); } }
 @media (max-width: 560px){ .stakes{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
 
+.stakes-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0 8px; }
+.stakes-head-right{ display:flex; align-items:center; gap:8px; }
+@media (max-width: 560px){ .stakes-head{ flex-direction:column; align-items:flex-start; } }
+
+.stake-card{
+  position:relative;
+  display:flex; flex-direction:column; gap:10px;
+  padding:14px 14px 12px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(18,22,33,.70), rgba(12,16,24,.92));
+  box-shadow: 0 10px 18px rgba(0,0,0,.18);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+.stake-card::before{
+  content:'';
+  position:absolute; inset:0;
+  border-radius:16px;
+  background: radial-gradient(1200px 260px at 40% 0%, rgba(244,216,138,.10), transparent 55%);
+  pointer-events:none;
+  opacity:.85;
+}
+.stake-card:hover{ transform: translateY(-2px); border-color: rgba(255,255,255,.16); filter:brightness(1.03); }
+.stake-card.is-selected{
+  border-color: rgba(244,216,138,.55);
+  box-shadow: 0 0 0 3px rgba(244,216,138,.12) inset, 0 14px 26px rgba(0,0,0,.24);
+}
+
+.stake-top{ position:relative; z-index:1; display:flex; flex-direction:column; gap:4px; }
+.stake-top .amt{ font-weight:950; font-size:18px; letter-spacing:.2px; }
+.stake-top .meta{ font-size:12px; color:var(--muted); line-height:1.15; }
+
+.stake-kpis{ position:relative; z-index:1; display:flex; gap:10px; align-items:center; }
+.stake-kpis .kpi{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+.stake-kpis .dot{ width:6px; height:6px; border-radius:10px; background: rgba(244,216,138,.95); box-shadow:0 0 0 3px rgba(244,216,138,.14); }
+
+.stake-actions{ position:relative; z-index:1; display:flex; gap:8px; margin-top:auto; }
+.stake-actions .btn{ flex:1; justify-content:center; padding:10px 12px; border-radius:12px; font-weight:900; }
+.stake-actions .btn.ghost{ flex:0 0 auto; min-width:104px; }
+.stake-actions .btn:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
+
+/* legacy small cards (используем в заглушках розыгрышей) */
 .stake-chip{
-  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  display:flex; flex-direction:column; align-items:flex-start; gap:6px;
   padding:12px 12px;
   border-radius:14px; border:1px solid var(--border);
   background:rgba(18,22,33,.55);
-  color:var(--text); cursor:pointer;
+  color:var(--text);
   text-align:left;
-  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease, filter .15s ease;
 }
-.stake-chip:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
-.stake-chip .amt{ font-weight:900; font-size:16px; letter-spacing:.2px; }
-.stake-chip .meta{ font-size:12px; color:var(--muted); line-height:1.15; }
-.stake-chip.is-selected{
-  border-color: rgba(244,216,138,.55);
-  box-shadow: 0 0 0 3px rgba(244,216,138,.12) inset, 0 12px 22px rgba(0,0,0,.22);
-}
-    .stake-chip:hover{ filter:brightness(1.06); }
+.stake-chip:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.16); filter:brightness(1.03); }
+.stake-chip[aria-disabled="true"]{ opacity:.72; cursor:not-allowed; transform:none; }
 
-    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .row input{
-      width:160px; max-width:100%; padding:10px 12px;
-      border-radius:12px; border:1px solid var(--border);
-      background:#0b0f18; color:var(--text);
-      outline:none;
-    }
-    .row input:focus{ border-color:rgba(244,216,138,.45); }
-    .hint{ margin-top:8px; font-size:13px; color:var(--muted); }
+.hint{ margin-top:8px; font-size:13px; color:var(--muted); }
 
     .duels-list{ display:grid; grid-template-columns:1fr; gap:10px; margin-top:12px; }
     .duel-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; border-radius:14px; border:1px solid var(--border); background:#0c1018; }
@@ -659,46 +687,93 @@
             Создай комнату со ставкой — второй игрок заходит, и система честно кидает монету (coinflip).
           </div>
 
-          <div class="stakes" aria-label="Быстрые ставки">
-
-            <button class="stake-chip is-selected" data-stake="100" type="button">
-              <div class="amt">₽100</div>
-              <div class="meta">pot ₽200 • fee ~₽10</div>
-            </button>
-            <button class="stake-chip" data-stake="250" type="button">
-              <div class="amt">₽250</div>
-              <div class="meta">pot ₽500 • fee ~₽25</div>
-            </button>
-            <button class="stake-chip" data-stake="500" type="button">
-              <div class="amt">₽500</div>
-              <div class="meta">pot ₽1 000 • fee ~₽50</div>
-            </button>
-            <button class="stake-chip" data-stake="1000" type="button">
-              <div class="amt">₽1 000</div>
-              <div class="meta">pot ₽2 000 • fee ~₽100</div>
-            </button>
-            <button class="stake-chip" data-stake="2500" type="button">
-              <div class="amt">₽2 500</div>
-              <div class="meta">pot ₽5 000 • fee ~₽250</div>
-            </button>
+          
+          <div class="stakes-head">
+            <div class="muted" style="font-size:13px">Выбери ставку</div>
+            <div class="stakes-head-right">
+              <span class="mode-pill" id="create-mode-pill"><span class="tag">1v1</span> Публичная дуэль</span>
+              <button class="btn ghost icon" id="create-mode-btn" type="button" title="Режим комнаты" aria-label="Режим комнаты">⚙</button>
+            </div>
           </div>
 
-          
-<div class="row">
-  <input id="stake-input" inputmode="numeric" type="number" min="10" max="1000000" step="10" value="100" />
-  <span class="split-btn">
-    <button class="btn primary" id="duels-create" type="button">Создать комнату</button>
-    <button class="btn ghost icon" id="create-mode-btn" type="button" title="Режим комнаты" aria-label="Режим комнаты">⚙</button>
-  </span>
-</div>
+          <div class="stakes" aria-label="Ставки">
+            <div class="stake-card is-selected" data-stake="100">
+              <div class="stake-top">
+                <div class="amt">₽100</div>
+                <div class="meta">pot ₽200 • fee ~₽10</div>
+              </div>
+              <div class="stake-kpis">
+                <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="100">—</b></span>
+              </div>
+              <div class="stake-actions">
+                <button class="btn primary" type="button" data-action="quick" data-stake="100">Быстрый матч</button>
+                <button class="btn ghost" type="button" data-action="create" data-stake="100">Создать</button>
+              </div>
+            </div>
 
-<div class="mode-line" aria-label="Режим создания">
-  <span class="muted">Режим:</span>
-  <span class="mode-pill" id="create-mode-pill"><span class="tag">1v1</span> Публичная дуэль</span>
-  <a class="mode-link" href="#" id="create-mode-link">изменить</a>
-</div>
+            <div class="stake-card" data-stake="250">
+              <div class="stake-top">
+                <div class="amt">₽250</div>
+                <div class="meta">pot ₽500 • fee ~₽25</div>
+              </div>
+              <div class="stake-kpis">
+                <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="250">—</b></span>
+              </div>
+              <div class="stake-actions">
+                <button class="btn primary" type="button" data-action="quick" data-stake="250">Быстрый матч</button>
+                <button class="btn ghost" type="button" data-action="create" data-stake="250">Создать</button>
+              </div>
+            </div>
 
-<div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
+            <div class="stake-card" data-stake="500">
+              <div class="stake-top">
+                <div class="amt">₽500</div>
+                <div class="meta">pot ₽1 000 • fee ~₽50</div>
+              </div>
+              <div class="stake-kpis">
+                <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="500">—</b></span>
+              </div>
+              <div class="stake-actions">
+                <button class="btn primary" type="button" data-action="quick" data-stake="500">Быстрый матч</button>
+                <button class="btn ghost" type="button" data-action="create" data-stake="500">Создать</button>
+              </div>
+            </div>
+
+            <div class="stake-card" data-stake="1000">
+              <div class="stake-top">
+                <div class="amt">₽1 000</div>
+                <div class="meta">pot ₽2 000 • fee ~₽100</div>
+              </div>
+              <div class="stake-kpis">
+                <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="1000">—</b></span>
+              </div>
+              <div class="stake-actions">
+                <button class="btn primary" type="button" data-action="quick" data-stake="1000">Быстрый матч</button>
+                <button class="btn ghost" type="button" data-action="create" data-stake="1000">Создать</button>
+              </div>
+            </div>
+
+            <div class="stake-card" data-stake="2500">
+              <div class="stake-top">
+                <div class="amt">₽2 500</div>
+                <div class="meta">pot ₽5 000 • fee ~₽250</div>
+              </div>
+              <div class="stake-kpis">
+                <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="2500">—</b></span>
+              </div>
+              <div class="stake-actions">
+                <button class="btn primary" type="button" data-action="quick" data-stake="2500">Быстрый матч</button>
+                <button class="btn ghost" type="button" data-action="create" data-stake="2500">Создать</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mode-line" aria-label="Режим создания">
+            <span class="muted">Режим:</span>
+            <a class="mode-link" href="#" id="create-mode-link">изменить</a>
+          </div>
+
+          <div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
         </div>
 
         <div id="live"></div>
@@ -1146,8 +1221,9 @@ if(isLottery){
     // ===== Step 1.5: режимы комнат (UI-слой, без изменения логики 1v1) =====
     (function(){
       const $ = (s, r=document) => r.querySelector(s);
-
-      const btnCreate = $('#duels-create');
+      const getCreateBtns = () => Array.from(document.querySelectorAll('[data-action="create"]'));
+      const getQuickBtns  = () => Array.from(document.querySelectorAll('[data-action="quick"]'));
+      const getActionBtns = () => Array.from(document.querySelectorAll('[data-action="create"],[data-action="quick"]'));
       const btnMode = $('#create-mode-btn');
       const linkMode = $('#create-mode-link');
       const pillMode = $('#create-mode-pill');
@@ -1204,6 +1280,12 @@ if(isLottery){
         panes.forEach(p => p.classList.toggle('is-active', p.dataset.pane === type));
       }
 
+      function applyModeToButtons(type){
+        const ok = (type === 'duel_1v1_public');
+        getQuickBtns().forEach((b)=>{ b.disabled = !ok; b.textContent = ok ? 'Быстрый матч' : 'Матч (скоро)'; });
+        getCreateBtns().forEach((b)=>{ b.disabled = !ok; b.textContent = ok ? 'Создать' : 'Создать (скоро)'; });
+      }
+
       function renderMode(){
         const m = getMode();
         const map = {
@@ -1214,17 +1296,8 @@ if(isLottery){
         const x = map[m.type] || map.duel_1v1_public;
         pillMode.innerHTML = `<span class="tag">${x.tag}</span> ${x.text}`;
         setActiveMode(m.type);
-
-        // Если режим не 1v1 — меняем лейбл кнопки (но не лезем в расчёты/запросы)
-        if(m.type !== 'duel_1v1_public'){
-          btnCreate.classList.remove('primary');
-          btnCreate.classList.add('danger');
-          btnCreate.textContent = 'Создать (скоро)';
-        } else {
-          btnCreate.classList.remove('danger');
-          btnCreate.classList.add('primary');
-          btnCreate.textContent = 'Создать комнату';
-        }
+        // Если режим не 1v1 — блокируем действия в карточках (но не лезем в расчёты/запросы)
+        applyModeToButtons(m.type);
       }
 
       // переключение табов в модалке
@@ -1281,12 +1354,14 @@ if(isLottery){
           toast('Скоро', 'Этот формат появится чуть позже. Сейчас доступна только публичная дуэль 1v1.');
           return;
         }
-        // Важно: НЕ трогаем логику создания — просто жмём существующую кнопку.
-        btnCreate.click();
+        // Создаём комнату по выбранной ставке (делегируем в duels-lobby.js)
+        if (typeof window.__gg_duels_create_selected === 'function') window.__gg_duels_create_selected();
+        else toast('Ок', 'Выбери ставку и нажми «Создать» на карточке.');
       });
-
-      // блокируем создание, если выбран неподдерживаемый режим (без правок duels-lobby.js)
-      btnCreate.addEventListener('click', (e)=>{
+      // блокируем создание/быстрый матч, если выбран неподдерживаемый режим
+      document.addEventListener('click', (e)=>{
+        const btn = e.target && e.target.closest && e.target.closest('[data-action="create"],[data-action="quick"]');
+        if(!btn) return;
         const m = getMode();
         if(m.type !== 'duel_1v1_public'){
           e.preventDefault();
