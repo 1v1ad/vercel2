@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GGRoom — Дуэль</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="stylesheet" href="/css/ui-tokens.css">
+  <link rel="stylesheet" href="/css/duel-card.css">
+  <script defer src="/js/duel-card.js"></script>
+</head>
+<body>
+  <header class="dc-topbar">
+    <a class="dc-back" id="backLink" href="/lobby.html#archive" aria-label="Назад">
+      <span class="dc-back-ic">←</span><span class="dc-back-txt">Назад</span>
+    </a>
+
+    <div class="dc-title">
+      <div class="dc-title-h" id="dcTitle">Дуэль</div>
+      <div class="dc-title-sub" id="dcSubtitle">Загружаю…</div>
+    </div>
+
+    <div class="dc-actions">
+      <button class="ui-btn ui-btn-ghost" id="copyBtn" type="button">Скопировать ID</button>
+    </div>
+  </header>
+
+  <main class="dc-wrap">
+    <section class="dc-hero">
+      <div class="dc-hero-left">
+        <div class="dc-hero-id" id="dcId">#—</div>
+        <div class="dc-hero-pills">
+          <span class="dc-pill" id="dcStatusPill">…</span>
+          <span class="dc-pill dc-pill-muted" id="dcStakePill">Ставка: —</span>
+        </div>
+      </div>
+      <div class="dc-hero-right">
+        <div class="dc-kpi">
+          <div class="dc-k">Pot</div>
+          <div class="dc-v" id="kpiPot">—</div>
+        </div>
+        <div class="dc-kpi">
+          <div class="dc-k">Fee</div>
+          <div class="dc-v" id="kpiFee">—</div>
+        </div>
+        <div class="dc-kpi">
+          <div class="dc-k">Payout</div>
+          <div class="dc-v" id="kpiPayout">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dc-grid">
+      <article class="dc-card">
+        <div class="dc-card-h">Участники</div>
+        <div class="dc-players">
+          <div class="dc-player" id="p1">
+            <div class="dc-ava" id="p1Ava"></div>
+            <div class="dc-player-meta">
+              <div class="dc-player-name" id="p1Name">—</div>
+              <div class="dc-player-tags" id="p1Tags"></div>
+            </div>
+          </div>
+
+          <div class="dc-vs">VS</div>
+
+          <div class="dc-player" id="p2">
+            <div class="dc-ava" id="p2Ava"></div>
+            <div class="dc-player-meta">
+              <div class="dc-player-name" id="p2Name">—</div>
+              <div class="dc-player-tags" id="p2Tags"></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="dc-card">
+        <div class="dc-card-h">Таймлайн</div>
+        <div class="dc-kv">
+          <div class="dc-k">Создано</div><div class="dc-v" id="tCreated">—</div>
+          <div class="dc-k">Обновлено</div><div class="dc-v" id="tUpdated">—</div>
+          <div class="dc-k">Завершено</div><div class="dc-v" id="tFinished">—</div>
+        </div>
+      </article>
+
+      <article class="dc-card dc-card-wide">
+        <div class="dc-card-h">Честность (PF)</div>
+        <div class="dc-muted" id="pfHint">Скоро здесь будет проверка честности как в админке: commit / nonce / seeds + кнопка “Проверить”.</div>
+        <details class="dc-details" id="pfDetails">
+          <summary>Показать детали</summary>
+          <div class="dc-kv" id="pfKv"></div>
+        </details>
+      </article>
+    </section>
+
+    <section class="dc-foot muted">
+      Если что-то выглядит странно — просто скопируй ID дуэли и скинь саппорту. Вселенная любит логи.
+    </section>
+  </main>
+</body>
+</html>

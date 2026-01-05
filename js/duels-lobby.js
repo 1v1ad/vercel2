@@ -438,7 +438,7 @@ function renderHistory(items){
       var row = document.createElement('div');
       row.className = 'history-item';
       row.onclick = (function(id){
-        return function(){ showDuelDetails(id); };
+        return function(){ openUserDuelCard(id); };
       })(it.id);
 
       var left = document.createElement('div');
@@ -466,6 +466,13 @@ function renderHistory(items){
       title.className = 'duel-title';
       title.textContent = fmtRub(it.stake||0) + ' · ' + cName + ' vs ' + oName;
 
+      var idLink = document.createElement('a');
+      idLink.className = 'pill pill-id';
+      idLink.href = '/duel-card.html?id=' + encodeURIComponent(it.id) + '&back=' + encodeURIComponent('/lobby.html#archive');
+      idLink.textContent = '#' + String(it.id);
+      idLink.onclick = function(ev){ try{ ev.stopPropagation(); }catch(_){} };
+
+
       // outcome-плашка (если это "моя" дуэль)
       var pillText = '';
       var pillClass = '';
@@ -479,6 +486,7 @@ function renderHistory(items){
       }catch(_){}
 
       titleRow.appendChild(title);
+      titleRow.appendChild(idLink);
       if (pillText){
         var pill = document.createElement('span');
         pill.className = 'pill ' + pillClass;
@@ -711,7 +719,7 @@ function renderHistory(items){
       var row = document.createElement('div');
       row.className = 'history-item';
       row.onclick = (function(id){
-        return function(){ showDuelDetails(id); };
+        return function(){ openUserDuelCard(id); };
       })(it.id);
 
       var left = document.createElement('div');
@@ -1130,6 +1138,17 @@ async function loadOpen(){
       }
     }
   }
+
+  function openUserDuelCard(id){
+    try{
+      var back = '/lobby.html' + (location.hash ? location.hash : '#archive');
+      var url = '/duel-card.html?id=' + encodeURIComponent(id) + '&back=' + encodeURIComponent(back);
+      window.location.href = url;
+    }catch(_){
+      window.location.href = '/duel-card.html?id=' + encodeURIComponent(id);
+    }
+  }
+
 
   function hideModal(){
     var modal = byId('duel-modal');
