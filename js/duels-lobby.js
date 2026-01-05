@@ -158,10 +158,64 @@ function setSelectedStake(v){
       if (!st) continue;
       map[st] = (map[st]||0) + 1;
     }
+
+    // max по числовым ставкам — чтобы честно помечать HOT
+    var max = 0;
+    for (var k in map){
+      if (isNumericStake(k)){
+        if (map[k] > max) max = map[k];
+      }
+    }
+
     var els = document.querySelectorAll('[data-open-count]');
     for (var j=0;j<els.length;j++){
-      var k = String(els[j].getAttribute('data-open-count')||'');
-      els[j].textContent = (map[k] != null) ? String(map[k]) : '0';
+      var key = String(els[j].getAttribute('data-open-count')||'');
+      var cnt = (map[key] != null) ? Number(map[key]) : 0;
+
+      els[j].textContent = String(cnt);
+
+      // микро-пульс, если есть жизнь
+      try{
+        var kpi = els[j].closest('.kpi');
+        if (kpi){
+          if (key !== 'vip' && cnt > 0) kpi.classList.add('is-live');
+          else kpi.classList.remove('is-live');
+        }
+      }catch(_){}
+
+      // бейджи LIVE/HOT/VIP
+      try{
+        var card = els[j].closest('.stake-card');
+        if (!card) continue;
+        var badge = card.querySelector('.stake-badge');
+        if (!badge) continue;
+
+        var label = '';
+        var cls = '';
+
+        if (key === 'vip'){
+          label = 'VIP';
+          cls = 'badge-vip';
+        } else if (cnt > 0){
+          if (max > 0 && cnt === max){
+            label = 'HOT';
+            cls = 'badge-hot';
+          } else {
+            label = 'LIVE';
+            cls = 'badge-live';
+          }
+        }
+
+        if (label){
+          badge.textContent = label;
+          badge.className = 'stake-badge ' + cls;
+          card.classList.add('has-badge');
+        } else {
+          badge.textContent = '';
+          badge.className = 'stake-badge';
+          card.classList.remove('has-badge');
+        }
+      }catch(_){}
     }
   }
 

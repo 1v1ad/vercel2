@@ -270,7 +270,8 @@
 .stake-card{
   position:relative;
   display:grid;
-  grid-template-columns: minmax(0,1fr) 260px;
+  /* mobile-first: по умолчанию как на телефоне */
+  grid-template-columns: 1fr;
   gap:14px;
   align-items:stretch;
   padding:14px 14px 12px;
@@ -294,6 +295,40 @@
   box-shadow: 0 0 0 3px rgba(244,216,138,.12) inset, 0 14px 26px rgba(0,0,0,.24);
 }
 
+.stake-badge{
+  position:absolute;
+  top:10px; right:10px;
+  display:none;
+  align-items:center; justify-content:center;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(18,22,33,.68);
+  color:var(--text);
+  font-size:11px;
+  font-weight:950;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  z-index:2;
+  box-shadow:0 10px 18px rgba(0,0,0,.25);
+}
+.stake-card.has-badge .stake-badge{ display:inline-flex; }
+.stake-badge.badge-live{
+  border-color:rgba(45,212,191,.35);
+  background:rgba(45,212,191,.12);
+  color:#8ff3df;
+}
+.stake-badge.badge-hot{
+  border-color:rgba(244,216,138,.55);
+  background:rgba(244,216,138,.12);
+  color:var(--gold);
+}
+.stake-badge.badge-vip{
+  border-color:rgba(186,141,255,.40);
+  background:rgba(186,141,255,.12);
+  color:#e6d6ff;
+}
+
 .stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; min-width:0; }
 .stake-top{ position:relative; z-index:1; display:flex; flex-direction:column; gap:4px; }
 .stake-top .amt{ font-weight:950; font-size:18px; letter-spacing:.2px; }
@@ -303,12 +338,55 @@
 .stake-kpis .kpi{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
 .stake-kpis .dot{ width:6px; height:6px; border-radius:10px; background:rgba(244,216,138,.95); box-shadow:0 0 0 3px rgba(244,216,138,.14); }
 
-.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:auto; }
+/* живой индикатор, если есть открытые комнаты */
+.stake-kpis .kpi.is-live{ color:rgba(232,234,240,.95); }
+.stake-kpis .kpi.is-live b{
+  color:#8ff3df;
+  text-shadow:0 0 10px rgba(45,212,191,.22);
+  animation:kpiPulse 1.8s ease-in-out infinite;
+}
+.stake-kpis .kpi.is-live .dot{
+  background:rgba(45,212,191,.95);
+  box-shadow:0 0 0 3px rgba(45,212,191,.16);
+  animation:dotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes kpiPulse{
+  0%,100%{ opacity:.88; filter:brightness(1); }
+  50%{ opacity:1; filter:brightness(1.25); }
+}
+@keyframes dotPulse{
+  0%,100%{ transform:scale(1); box-shadow:0 0 0 3px rgba(45,212,191,.16); }
+  50%{ transform:scale(1.18); box-shadow:0 0 0 6px rgba(45,212,191,.10); }
+}
+
+@keyframes illShine{
+  0%{ transform: rotate(20deg) translateX(-80%); opacity:0; }
+  18%{ opacity:.28; }
+  50%{ opacity:.45; }
+  82%{ opacity:.28; }
+  100%{ transform: rotate(20deg) translateX(80%); opacity:0; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .stake-card,
+  .stake-ill img,
+  .stake-ill::after,
+  .stake-kpis .kpi.is-live b,
+  .stake-kpis .kpi.is-live .dot{
+    animation:none !important;
+    transition:none !important;
+  }
+}
+
+
+.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr; gap:10px; margin-top:auto; }
 .stake-actions .btn{ justify-content:center; padding:10px 12px; border-radius:12px; font-weight:900; white-space:nowrap; }
 .stake-actions .btn:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
 
 .stake-ill{
   position:relative; z-index:1;
+  height:150px;
   border-radius:14px;
   overflow:hidden;
   border:1px solid rgba(255,255,255,.08);
@@ -338,7 +416,13 @@
   pointer-events:none;
 }
 .stake-card:hover .stake-ill img{ transform: translateY(-4px) scale(1.02); filter: drop-shadow(0 14px 22px rgba(0,0,0,.35)); }
-.stake-card:hover .stake-ill::after{ opacity:1; transform: rotate(20deg) translateX(40%); }
+.stake-card:not(.has-shine):hover .stake-ill::after{ opacity:1; transform: rotate(20deg) translateX(40%); }
+
+.stake-card.has-shine .stake-ill::after{
+  opacity:.35;
+  animation: illShine 4.6s ease-in-out infinite;
+}
+.stake-card.has-shine:hover .stake-ill::after{ opacity:.55; }
 
 .stake-card.stake-vip{
   border-color: rgba(186,141,255,.28);
@@ -355,15 +439,16 @@
 .stake-card.stake-vip[data-disabled="1"]{ opacity:.72; }
 .stake-card.stake-vip[data-disabled="1"]:hover{ transform:none; filter:none; }
 
-@media (max-width: 980px){
-  .stake-card{ grid-template-columns: minmax(0,1fr) 210px; }
+@media (min-width: 520px){
+  .stake-actions{ grid-template-columns: 1fr 1fr; }
 }
-@media (max-width: 680px){
-  .stake-card{ grid-template-columns:1fr; }
-  .stake-ill{ height:150px; }
+
+@media (min-width: 980px){
+  .stake-card{ grid-template-columns: minmax(0,1fr) 260px; }
+  .stake-ill{ height:auto; min-height:150px; }
 }
+
 @media (max-width: 420px){
-  .stake-actions{ grid-template-columns:1fr; }
   .stake-actions .btn{ padding:10px 10px; font-size:13px; }
 }
 
@@ -759,6 +844,7 @@
 
                     <div class="stakes" aria-label="Ставки">
             <div class="stake-card is-selected" data-stake="100">
+              <div class="stake-badge" aria-hidden="true"></div>
               <div class="stake-left">
                 <div class="stake-top">
                   <div class="amt">₽100</div>
@@ -778,6 +864,7 @@
             </div>
 
             <div class="stake-card" data-stake="250">
+              <div class="stake-badge" aria-hidden="true"></div>
               <div class="stake-left">
                 <div class="stake-top">
                   <div class="amt">₽250</div>
@@ -796,7 +883,8 @@
               </div>
             </div>
 
-            <div class="stake-card" data-stake="500">
+            <div class="stake-card has-shine" data-stake="500">
+              <div class="stake-badge" aria-hidden="true"></div>
               <div class="stake-left">
                 <div class="stake-top">
                   <div class="amt">₽500</div>
@@ -815,7 +903,8 @@
               </div>
             </div>
 
-            <div class="stake-card" data-stake="1000">
+            <div class="stake-card has-shine" data-stake="1000">
+              <div class="stake-badge" aria-hidden="true"></div>
               <div class="stake-left">
                 <div class="stake-top">
                   <div class="amt">₽1 000</div>
@@ -834,7 +923,8 @@
               </div>
             </div>
 
-            <div class="stake-card" data-stake="2500">
+            <div class="stake-card has-shine" data-stake="2500">
+              <div class="stake-badge" aria-hidden="true"></div>
               <div class="stake-left">
                 <div class="stake-top">
                   <div class="amt">₽2 500</div>
@@ -854,6 +944,7 @@
             </div>
 
             <div class="stake-card stake-vip" data-stake="vip" data-disabled="1">
+              <div class="stake-badge" aria-hidden="true"></div>
               <div class="stake-left">
                 <div class="stake-top">
                   <div class="amt">VIP</div>
