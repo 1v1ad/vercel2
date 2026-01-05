@@ -1,136 +1,107 @@
-// /js/duel-card.js — user duel card (front, mobile-first)
+// /js/duel-card.js — user duel card (front)
+// Loads duel data from backend and renders compact "support-friendly" duel card.
 
-(function(){
-  function qs(sel){ return document.querySelector(sel); }
-  function byId(id){ return document.getElementById(id); }
+(function () {
+  var API_FALLBACK = 'https://vercel2pr.onrender.com';
 
-  function getParam(name){
-    try{
+  function qs(sel) { return document.querySelector(sel); }
+  function byId(id) { return document.getElementById(id); }
+
+  function getParam(name) {
+    try {
       var u = new URL(window.location.href);
       return u.searchParams.get(name);
-    }catch(_){
+    } catch (_) {
       return null;
     }
   }
 
-  function safeText(v){
+  function apiBase() {
+    try {
+      var meta = qs('meta[name="api-base"]');
+      if (meta && meta.content) return meta.content.replace(/\/+$/, '');
+    } catch (_) {}
+    try {
+      var ls = localStorage.getItem('API_BASE');
+      if (ls) return String(ls).replace(/\/+$/, '');
+    } catch (_) {}
+    return API_FALLBACK;
+  }
+
+  function getAuthHeaders() {
+    try {
+      if (typeof window.adminHeaders === 'function') return window.adminHeaders() || {};
+      if (typeof window.headers === 'function') return window.headers() || {};
+      if (typeof window.authHeaders === 'function') return window.authHeaders() || {};
+    } catch (_) {}
+    return {};
+  }
+
+  async function apiJson(path, opts) {
+    var base = apiBase();
+    var url = /^https?:\/\//i.test(path) ? path : (base + path);
+
+    var o = opts || {};
+    o.credentials = 'include';
+    o.headers = o.headers || {};
+
+    var H = getAuthHeaders();
+    for (var k in H) o.headers[k] = H[k];
+
+    var r = null;
+    var j = null;
+    try {
+      r = await fetch(url, o);
+      try { j = await r.json(); } catch (_) {}
+    } catch (_) {}
+    return { r: r, j: j };
+  }
+
+  function safeText(v) {
     if (v === null || v === undefined) return '';
     return String(v);
   }
 
-  function fullName(first, last, id){
-    var a = (first||'').toString().trim();
-    var b = (last||'').toString().trim();
+  function fullName(first, last, id) {
+    var a = (first || '').toString().trim();
+    var b = (last || '').toString().trim();
     var n = (a + ' ' + b).trim();
-    if (!n) return 'user #' + safeText(id||'—');
+    if (!n) return 'user #' + safeText(id || '—');
     return n;
   }
 
-  function fmtRub(n){
-    n = Number(n||0);
-    try{
+  function fmtRub(n) {
+    n = Number(n || 0);
+    if (!isFinite(n)) n = 0;
+    try {
       return n.toLocaleString('ru-RU') + ' ₽';
-    }catch(_){
+    } catch (_) {
       return String(n) + ' ₽';
     }
   }
 
-  function fmtDT(s){
-    if (!s) return '—';
-    var d = new Date(s);
-    if (isNaN(d.getTime())) return safeText(s);
-    var dd = String(d.getDate()).padStart(2,'0');
-    var mm = String(d.getMonth()+1).padStart(2,'0');
-    var yy = d.getFullYear();
-    var hh = String(d.getHours()).padStart(2,'0');
-    var mi = String(d.getMinutes()).padStart(2,'0');
-    return dd + '.' + mm + '.' + yy + ' ' + hh + ':' + mi;
-  }
-
-  function parseDT(v){
-    if (!v) return null;
-    var s = String(v).trim();
-    if (!s) return null;
-    // common pg: "YYYY-MM-DD HH:MM:SS"
-    if (!s.includes('T') && s.includes(' ')) s = s.replace(' ', 'T');
-    // keep timezone if present, strip trailing "Z" only for display (Date can parse it)
-    var d = new Date(s);
-    if (isNaN(d.getTime())) return null;
-    return d;
-  }
-
-  function fmtDurSec(sec){
-    var s = Math.max(0, Math.round(Number(sec)||0));
-    if (!s) return '0с';
-    var m = Math.floor(s/60); s -= m*60;
-    var h = Math.floor(m/60); m -= h*60;
-    var parts = [];
-    if (h) parts.push(h + 'ч');
-    if (m) parts.push(m + 'м');
-    if (s || !parts.length) parts.push(s + 'с');
-    return parts.join(' ');
-  }
-
-  function pick(obj, keys){
-    if (!obj) return null;
-    for (var i=0;i<keys.length;i++){
-      var k = keys[i];
-      if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
+  function fmtDate(ts) {
+    if (!ts) return '—';
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return safeText(ts);
+    try {
+      // Always show MSK (+3) to be consistent with admin/ops.
+      return d.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+    } catch (_) {
+      return d.toLocaleString('ru-RU');
     }
-    return null;
   }
 
-  async function sha256Hex(str){
-    if (!window.crypto || !crypto.subtle) throw new Error('WebCrypto недоступен');
-    var buf = new TextEncoder().encode(String(str));
-    var hash = await crypto.subtle.digest('SHA-256', buf);
-    var arr = Array.from(new Uint8Array(hash));
-    return arr.map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  function setText(id, v) {
+    var el = byId(id);
+    if (!el) return;
+    el.textContent = (v === null || v === undefined || v === '') ? '—' : String(v);
   }
 
-  function readMeta(name){
-    var m = document.querySelector('meta[name="'+name+'"]');
-    return m ? String(m.getAttribute('content')||'').trim() : '';
-  }
-
-  function apiBase(){
-    var v = '';
-    try { v = (localStorage.getItem('api-base') || ''); } catch(_){}
-    v = v || readMeta('api-base') || (window.API_BASE||'') || 'https://vercel2pr.onrender.com';
-    return String(v||'').trim().replace(/\/+$/,'');
-  }
-
-  function getAuthHeaders(){
-    try{
-      if (typeof window.headers === 'function') return window.headers() || {};
-      if (typeof window.authHeaders === 'function') return window.authHeaders() || {};
-    }catch(_){}
-    return {};
-  }
-
-  async function apiJson(path, opts){
-    var base = apiBase();
-    var url = (/^https?:\/\//i.test(path) ? path : (base + path));
-    opts = opts || {};
-    var headers = opts.headers || {};
-    // merge auth headers (if any)
-    var H = getAuthHeaders();
-    for (var k in H) headers[k] = H[k];
-    opts.headers = headers;
-    opts.credentials = 'include';
-
-    var r=null, j=null;
-    try{
-      r = await fetch(url, opts);
-      try{ j = await r.json(); }catch(_){}
-    }catch(_){}
-    return { r:r, j:j };
-  }
-
-  function setAva(el, url, name){
+  function setAva(el, url, name) {
     if (!el) return;
     el.innerHTML = '';
-    if (url){
+    if (url) {
       var img = document.createElement('img');
       img.src = url;
       img.alt = name || 'avatar';
@@ -138,324 +109,312 @@
       el.appendChild(img);
       return;
     }
-    // fallback initials
-    var t = (name||'').trim();
-    var parts = t.split(/\s+/).filter(Boolean);
-    var ini = parts.length ? parts[0][0] : '?';
-    if (parts.length>1) ini += parts[parts.length-1][0];
-    el.textContent = ini.toUpperCase();
+    var ph = document.createElement('div');
+    ph.className = 'dc-ava-ph';
+    ph.textContent = (name && name.trim()) ? name.trim().slice(0, 1).toUpperCase() : '•';
+    el.appendChild(ph);
   }
 
-  function tag(html, cls){
+  function pillStatus(status) {
+    status = String(status || '').toLowerCase();
+    if (status === 'open') return { t: 'Ожидает', cls: 'dc-pill dc-pill-live' };
+    if (status === 'finished') return { t: 'Завершено', cls: 'dc-pill dc-pill-ok' };
+    if (status === 'cancelled' || status === 'canceled') return { t: 'Отменено', cls: 'dc-pill dc-pill-muted' };
+    return { t: status || '—', cls: 'dc-pill dc-pill-muted' };
+  }
+
+  function setTags(container, tags) {
+    if (!container) return;
+    container.innerHTML = '';
+    (tags || []).forEach(function (t) {
+      var s = document.createElement('span');
+      s.className = 'dc-tag';
+      s.textContent = t;
+      container.appendChild(s);
+    });
+  }
+
+  function addTag(container, text, kind) {
+    if (!container) return;
     var s = document.createElement('span');
-    s.className = 'dc-tag' + (cls ? (' ' + cls) : '');
-    s.textContent = html;
-    return s;
+    s.className = 'dc-tag' + (kind ? (' dc-tag-' + kind) : '');
+    s.textContent = text;
+    container.appendChild(s);
   }
 
-  function setTags(root, tags){
-    if (!root) return;
-    root.innerHTML = '';
-    for (var i=0;i<tags.length;i++) root.appendChild(tags[i]);
+  function kvAppend(container, k, v) {
+    if (!container) return;
+    var kk = document.createElement('div');
+    kk.className = 'dc-k';
+    kk.textContent = k;
+    var vv = document.createElement('div');
+    vv.className = 'dc-v mono';
+    vv.textContent = (v === null || v === undefined) ? '—' : String(v);
+    container.appendChild(kk);
+    container.appendChild(vv);
   }
 
-  async function boot(){
-    var duelId = getParam('id') || (location.hash ? location.hash.replace('#','') : '');
-    duelId = String(duelId||'').replace(/[^0-9]/g,'');
-    if (!duelId){
-      byId('dcSubtitle').textContent = 'Не указан id дуэли';
-      return;
+  async function sha256Hex(str) {
+    var enc = new TextEncoder();
+    var buf = enc.encode(str);
+    var hash = await crypto.subtle.digest('SHA-256', buf);
+    var arr = Array.from(new Uint8Array(hash));
+    return arr.map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+
+  function computeEconomy(stake, feeBps) {
+    var pot = stake * 2;
+    var fee = Math.floor(pot * (feeBps / 10000));
+    var payout = pot - fee;
+    var profit = payout - stake;
+    return { pot: pot, fee: fee, payout: payout, profit: profit };
+  }
+
+  function render(it, me) {
+    // Header
+    setText('dcId', '#' + it.id);
+    setText('dcTitle', 'Дуэль #' + it.id);
+    setText('dcSubtitle', 'Открыта: ' + fmtDate(it.created_at));
+
+    var sp = byId('dcStatusPill');
+    var st = pillStatus(it.status);
+    if (sp) { sp.textContent = st.t; sp.className = st.cls; }
+
+    setText('dcStakePill', 'Ставка: ' + fmtRub(it.stake || 0));
+
+    // Economy
+    var stake = Number(it.stake || 0);
+    var feeBps = Number(it.fee_bps || 500);
+    var eco = computeEconomy(stake, feeBps);
+
+    setText('kpiPot', fmtRub(eco.pot));
+    setText('kpiFee', fmtRub(eco.fee));
+    setText('kpiPayout', fmtRub(eco.payout));
+
+    setText('finStake', fmtRub(stake));
+    setText('finPot', fmtRub(eco.pot));
+    setText('finFee', fmtRub(eco.fee));
+    setText('finPayout', fmtRub(eco.payout));
+    setText('finProfit', fmtRub(eco.profit));
+
+    // Participants
+    var p1Ava = byId('p1Ava'), p2Ava = byId('p2Ava');
+    var p1Name = byId('p1Name'), p2Name = byId('p2Name');
+    var p1Tags = byId('p1Tags'), p2Tags = byId('p2Tags');
+
+    var creatorName = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
+    var oppName = it.opponent_user_id
+      ? fullName(it.opponent_first_name, it.opponent_last_name, it.opponent_user_id)
+      : 'Ожидаем соперника';
+
+    if (p1Name) p1Name.textContent = creatorName;
+    if (p2Name) p2Name.textContent = oppName;
+
+    setAva(p1Ava, it.creator_avatar, creatorName);
+    setAva(p2Ava, it.opponent_avatar, oppName);
+
+    if (p1Tags) p1Tags.innerHTML = '';
+    if (p2Tags) p2Tags.innerHTML = '';
+
+    var myId = me && (me.id || me.user_id) ? Number(me.id || me.user_id) : null;
+    if (myId && Number(it.creator_user_id) === myId) addTag(p1Tags, 'Вы', 'me');
+    if (myId && Number(it.opponent_user_id) === myId) addTag(p2Tags, 'Вы', 'me');
+
+    var winnerId = it.winner_user_id ? Number(it.winner_user_id) : null;
+    if (winnerId) {
+      if (Number(it.creator_user_id) === winnerId) addTag(p1Tags, 'Победитель', 'win');
+      if (Number(it.opponent_user_id) === winnerId) addTag(p2Tags, 'Победитель', 'win');
+      if (Number(it.creator_user_id) !== winnerId) addTag(p1Tags, 'Проиграл', 'lose');
+      if (Number(it.opponent_user_id) !== winnerId) addTag(p2Tags, 'Проиграл', 'lose');
+      // add class to cards
+      var p1 = byId('p1'), p2 = byId('p2');
+      if (p1) p1.classList.toggle('is-win', Number(it.creator_user_id) === winnerId);
+      if (p1) p1.classList.toggle('is-lose', it.opponent_user_id && Number(it.creator_user_id) !== winnerId);
+      if (p2) p2.classList.toggle('is-win', it.opponent_user_id && Number(it.opponent_user_id) === winnerId);
+      if (p2) p2.classList.toggle('is-lose', it.opponent_user_id && Number(it.opponent_user_id) !== winnerId);
     }
 
-    var back = getParam('back');
-    if (back){
-      var a = byId('backLink');
-      if (a) a.href = back;
-    }
-
-    var copyBtn = byId('copyBtn');
-    if (copyBtn){
-      copyBtn.onclick = function(){
-        try{
-          navigator.clipboard.writeText(duelId);
-          copyBtn.textContent = 'Скопировано';
-          setTimeout(function(){ copyBtn.textContent = 'Скопировать ID'; }, 1200);
-        }catch(_){}
-      };
-    }
-
-    byId('dcId').textContent = '#' + duelId;
-    byId('dcTitle').textContent = 'Дуэль #' + duelId;
-
-    // who am I?
-    var myUserId = null;
-    try{
-      var me = await apiJson('/api/me');
-      if (me.r && me.r.ok && me.j && me.j.ok && me.j.user) myUserId = me.j.user.id;
-    }catch(_){}
-
-    var res = await apiJson('/api/duels/' + encodeURIComponent(duelId));
-    if (!res.r || !res.r.ok || !res.j || !res.j.ok || !res.j.item){
-      byId('dcSubtitle').textContent = 'Не удалось загрузить данные дуэли';
-      byId('dcStatusPill').textContent = 'Ошибка';
-      return;
-    }
-
-    var it = res.j.item;
-    byId('dcSubtitle').textContent = safeText(it.status||'');
-    byId('dcStatusPill').textContent = safeText(it.status||'—');
-    byId('dcStakePill').textContent = 'Ставка: ' + fmtRub(it.stake||0);
-
-    var pot=0, fee=0, payout=0;
-    try{
-      var rr = it.result;
-      if (typeof rr === 'string') rr = JSON.parse(rr);
-      if (rr){
-        pot = Number(rr.pot||0);
-        fee = Number(rr.fee||0);
-        payout = Number(rr.payout||0);
+    // Split (net for each side)
+    var creatorNet = '—';
+    var oppNet = '—';
+    if (it.status === 'finished' && winnerId && stake > 0) {
+      if (Number(it.creator_user_id) === winnerId) creatorNet = '+' + fmtRub(eco.profit);
+      else creatorNet = '−' + fmtRub(stake);
+      if (it.opponent_user_id) {
+        if (Number(it.opponent_user_id) === winnerId) oppNet = '+' + fmtRub(eco.profit);
+        else oppNet = '−' + fmtRub(stake);
       }
-    }catch(_){}
-
-    byId('kpiPot').textContent = fmtRub(pot||0);
-    byId('kpiFee').textContent = fmtRub(fee||0);
-    byId('kpiPayout').textContent = fmtRub(payout||0);
-
-    var cName = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
-    var oName = fullName(it.opponent_first_name, it.opponent_last_name, it.opponent_user_id);
-
-    setAva(byId('p1Ava'), it.creator_avatar, cName);
-    setAva(byId('p2Ava'), it.opponent_avatar, oName);
-    byId('p1Name').textContent = cName;
-    byId('p2Name').textContent = oName;
-
-    var winnerId = it.winner_user_id || (it.winner && it.winner.user_id) || null;
-    var cTags = [tag('Создатель')];
-    var oTags = [tag('Оппонент')];
-
-    if (myUserId && Number(it.creator_user_id) === Number(myUserId)) cTags.push(tag('Вы', 'dc-tag-me'));
-    if (myUserId && Number(it.opponent_user_id) === Number(myUserId)) oTags.push(tag('Вы', 'dc-tag-me'));
-
-    if (winnerId){
-      if (Number(winnerId) === Number(it.creator_user_id)){
-        cTags.push(tag('Победа', 'dc-tag-win'));
-        if (it.opponent_user_id) oTags.push(tag('Поражение', 'dc-tag-lose'));
-      } else if (Number(winnerId) === Number(it.opponent_user_id)){
-        oTags.push(tag('Победа', 'dc-tag-win'));
-        if (it.creator_user_id) cTags.push(tag('Поражение', 'dc-tag-lose'));
-      }
     }
+    setText('finCreator', creatorNet);
+    setText('finOpponent', oppNet);
 
-    setTags(byId('p1Tags'), cTags);
-    setTags(byId('p2Tags'), oTags);
+    // Timeline
+    setText('tCreated', fmtDate(it.created_at));
+    // We don't have dedicated joined/coinflip/payout timestamps in duel_rooms now; approximate from updated/finished.
+    setText('tUpdated', safeText(it.updated_at || '—'));
+    setText('tFinished', safeText(it.finished_at || '—'));
 
-        // winner highlight
-    try{
-      var p1El = byId('p1');
-      var p2El = byId('p2');
-      if (p1El) p1El.classList.remove('is-win','is-lose');
-      if (p2El) p2El.classList.remove('is-win','is-lose');
-      if (winnerId){
-        if (Number(winnerId) === Number(it.creator_user_id)){
-          if (p1El) p1El.classList.add('is-win');
-          if (p2El) p2El.classList.add('is-lose');
-        } else if (Number(winnerId) === Number(it.opponent_user_id)){
-          if (p2El) p2El.classList.add('is-win');
-          if (p1El) p1El.classList.add('is-lose');
-        }
-      }
-    }catch(_){}
+    var joinedGuess = it.opponent_user_id ? fmtDate(it.updated_at || it.created_at) : '—';
+    setText('tJoined', joinedGuess);
 
-    // Финансы (best-effort)
-    var stake = Number(it.stake||0);
-    if ((!pot || pot===0) && stake) pot = stake*2;
-    if ((!fee || fee===0) && rr && typeof rr === 'object'){
-      fee = Number(pick(rr, ['fee','rake','rake_fee','rake_amount','platform_fee']) || 0);
-    }
-    if ((!payout || payout===0) && pot) payout = Math.max(0, pot - fee);
+    var coinflipGuess = (it.status === 'finished') ? fmtDate(it.updated_at || it.finished_at) : '—';
+    setText('tCoinflip', coinflipGuess);
 
-    if (byId('finStake')) byId('finStake').textContent = fmtRub(stake||0);
-    if (byId('finPot')) byId('finPot').textContent = fmtRub(pot||0);
-    if (byId('finFee')) byId('finFee').textContent = fmtRub(fee||0);
-    if (byId('finPayout')) byId('finPayout').textContent = fmtRub(payout||0);
+    var payoutGuess = (it.status === 'finished') ? fmtDate(it.finished_at || it.updated_at) : '—';
+    setText('tPayout', payoutGuess);
 
-    var profit = (payout && stake) ? (payout - stake) : null;
-    if (byId('finProfit')) byId('finProfit').textContent = (profit!=null ? fmtRub(profit) : '—');
-
-    var cNet = '—', oNet = '—';
-    if (winnerId && stake){
-      if (Number(winnerId) === Number(it.creator_user_id)){
-        cNet = '+' + fmtRub(profit!=null?profit:0);
-        oNet = '−' + fmtRub(stake);
-      } else if (Number(winnerId) === Number(it.opponent_user_id)){
-        oNet = '+' + fmtRub(profit!=null?profit:0);
-        cNet = '−' + fmtRub(stake);
-      }
-    } else if (stake){
-      // дуэль ещё не завершена — показываем только ожидание ставок
-      if (it.creator_user_id) cNet = '−' + fmtRub(stake);
-      if (it.opponent_user_id) oNet = '−' + fmtRub(stake);
-    }
-    if (byId('finCreator')) byId('finCreator').textContent = cNet;
-    if (byId('finOpponent')) byId('finOpponent').textContent = oNet;
-
-    // Таймлайн: created → join → coinflip → payout (best-effort)
-    var createdAt = pick(it, ['created_at','createdAt']) || it.created_at;
-    var joinedAt = pick(it, ['joined_at','opponent_joined_at','started_at']);
-    if (!joinedAt && rr && typeof rr === 'object') joinedAt = pick(rr, ['joined_at','opponent_joined_at','join_at','join_ts','started_at','joinedAt']);
-    if (!joinedAt && it.opponent_user_id && it.updated_at) joinedAt = it.updated_at;
-
-    var coinAt = (rr && typeof rr === 'object') ? pick(rr, ['coinflip_at','coinflip_ts','rng_at','coin_at','flip_at']) : null;
-    var payoutAt = (rr && typeof rr === 'object') ? pick(rr, ['payout_at','payout_ts','paid_at']) : null;
-    if (!payoutAt) payoutAt = pick(it, ['finished_at','finishedAt']) || it.finished_at;
-
-    byId('tCreated').textContent = fmtDT(createdAt);
-    byId('tJoined').textContent  = joinedAt ? fmtDT(joinedAt) : '—';
-    byId('tCoinflip').textContent = coinAt ? fmtDT(coinAt) : '—';
-    byId('tPayout').textContent  = payoutAt ? fmtDT(payoutAt) : '—';
-
-    if (byId('tUpdated')) byId('tUpdated').textContent  = fmtDT(it.updated_at);
-    if (byId('tFinished')) byId('tFinished').textContent = it.finished_at ? fmtDT(it.finished_at) : '—';
-
-    var dC = parseDT(createdAt);
-    var dJ = parseDT(joinedAt);
-    var dCoin = parseDT(coinAt);
-    var dP = parseDT(payoutAt);
-
-    var dparts = [];
-    if (dC && dJ) dparts.push('Ожидание соперника: ' + fmtDurSec((dJ - dC)/1000));
-    if (dJ && dCoin) dparts.push('До coinflip: ' + fmtDurSec((dCoin - dJ)/1000));
-    if (dCoin && dP) dparts.push('До выплаты: ' + fmtDurSec((dP - dCoin)/1000));
-    if (!dparts.length && dC && dP) dparts.push('Длительность: ' + fmtDurSec((dP - dC)/1000));
-    if (byId('tDur')) byId('tDur').textContent = dparts.length ? dparts.join(' • ') : '—';
-
-    // PF (provably fair): вытаскиваем из result/meta, если есть
-    var pf = {};
-    function take(src, fromKey, toKey){
-      if (!src || typeof src !== 'object') return;
-      var v = src[fromKey];
-      if (v === undefined || v === null) return;
-      var s = String(v);
-      if (!s.trim()) return;
-      if (pf[toKey] === undefined || pf[toKey] === null || !String(pf[toKey]).trim()){
-        pf[toKey] = v;
+    // Duration hint
+    var tDur = byId('tDur');
+    if (tDur) {
+      var d0 = it.created_at ? new Date(it.created_at).getTime() : NaN;
+      var d1 = it.finished_at ? new Date(it.finished_at).getTime() : NaN;
+      if (!isNaN(d0) && !isNaN(d1) && d1 >= d0) {
+        var sec = Math.floor((d1 - d0) / 1000);
+        var mm = Math.floor(sec / 60);
+        var ss = sec % 60;
+        tDur.textContent = 'Длительность: ' + mm + 'м ' + ss + 'с';
+      } else {
+        tDur.textContent = '—';
       }
     }
 
-    var sources = [];
-    if (rr && typeof rr === 'object'){
-      sources.push(rr);
-      if (rr.pf) sources.push(rr.pf);
-      if (rr.provably_fair) sources.push(rr.provably_fair);
-      if (rr.provablyFair) sources.push(rr.provablyFair);
-      if (rr.rng) sources.push(rr.rng);
-    }
-    sources.push(it);
-    try{
-      var meta = it.meta;
-      if (typeof meta === 'string') meta = JSON.parse(meta);
-      if (meta) sources.push(meta);
-    }catch(_){}
-
-    for (var si=0; si<sources.length; si++){
-      var ssrc = sources[si];
-      take(ssrc, 'commit', 'commit');
-      take(ssrc, 'hash', 'commit');
-      take(ssrc, 'server_seed_hash', 'commit');
-
-      take(ssrc, 'nonce', 'nonce');
-      take(ssrc, 'pf_nonce', 'nonce');
-
-      take(ssrc, 'client_seed', 'client_seed');
-      take(ssrc, 'clientSeed', 'client_seed');
-
-      take(ssrc, 'server_seed', 'server_seed');
-      take(ssrc, 'serverSeed', 'server_seed');
-
-      take(ssrc, 'method', 'method');
-      take(ssrc, 'rand_source', 'rand_source');
-
-      take(ssrc, 'winner_user_id', 'winner_user_id');
-      take(ssrc, 'roll', 'roll');
-    }
-
-    if (byId('pfCommit')) byId('pfCommit').textContent = safeText(pf.commit || '—');
-    if (byId('pfNonce')) byId('pfNonce').textContent = safeText(pf.nonce || '—');
-    if (byId('pfClientSeed')) byId('pfClientSeed').textContent = safeText(pf.client_seed || '—');
-
-    function kvAppend(container, k, v){
-      if (!container) return;
-      var kk = document.createElement('div'); kk.className = 'dc-k'; kk.textContent = k;
-      var vv = document.createElement('div'); vv.className = 'dc-v mono'; vv.textContent = (v==null? '—' : String(v));
-      container.appendChild(kk); container.appendChild(vv);
-    }
+    // PF
+    var meta = it.meta && typeof it.meta === 'object' ? it.meta : null;
+    var pf = meta && meta.pf && typeof meta.pf === 'object' ? meta.pf : {};
+    setText('pfCommit', pf.commit || '—');
+    setText('pfNonce', (pf.nonce === 0 || pf.nonce) ? String(pf.nonce) : '—');
+    setText('pfClientSeed', pf.client_seed || '—');
 
     var pfKv = byId('pfKv');
-    if (pfKv){
+    if (pfKv) {
       pfKv.innerHTML = '';
       if (pf.method) kvAppend(pfKv, 'method', pf.method);
       if (pf.rand_source) kvAppend(pfKv, 'rand_source', pf.rand_source);
       kvAppend(pfKv, 'commit', pf.commit || '—');
-      kvAppend(pfKv, 'nonce', pf.nonce || '—');
+      kvAppend(pfKv, 'nonce', (pf.nonce === 0 || pf.nonce) ? String(pf.nonce) : '—');
       kvAppend(pfKv, 'client_seed', pf.client_seed || '—');
-      kvAppend(pfKv, 'server_seed', pf.server_seed ? pf.server_seed : '—');
-      if (pf.roll) kvAppend(pfKv, 'roll', pf.roll);
+      kvAppend(pfKv, 'server_seed', pf.server_seed ? String(pf.server_seed) : '—');
+      if (pf.roll !== undefined && pf.roll !== null) kvAppend(pfKv, 'roll', pf.roll);
       if (pf.winner_user_id) kvAppend(pfKv, 'winner_user_id', pf.winner_user_id);
     }
 
     var pfNote = byId('pfNote');
-    if (pfNote){
-      pfNote.textContent = 'Проверка: sha256(server_seed:client_seed:nonce) → первые 16 hex как roll. roll чётный — победа creator, иначе opponent.';
+    if (pfNote) {
+      pfNote.textContent = 'Проверка: sha256(server_seed:client_seed:nonce) → берём первые 16 hex как roll. roll чётный — победа creator, иначе opponent.';
     }
 
     var pfBtn = byId('pfVerifyBtn');
-    var pfResEl = byId('pfResult');
-    if (pfBtn){
-      var canVerify = !!(pf.server_seed && pf.client_seed && (pf.nonce !== undefined && pf.nonce !== null && String(pf.nonce).trim() !== '') && window.crypto && crypto.subtle);
+    var pfRes = byId('pfResult');
+    if (pfBtn) {
+      var hasCrypto = !!(window.crypto && crypto.subtle);
+      var canVerify = hasCrypto && !!(pf.server_seed && pf.client_seed && (pf.nonce === 0 || (pf.nonce && String(pf.nonce).trim() !== '')));
       pfBtn.disabled = !canVerify;
-      if (!canVerify && pfResEl){
-        if (!window.crypto || !crypto.subtle) pfResEl.textContent = 'Проверка недоступна в браузере';
-        else pfResEl.textContent = 'Нужны server_seed + client_seed + nonce';
+
+      if (pfRes) {
+        if (!hasCrypto) pfRes.textContent = 'Проверка недоступна в браузере';
+        else if (!canVerify) pfRes.textContent = 'Нужны server_seed + client_seed + nonce';
+        else pfRes.textContent = 'Готово к проверке';
       }
 
-      pfBtn.onclick = async function(){
-        if (!pfResEl) return;
-        try{
+      pfBtn.onclick = async function () {
+        if (!pfRes) return;
+        try {
           var base = String(pf.server_seed) + ':' + String(pf.client_seed) + ':' + String(pf.nonce);
           var h = await sha256Hex(base);
-          var roll = BigInt('0x' + h.slice(0,16));
+          var roll = BigInt('0x' + h.slice(0, 16));
           var side = (roll % 2n === 0n) ? 'creator' : 'opponent';
 
-          var hSeed = await sha256Hex(String(pf.server_seed));
           var commitOk = '';
-          if (pf.commit){
+          if (pf.commit) {
             var c = String(pf.commit).toLowerCase().replace(/^0x/, '');
             if (c === h) commitOk = 'commit OK (hash)';
-            else if (c === hSeed) commitOk = 'commit OK (sha256(server_seed))';
-            else commitOk = 'commit ≠ hash';
+            else {
+              var hSeed = await sha256Hex(String(pf.server_seed));
+              if (c === hSeed) commitOk = 'commit OK (sha256(server_seed))';
+              else commitOk = 'commit ≠ hash';
+              if (pfKv) kvAppend(pfKv, 'computed.sha256(server_seed)', hSeed);
+            }
           }
 
-          pfResEl.textContent = 'roll: ' + String(roll) + ' → ' + side + (commitOk ? ' • ' + commitOk : '');
+          pfRes.textContent = 'roll: ' + String(roll) + ' → ' + side + (commitOk ? ' • ' + commitOk : '');
 
-          // append computed into details
-          if (pfKv){
+          if (pfKv) {
             kvAppend(pfKv, 'computed.hash', h);
             kvAppend(pfKv, 'computed.roll', String(roll));
             kvAppend(pfKv, 'computed.side', side);
-            kvAppend(pfKv, 'computed.sha256(server_seed)', hSeed);
           }
 
-          var predicted = (side === 'creator') ? it.creator_user_id : it.opponent_user_id;
-          var actualWinner = winnerId || pf.winner_user_id || null;
-          if (predicted && actualWinner){
-            var ok = (Number(predicted) === Number(actualWinner));
-            pfResEl.textContent += ok ? ' • winner совпал' : ' • winner НЕ совпал';
+          var predictedWinner = (side === 'creator') ? it.creator_user_id : it.opponent_user_id;
+          if (predictedWinner && winnerId) {
+            pfRes.textContent += (Number(predictedWinner) === Number(winnerId)) ? ' • winner совпал' : ' • winner НЕ совпал';
           }
-        }catch(err){
-          pfResEl.textContent = 'Ошибка проверки: ' + (err && err.message ? err.message : String(err));
+        } catch (err) {
+          pfRes.textContent = 'Ошибка проверки: ' + (err && err.message ? err.message : String(err));
         }
       };
     }
+
+    // Copy button
+    var copyBtn = byId('copyBtn');
+    if (copyBtn) {
+      copyBtn.onclick = async function () {
+        try {
+          await navigator.clipboard.writeText(String(it.id));
+          copyBtn.textContent = 'Скопировано!';
+          setTimeout(function () { copyBtn.textContent = 'Скопировать ID'; }, 900);
+        } catch (_) {
+          // fallback
+          try {
+            var ta = document.createElement('textarea');
+            ta.value = String(it.id);
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            copyBtn.textContent = 'Скопировано!';
+            setTimeout(function () { copyBtn.textContent = 'Скопировать ID'; }, 900);
+          } catch (__) {}
+        }
+      };
+    }
+  }
+
+  async function boot() {
+    var duelId = getParam('id') || getParam('duel_id') || getParam('duelId');
+    if (!duelId) {
+      setText('dcSubtitle', 'Нет параметра duel_id');
+      return;
+    }
+
+    // back link passthrough (optional)
+    try {
+      var back = getParam('back');
+      if (back) {
+        var a = byId('backLink');
+        if (a) a.href = decodeURIComponent(back);
+      }
+    } catch (_) {}
+
+    // load me (optional)
+    var me = null;
+    try {
+      var mr = await apiJson('/api/me');
+      if (mr.r && mr.r.ok && mr.j && mr.j.ok) {
+        me = mr.j.user || mr.j.me || mr.j;
+      }
+    } catch (_) {}
+
+    // load duel
+    var dr = await apiJson('/api/duels/' + encodeURIComponent(duelId));
+    if (!dr.r || !dr.r.ok || !dr.j || !dr.j.ok || !dr.j.item) {
+      setText('dcSubtitle', 'Не удалось загрузить данные дуэли');
+      var sp = byId('dcStatusPill');
+      if (sp) { sp.textContent = 'Ошибка'; sp.className = 'dc-pill dc-pill-muted'; }
+      return;
+    }
+
+    render(dr.j.item, me);
+  }
 
   boot();
 })();
