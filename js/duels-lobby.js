@@ -159,6 +159,8 @@
   var pollTimer = null;
   var selectedStake = '100';
   var lastOpenItems = [];
+  var lastHistoryItems = [];
+  var myDuelsTab = 'active';
 
   function setKpi(id, val){
     var el = byId(id);
@@ -534,6 +536,383 @@ function renderHistory(items){
     }
   }
 
+
+  // --------------------- My Duels tabs (step 3.2) ---------------------
+  function setMyDuelsTab(tab){
+    tab = String(tab||'').toLowerCase();
+    if (tab !== 'active' && tab !== 'created' && tab !== 'archive') tab = 'archive';
+    myDuelsTab = tab;
+    try{ localStorage.setItem('ggroom_myduels_tab_v1', tab); }catch(_){}
+
+    // buttons
+    try{
+      var btns = document.querySelectorAll('.myduels-tabs [data-myduels-tab]');
+      for (var i=0;i<btns.length;i++){
+        var b = btns[i];
+        var t = String(b.getAttribute('data-myduels-tab')||'').toLowerCase();
+        if (t === tab) b.classList.add('is-active');
+        else b.classList.remove('is-active');
+      }
+    }catch(_){}
+
+    // panes
+    var pA = byId('myduels-pane-active');
+    var pC = byId('myduels-pane-created');
+    var pR = byId('myduels-pane-archive');
+    if (pA) pA.classList.toggle('is-active', tab === 'active');
+    if (pC) pC.classList.toggle('is-active', tab === 'created');
+    if (pR) pR.classList.toggle('is-active', tab === 'archive');
+  }
+
+  function setCnt(id, n){
+    var el = byId(id);
+    if (!el) return;
+    el.textContent = String(Number(n||0));
+  }
+
+  function renderOpenInto(listEl, items, emptyText){
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    if (!items || !items.length){
+      if (emptyText){
+        var d = document.createElement('div');
+        d.className = 'muted';
+        d.textContent = emptyText;
+        listEl.appendChild(d);
+      }
+      return;
+    }
+
+    for (var i=0;i<items.length;i++){
+      var it = items[i];
+
+      var row = document.createElement('div');
+      row.className = 'duel-item';
+      row.style.cursor = 'pointer';
+      row.onclick = (function(id){
+        return function(ev){
+          if (ev && ev.target && (ev.target.tagName === 'BUTTON' || (ev.target.closest && ev.target.closest('button')))) return;
+          showDuelDetails(id);
+        };
+      })(it.id);
+
+      var left = document.createElement('div');
+      left.className = 'duel-left';
+
+      var avatars = document.createElement('div');
+      avatars.className = 'duel-avatars';
+      var who = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
+      var img1 = makeAvatarImg(it.creator_avatar, who);
+      var img2 = makeAvatarImg(it.opponent_avatar || '', 'opponent');
+      if (!it.opponent_avatar) img2.classList.add('ph');
+      avatars.appendChild(img1);
+      avatars.appendChild(img2);
+
+      var txt = document.createElement('div');
+      txt.className = 'duel-text';
+
+      var title = document.createElement('div');
+      title.className = 'duel-title';
+      title.textContent = fmtRub(it.stake||0) + ' · ' + who;
+
+      var sub = document.createElement('div');
+      sub.className = 'duel-sub';
+
+      var meta = document.createElement('span');
+      meta.className = 'duel-meta';
+
+      var idPill = document.createElement('span');
+      idPill.className = 'duel-id';
+      idPill.textContent = '#' + it.id;
+
+      var wait = document.createElement('span');
+      wait.className = 'wait';
+      var cMs = parseDateMs(it.created_at || it.createdAt);
+      if (cMs) wait.setAttribute('data-created-ms', String(cMs));
+      wait.textContent = 'ожидание —';
+
+      meta.appendChild(idPill);
+
+      sub.appendChild(meta);
+      sub.appendChild(document.createTextNode(' • '));
+      sub.appendChild(wait);
+
+      txt.appendChild(title);
+      txt.appendChild(sub);
+
+      left.appendChild(avatars);
+      left.appendChild(txt);
+
+      var actions = document.createElement('div');
+      actions.className = 'duel-actions';
+
+      var btnWatch = document.createElement('button');
+      btnWatch.className = 'btn ghost';
+      btnWatch.type = 'button';
+      btnWatch.textContent = 'Смотреть';
+      btnWatch.onclick = (function(id){
+        return function(ev){
+          ev.stopPropagation();
+          showDuelDetails(id);
+        };
+      })(it.id);
+      actions.appendChild(btnWatch);
+
+      var isMine = (myUserId && Number(it.creator_user_id) === Number(myUserId));
+      var btn = document.createElement('button');
+      btn.className = 'btn ' + (isMine ? 'danger' : 'primary');
+      btn.type = 'button';
+      btn.textContent = isMine ? 'Отменить' : 'Присоединиться';
+      btn.onclick = (function(id, mine){
+        return async function(ev){
+          ev.stopPropagation();
+          if (mine){
+            await cancelDuel(id);
+            await pollOpenOnce();
+            await loadHistory();
+            await refreshBalance();
+          } else {
+            await joinDuel(id);
+            await pollOpenOnce();
+            await loadHistory();
+            await refreshBalance();
+          }
+        };
+      })(it.id, isMine);
+
+      actions.appendChild(btn);
+
+      row.appendChild(left);
+      row.appendChild(actions);
+      listEl.appendChild(row);
+    }
+
+    try{ updateWaitNodes(); }catch(_){}
+  }
+
+  function renderHistoryInto(listEl, items, emptyText){
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    if (!items || !items.length){
+      if (emptyText){
+        var d = document.createElement('div');
+        d.className = 'muted';
+        d.textContent = emptyText;
+        listEl.appendChild(d);
+      }
+      return;
+    }
+
+    for (var i=0;i<items.length;i++){
+      var it = items[i];
+
+      var row = document.createElement('div');
+      row.className = 'history-item';
+      row.onclick = (function(id){
+        return function(){ showDuelDetails(id); };
+      })(it.id);
+
+      var left = document.createElement('div');
+      left.className = 'history-left';
+
+      var right = document.createElement('div');
+      right.className = 'history-right';
+
+      var cName = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
+      var oName = fullName(it.opponent_first_name, it.opponent_last_name, it.opponent_user_id || '—');
+
+      var avatars = document.createElement('div');
+      avatars.className = 'history-avatars';
+      avatars.appendChild(makeAvatarImg(it.creator_avatar, cName));
+      avatars.appendChild(makeAvatarImg(it.opponent_avatar, oName));
+
+      var info = document.createElement('div');
+      info.className = 'history-info';
+
+      var titleRow = document.createElement('div');
+      titleRow.className = 'history-title-row';
+
+      var title = document.createElement('div');
+      title.className = 'duel-title';
+      title.textContent = fmtRub(it.stake||0) + ' · ' + cName + ' vs ' + oName;
+
+      var pillText = '';
+      var pillClass = '';
+      try{
+        var st = String(it.status||'');
+        if (st === 'finished' && it.winner_user_id && myUserId &&
+            (Number(it.creator_user_id)===Number(myUserId) || Number(it.opponent_user_id)===Number(myUserId))){
+          if (Number(it.winner_user_id) === Number(myUserId)){ pillText = 'победа'; pillClass = 'win'; }
+          else { pillText = 'поражение'; pillClass = 'lose'; }
+        } else if (st === 'cancelled'){ pillText = 'отмена'; pillClass = 'lose'; }
+      }catch(_){}
+
+      titleRow.appendChild(title);
+      if (pillText){
+        var pill = document.createElement('span');
+        pill.className = 'pill ' + pillClass;
+        pill.textContent = pillText;
+        titleRow.appendChild(pill);
+      }
+
+      var sub = document.createElement('div');
+      sub.className = 'duel-sub';
+
+      var pot = 0, fee = 0;
+      try {
+        if (it.result){
+          if (typeof it.result === 'string') {
+            var rr = JSON.parse(it.result);
+            pot = Number(rr.pot||0);
+            fee = Number(rr.fee||0);
+          } else {
+            pot = Number(it.result.pot||0);
+            fee = Number(it.result.fee||0);
+          }
+        }
+      } catch(_){}
+
+      var dt = it.finished_at ? new Date(it.finished_at) : (it.updated_at ? new Date(it.updated_at) : null);
+      var tstr = dt ? (String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0')+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
+      var w = '';
+      if (it.winner_user_id){
+        var wName = (Number(it.winner_user_id)===Number(it.creator_user_id)) ? cName : oName;
+        w = ' · победил: ' + wName;
+      }
+      sub.textContent = (it.status||'') + (tstr?(' · '+tstr):'') + w;
+
+      info.appendChild(titleRow);
+      info.appendChild(sub);
+
+      var top = document.createElement('div');
+      top.className = 'history-top';
+      top.appendChild(avatars);
+      top.appendChild(info);
+
+      left.appendChild(top);
+
+      var r1 = document.createElement('div');
+      r1.textContent = 'pot ' + String(pot||0);
+      var r2 = document.createElement('div');
+      r2.textContent = 'fee ' + String(fee||0);
+
+      right.appendChild(r1);
+      right.appendChild(r2);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      listEl.appendChild(row);
+    }
+  }
+
+  function renderMyCreated(openItems, histItems){
+    var root = byId('myduels-created-list');
+    if (!root) return;
+
+    if (!myUserId){
+      root.innerHTML = '<div class="muted">Войди, чтобы видеть свои дуэли.</div>';
+      return;
+    }
+
+    openItems = openItems || [];
+    histItems = histItems || [];
+
+    var openMine = [];
+    for (var i=0;i<openItems.length;i++){
+      if (Number(openItems[i].creator_user_id) === Number(myUserId)) openMine.push(openItems[i]);
+    }
+
+    var histCreated = [];
+    for (var j=0;j<histItems.length;j++){
+      if (Number(histItems[j].creator_user_id) === Number(myUserId)) histCreated.push(histItems[j]);
+    }
+
+    root.innerHTML = '';
+
+    if (!openMine.length && !histCreated.length){
+      root.innerHTML = '<div class="muted">Пока нет созданных дуэлей. Создай комнату — и она появится здесь.</div>';
+      return;
+    }
+
+    if (openMine.length){
+      var h1 = document.createElement('div');
+      h1.className = 'mini-hdr';
+      h1.innerHTML = '<strong>Ожидают соперника</strong><span class="note">open</span>';
+      root.appendChild(h1);
+
+      var list1 = document.createElement('div');
+      list1.className = 'duels-list live-list';
+      root.appendChild(list1);
+      renderOpenInto(list1, openMine, '');
+    }
+
+    if (histCreated.length){
+      var h2 = document.createElement('div');
+      h2.className = 'mini-hdr';
+      h2.innerHTML = '<strong>Завершённые</strong><span class="note">созданные тобой</span>';
+      root.appendChild(h2);
+
+      var list2 = document.createElement('div');
+      list2.className = 'history-list';
+      root.appendChild(list2);
+      renderHistoryInto(list2, histCreated, '');
+    }
+  }
+
+  function renderMyActive(openItems){
+    var root = byId('myduels-active-list');
+    if (!root) return;
+
+    if (!myUserId){
+      root.innerHTML = '<div class="muted">Войди, чтобы видеть активные дуэли.</div>';
+      return;
+    }
+
+    openItems = openItems || [];
+    var active = [];
+    for (var i=0;i<openItems.length;i++){
+      var it = openItems[i];
+      if (Number(it.creator_user_id) === Number(myUserId) || Number(it.opponent_user_id) === Number(myUserId)) active.push(it);
+    }
+
+    renderOpenInto(root, active, 'Сейчас нет активных дуэлей. Создай комнату или зайди в Live.');
+  }
+
+  function updateMyDuelsUI(){
+    var openItems = lastOpenItems || [];
+    var histItems = lastHistoryItems || [];
+
+    var activeCnt = 0;
+    var createdCnt = 0;
+    var archiveCnt = (histItems && histItems.length) ? histItems.length : 0;
+
+    if (myUserId){
+      for (var i=0;i<openItems.length;i++){
+        var it = openItems[i];
+        var isMineCreator = (Number(it.creator_user_id) === Number(myUserId));
+        var isMineAny = isMineCreator || (Number(it.opponent_user_id) === Number(myUserId));
+        if (isMineAny) activeCnt++;
+        if (isMineCreator) createdCnt++;
+      }
+      for (var j=0;j<histItems.length;j++){
+        if (Number(histItems[j].creator_user_id) === Number(myUserId)) createdCnt++;
+      }
+    } else {
+      activeCnt = 0;
+      createdCnt = 0;
+    }
+
+    setCnt('myduels-count-active', activeCnt);
+    setCnt('myduels-count-created', createdCnt);
+    setCnt('myduels-count-archive', archiveCnt);
+
+    renderMyActive(openItems);
+    renderMyCreated(openItems, histItems);
+  }
+
+
 async function loadOpen(){
     var list = byId('duels-list');
     if (list) list.innerHTML = '<div class="muted">Загружаю комнаты…</div>';
@@ -562,6 +941,8 @@ async function loadOpen(){
       setKpi('kpi-myopen', myOpen);
     }catch(_){ }
 
+    try{ updateMyDuelsUI(); }catch(_){ }
+
     return items;
   }
 
@@ -571,13 +952,17 @@ async function loadOpen(){
 
     var res = await apiJson('/api/duels/history?limit=10');
     if (!res.r.ok || !res.j || !res.j.ok){
+      lastHistoryItems = [];
       renderHistory([]);
+      try{ updateMyDuelsUI(); }catch(_){ }
       try{ setKpi('kpi-history', 0); }catch(_){ }
       return;
     }
     var items = res.j.items || [];
+    lastHistoryItems = items;
     renderHistory(items);
     try{ setKpi('kpi-history', items.length); }catch(_){ }
+    try{ updateMyDuelsUI(); }catch(_){ }
   }
 
   async function refreshBalance(){
@@ -765,6 +1150,27 @@ async function loadOpen(){
     }catch(_){ }
     setSelectedStake(selectedStake);
 
+    // my duels tabs (step 3.2)
+    try{
+      var t = localStorage.getItem('ggroom_myduels_tab_v1');
+      if (t) myDuelsTab = String(t);
+    }catch(_){ }
+    try{ if (location && location.hash === '#archive') myDuelsTab = 'archive'; }catch(_){ }
+    setMyDuelsTab(myDuelsTab || 'active');
+
+    try{ window.addEventListener('hashchange', function(){ if (location.hash === '#archive') setMyDuelsTab('archive'); }); }catch(_){ }
+
+    try{
+      var myBtns = document.querySelectorAll('.myduels-tabs [data-myduels-tab]');
+      for (var i2=0;i2<myBtns.length;i2++){
+        myBtns[i2].addEventListener('click', function(){
+          var v = this.getAttribute('data-myduels-tab');
+          setMyDuelsTab(v);
+        });
+      }
+    }catch(_){}
+
+
     // клики по карточке — выбор ставки
     var cards = document.querySelectorAll('.stake-card[data-stake]');
     for (var i=0;i<cards.length;i++){
@@ -823,6 +1229,7 @@ async function loadOpen(){
         var nmEl = byId('user-name-text'); if (nmEl) nmEl.textContent = nm;
         var avEl = byId('user-avatar'); if (avEl) avEl.src = me.j.user.avatar || '';
         var balEl = byId('user-balance'); if (balEl) balEl.textContent = fmtRub(me.j.user.balance||0);
+        try{ updateMyDuelsUI(); }catch(_){ }
       }
     } catch(_){}
 

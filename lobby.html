@@ -740,6 +740,62 @@
   .lot-hero{ flex-direction:column; }
   .lot-hero .right{ width:100%; align-items:stretch; }
 }
+
+
+/* my duels tabs (step 3.2) */
+.myduels-tabs{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:10px 0 12px;
+}
+.myduels-tabs button{
+  appearance:none;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(18,22,33,.45);
+  color:var(--muted);
+  padding:8px 12px;
+  border-radius:999px;
+  font-weight:800;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  white-space:nowrap;
+}
+.myduels-tabs button:hover{ filter:brightness(1.08); }
+.myduels-tabs button.is-active{
+  color:var(--text);
+  border-color:rgba(82,214,255,.28);
+  background:rgba(82,214,255,.10);
+}
+.myduels-tabs .cnt{
+  min-width:20px;
+  height:20px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+  padding:0 6px;
+  background:rgba(255,255,255,.10);
+  color:var(--text);
+}
+.myduels-tabs button.is-active .cnt{ background:rgba(82,214,255,.22); }
+
+.myduels-pane{ display:none; }
+.myduels-pane.is-active{ display:block; }
+
+.myduels-list .mini-hdr{
+  margin:10px 2px 8px;
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.myduels-list .mini-hdr strong{ color:var(--text); letter-spacing:.02em; text-transform:none; font-size:12px; }
+.myduels-list .mini-hdr .note{ opacity:.85; margin-left:6px; font-size:11px; text-transform:none; letter-spacing:0; }
+
 </style>
 </head>
 <body>
@@ -997,11 +1053,32 @@
 </div>
 
 <div class="section-title" id="archive">
-  <div class="h3">История</div>
-  <div class="muted">последние игры</div>
+  <div class="h3">Мои дуэли</div>
+  <div class="muted">созданные • активные • архив</div>
 </div>
-<div class="history-list" id="history-list">
-  <div class="muted">Загружаю историю…</div>
+
+<div class="myduels-tabs" role="tablist" aria-label="Мои дуэли">
+  <button type="button" class="is-active" data-myduels-tab="active">Активные <span class="cnt" id="myduels-count-active">0</span></button>
+  <button type="button" data-myduels-tab="created">Созданные <span class="cnt" id="myduels-count-created">0</span></button>
+  <button type="button" data-myduels-tab="archive">Архив <span class="cnt" id="myduels-count-archive">0</span></button>
+</div>
+
+<div class="myduels-pane is-active" id="myduels-pane-active">
+  <div class="duels-list live-list" id="myduels-active-list">
+    <div class="muted">Загружаю…</div>
+  </div>
+</div>
+
+<div class="myduels-pane" id="myduels-pane-created">
+  <div class="myduels-list" id="myduels-created-list">
+    <div class="muted">Загружаю…</div>
+  </div>
+</div>
+
+<div class="myduels-pane" id="myduels-pane-archive">
+  <div class="history-list" id="history-list">
+    <div class="muted">Загружаю историю…</div>
+  </div>
 </div>
       </div>
 
