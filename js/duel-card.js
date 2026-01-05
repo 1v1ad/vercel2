@@ -279,13 +279,40 @@
     }
 
     // PF
-    var meta = it.meta && typeof it.meta === 'object' ? it.meta : null;
-    var pf = meta && meta.pf && typeof meta.pf === 'object' ? meta.pf : {};
+    var meta = null;
+    if (it.meta && typeof it.meta === 'object') meta = it.meta;
+    else if (typeof it.meta === 'string') meta = parseMaybeJson(it.meta);
+
+    var pfMeta = meta && meta.pf && typeof meta.pf === 'object' ? meta.pf : {};
+
+    var resultObj = null;
+    if (it.result && typeof it.result === 'object') resultObj = it.result;
+    else if (typeof it.result === 'string') resultObj = parseMaybeJson(it.result);
+
+    var pfRes = null;
+    if (resultObj && typeof resultObj === 'object') {
+      pfRes = resultObj.provably_fair || resultObj.provablyFair || resultObj.provably_fair_v1 || null;
+      if (pfRes && typeof pfRes !== 'object') pfRes = null;
+    }
+
+    var pf = Object.assign({}, pfMeta, (pfRes || {}));
+
+    // normalize common keys
+    pf.commit = pf.commit || pf.commit_hash || pf.commitHash || pf.server_commit || pf.serverCommit;
+    pf.nonce = (pf.nonce === 0 || pf.nonce) ? pf.nonce : ((pfMeta.nonce === 0 || pfMeta.nonce) ? pfMeta.nonce : ((pfRes && (pfRes.nonce === 0 || pfRes.nonce)) ? pfRes.nonce : null));
+    pf.server_seed = pf.server_seed || pf.serverSeed || pf.serverseed;
+    pf.client_seed = pf.client_seed || pf.clientSeed || pf.clientseed;
+
+    // our canonical client_seed (backend pfCompute) is deterministic; restore if API didn't store it
+    if (!pf.client_seed && it.id && it.creator_user_id && it.opponent_user_id) {
+      pf.client_seed = String(it.id) + ':' + String(it.creator_user_id) + ':' + String(it.opponent_user_id);
+    }
+
     setText('pfCommit', pf.commit || '—');
     setText('pfNonce', (pf.nonce === 0 || pf.nonce) ? String(pf.nonce) : '—');
     setText('pfClientSeed', pf.client_seed || '—');
 
-    var pfKv = byId('pfKv');
+var pfKv = byId('pfKv');
     if (pfKv) {
       pfKv.innerHTML = '';
       if (pf.method) kvAppend(pfKv, 'method', pf.method);
@@ -307,16 +334,28 @@
     var pfRes = byId('pfResult');
     if (pfBtn) {
       var hasCrypto = !!(window.crypto && crypto.subtle);
-      var canVerify = hasCrypto && !!(pf.server_seed && pf.client_seed && (pf.nonce === 0 || (pf.nonce && String(pf.nonce).trim() !== '')));
+      var nonceOk = (pf.nonce === 0 || (pf.nonce && String(pf.nonce).trim() !== ''));
+      var missing = [];
+      if (!pf.server_seed) missing.push('server_seed');
+      if (!pf.client_seed) missing.push('client_seed');
+      if (!nonceOk) missing.push('nonce');
+
+      var canVerify = hasCrypto && missing.length === 0;
       pfBtn.disabled = !canVerify;
 
       if (pfRes) {
         if (!hasCrypto) pfRes.textContent = 'Проверка недоступна в браузере';
-        else if (!canVerify) pfRes.textContent = 'Нужны server_seed + client_seed + nonce';
-        else pfRes.textContent = 'Готово к проверке';
+        else if (!canVerify) {
+          var st = String(it.status || '').toLowerCase();
+          if (missing.indexOf('server_seed') !== -1 && st !== 'finished') {
+            pfRes.textContent = 'server_seed раскрывается после завершения дуэли';
+          } else {
+            pfRes.textContent = 'Нужно: ' + missing.join(' + ');
+          }
+        } else pfRes.textContent = 'Готово к проверке';
       }
 
-      pfBtn.onclick = async function () {
+pfBtn.onclick = async function () {
         if (!pfRes) return;
         try {
           var base = String(pf.server_seed) + ':' + String(pf.client_seed) + ':' + String(pf.nonce);
