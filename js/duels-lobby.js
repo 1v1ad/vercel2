@@ -59,6 +59,52 @@
     return img;
   }
 
+
+  function parseDateMs(s){
+    if(!s) return null;
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) return d.getTime();
+    // пробуем "2025-01-01 12:34:56" -> ISO
+    try{
+      var t = String(s).trim().replace(' ', 'T');
+      d = new Date(t);
+      if (!isNaN(d.getTime())) return d.getTime();
+      d = new Date(t + 'Z');
+      if (!isNaN(d.getTime())) return d.getTime();
+    }catch(_){}
+    return null;
+  }
+
+  function pad2(n){ n = Math.floor(Math.abs(n)); return (n<10?'0':'') + n; }
+
+  function fmtWait(ms){
+    if (ms < 0) ms = 0;
+    var sec = Math.floor(ms/1000);
+    var h = Math.floor(sec/3600);
+    var m = Math.floor((sec%3600)/60);
+    var s = sec%60;
+    return h>0 ? (h + ':' + pad2(m) + ':' + pad2(s)) : (pad2(m) + ':' + pad2(s));
+  }
+
+  var waitTimer = null;
+
+  function updateWaitNodes(){
+    var nodes = document.querySelectorAll('.wait[data-created-ms]');
+    var now = Date.now();
+    for (var i=0;i<nodes.length;i++){
+      var el = nodes[i];
+      var ms = Number(el.getAttribute('data-created-ms')||'0');
+      if (!ms) continue;
+      el.textContent = 'ожидание ' + fmtWait(now - ms);
+    }
+  }
+
+  function setWaitTimerEnabled(enabled){
+    if (waitTimer){ clearInterval(waitTimer); waitTimer = null; }
+    if (!enabled) return;
+    waitTimer = setInterval(updateWaitNodes, 1000);
+  }
+
   async function apiJson(path, opts){
     var base = apiBase();
     var url = base + path;
@@ -248,12 +294,16 @@ function setPollEnabled(enabled){
     list.innerHTML = '';
 
     if (!items || !items.length){
+      setWaitTimerEnabled(false);
       var d = document.createElement('div');
       d.className = 'muted';
       d.textContent = 'Пока нет открытых комнат. Создай первую — пусть монета выберет драму.';
       list.appendChild(d);
       return;
     }
+
+    // живой таймер ожидания (создание -> сейчас)
+    setWaitTimerEnabled(true);
 
     for (var i=0;i<items.length;i++){
       var it = items[i];
@@ -263,7 +313,7 @@ function setPollEnabled(enabled){
       row.style.cursor = 'pointer';
       row.onclick = (function(id){
         return function(ev){
-          if (ev && ev.target && ev.target.tagName === 'BUTTON') return;
+          if (ev && ev.target && (ev.target.tagName === 'BUTTON' || ev.target.closest('button'))) return;
           showDuelDetails(id);
         };
       })(it.id);
@@ -271,8 +321,15 @@ function setPollEnabled(enabled){
       var left = document.createElement('div');
       left.className = 'duel-left';
 
+      // аватары: создатель + плейсхолдер соперника
+      var avatars = document.createElement('div');
+      avatars.className = 'duel-avatars';
       var who = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
-      var img = makeAvatarImg(it.creator_avatar, who);
+      var img1 = makeAvatarImg(it.creator_avatar, who);
+      var img2 = makeAvatarImg('', 'opponent');
+      img2.classList.add('ph');
+      avatars.appendChild(img1);
+      avatars.appendChild(img2);
 
       var txt = document.createElement('div');
       txt.className = 'duel-text';
@@ -283,36 +340,65 @@ function setPollEnabled(enabled){
 
       var sub = document.createElement('div');
       sub.className = 'duel-sub';
-      // время + комиссия
-      var dt = it.created_at ? new Date(it.created_at) : null;
-      var tstr = dt ? (String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
-      sub.textContent = 'Комната #' + it.id + (tstr ? (' · ' + tstr) : '') + ' · комиссия ' + (it.fee_bps||0)/100 + '%';
+
+      var meta = document.createElement('span');
+      meta.className = 'duel-meta';
+
+      var idPill = document.createElement('span');
+      idPill.className = 'duel-id';
+      idPill.textContent = '#' + it.id;
+
+      var wait = document.createElement('span');
+      wait.className = 'wait';
+      var cMs = parseDateMs(it.created_at || it.createdAt);
+      if (cMs) wait.setAttribute('data-created-ms', String(cMs));
+      wait.textContent = 'ожидание —';
+
+      meta.appendChild(idPill);
+
+      // "создано" / "ожидание"
+      sub.appendChild(meta);
+      sub.appendChild(document.createTextNode(' • '));
+      sub.appendChild(wait);
 
       txt.appendChild(title);
       txt.appendChild(sub);
 
-      left.appendChild(img);
+      left.appendChild(avatars);
       left.appendChild(txt);
 
       var actions = document.createElement('div');
       actions.className = 'duel-actions';
 
+      // Смотреть (детали)
+      var btnWatch = document.createElement('button');
+      btnWatch.className = 'btn ghost';
+      btnWatch.type = 'button';
+      btnWatch.textContent = 'Смотреть';
+      btnWatch.onclick = (function(id){
+        return function(ev){
+          ev.stopPropagation();
+          showDuelDetails(id);
+        };
+      })(it.id);
+      actions.appendChild(btnWatch);
+
+      // Присоединиться / Отменить
       var isMine = (myUserId && Number(it.creator_user_id) === myUserId);
       var btn = document.createElement('button');
       btn.className = 'btn ' + (isMine ? 'danger' : 'primary');
       btn.type = 'button';
-      btn.textContent = isMine ? 'Отменить' : 'Войти';
+      btn.textContent = isMine ? 'Отменить' : 'Присоединиться';
       btn.onclick = (function(id, mine){
         return async function(ev){
           ev.stopPropagation();
           if (mine){
             await cancelDuel(id);
             await pollOpenOnce();
+            await loadHistory();
+            await refreshBalance();
           } else {
-            await withCoin(async function(){
-              await joinDuel(id);
-            });
-            // после join — обновим всё (open и историю)
+            await joinDuel(id);
             await pollOpenOnce();
             await loadHistory();
             await refreshBalance();
@@ -326,9 +412,12 @@ function setPollEnabled(enabled){
       row.appendChild(actions);
       list.appendChild(row);
     }
+
+    // синхронизируем текст ожидания сразу, не ждём тика
+    try{ updateWaitNodes(); }catch(_){}
   }
 
-  function renderHistory(items){
+function renderHistory(items){
     var list = byId('history-list');
     if (!list) return;
     list.innerHTML = '';

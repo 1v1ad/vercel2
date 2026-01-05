@@ -475,6 +475,22 @@
     .duel-sub{ font-size:12px; color:var(--muted); }
     .duel-actions{ display:flex; align-items:center; gap:8px; }
 
+    .live-list .duel-item{ background:rgba(12,16,24,.88); }
+    .duel-avatars{ display:flex; align-items:center; }
+    .duel-avatars img{ width:36px; height:36px; border-radius:12px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.06); object-fit:cover; }
+    .duel-avatars img + img{ margin-left:-10px; }
+    .duel-avatars .ph{ opacity:.55; filter:saturate(.6); }
+    .duel-meta{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .duel-id{ font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(18,22,33,.55); border:1px solid var(--border); color:var(--muted); font-weight:800; }
+    .wait{ font-variant-numeric: tabular-nums; }
+    .wait::before{ content:"⏱ "; opacity:.7; }
+    .duel-actions{ flex-wrap:wrap; justify-content:flex-end; }
+    @media (max-width:560px){
+      .duel-item{ flex-direction:column; align-items:stretch; gap:10px; }
+      .duel-actions{ justify-content:stretch; }
+      .duel-actions .btn{ width:100%; }
+    }
+
     .toast{
       position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
       background:#0f1219; border:1px solid var(--border); border-radius:14px;
@@ -972,13 +988,15 @@
           <div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
         </div>
 
-        <div id="live"></div>
-   <div class="duels-list" id="duels-list">
+        <div class="section-title" id="live" style="margin-top:18px">
+  <div class="h3">Активные дуэли (Live)</div>
+  <div class="muted">открытые комнаты — ожидание соперника</div>
+</div>
+   <div class="duels-list live-list" id="duels-list">
   <div class="muted">Загружаю комнаты…</div>
 </div>
 
-<div id="archive"></div>
-   <div class="section-title">
+<div class="section-title" id="archive">
   <div class="h3">История</div>
   <div class="muted">последние игры</div>
 </div>
@@ -1122,6 +1140,27 @@
     </tbody>
   </table>
 </div></div><div class="muted" style="font-size:12px">скоро</div></div>
+
+<div class="card" id="lottery-pf-card" style="margin-top:14px">
+  <h3>Честность розыгрышей</h3>
+  <div class="small">
+    Розыгрыши будут отдельным режимом: прозрачные правила, публичные результаты,
+    и проверяемый механизм выбора победителя (по аналогии с provably fair).
+  </div>
+</div>
+
+<div class="card" id="lottery-status-card" style="margin-top:14px">
+  <h3>Статус розыгрышей</h3>
+  <div class="small">Здесь появятся активные розыгрыши и прогресс по билетам.</div>
+  <div class="kpi">
+    <div class="k"><div class="t">Активных</div><div class="v" id="kpi-lot-active">Скоро</div></div>
+    <div class="k"><div class="t">Ближайший</div><div class="v" id="kpi-lot-next">Скоро</div></div>
+    <div class="k"><div class="t">Мои билеты</div><div class="v" id="kpi-lot-mine">—</div></div>
+    <div class="k"><div class="t">Призы</div><div class="v" id="kpi-lot-prizes">iPhone · авто · cash</div></div>
+  </div>
+</div>
+
+
       </div>
 
       <div class="lot-row">
@@ -1146,13 +1185,6 @@
             В карточке дуэли можно увидеть seed/nonce/commit и повторить расчёт.
           </div>
         </div>
-
-        <div class="card" id="rail-lottery-pf" style="display:none">
-          <h3>Честность розыгрышей</h3>
-          <div class="small">
-            Розыгрыши будут отдельным режимом: прозрачные правила, публичные результаты,
-            и проверяемый механизм выбора победителя (по аналогии с provably fair).
-          </div>
         </div>
 
         <div class="card" id="rail-duels-status" style="margin-top:14px">
@@ -1165,16 +1197,6 @@
             <div class="k"><div class="t">Связи</div><div class="v" id="kpi-links">—</div></div>
           </div>
         </div>
-
-        <div class="card" id="rail-lottery-status" style="margin-top:14px; display:none">
-          <h3>Статус розыгрышей</h3>
-          <div class="small">Здесь появятся активные розыгрыши и прогресс по билетам.</div>
-          <div class="kpi">
-            <div class="k"><div class="t">Активных</div><div class="v" id="kpi-lot-active">Скоро</div></div>
-            <div class="k"><div class="t">Ближайший</div><div class="v" id="kpi-lot-next">Скоро</div></div>
-            <div class="k"><div class="t">Мои билеты</div><div class="v" id="kpi-lot-mine">—</div></div>
-            <div class="k"><div class="t">Призы</div><div class="v" id="kpi-lot-prizes">iPhone · авто · cash</div></div>
-          </div>
         </div>
       </aside>
     </div>
