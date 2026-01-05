@@ -87,6 +87,57 @@ body{
   background: var(--surface);
   box-shadow: var(--shadow);
   border: 1px solid rgba(255,255,255,.06);
+  position: relative;
+  overflow: hidden;
+
+}
+
+/* moving gradient (as in admin duel-card) */
+.dc-hero::before{
+  content:"";
+  position:absolute;
+  inset: -80px -220px;
+  pointer-events:none;
+  z-index: 0;
+
+  background-image:
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 22%,
+      rgba(10,132,255,.32) 32%,
+      rgba(46,209,169,.30) 44%,
+      rgba(0,0,0,0) 58%,
+      rgba(0,0,0,0) 100%),
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 36%,
+      rgba(255,193,7,.26) 46%,
+      rgba(10,132,255,.26) 58%,
+      rgba(0,0,0,0) 72%,
+      rgba(0,0,0,0) 100%),
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 10%,
+      rgba(46,209,169,.22) 22%,
+      rgba(255,193,7,.22) 34%,
+      rgba(0,0,0,0) 50%,
+      rgba(0,0,0,0) 100%);
+  background-size: 220% 220%;
+  background-position: 0% 12%, 0% 52%, 0% 88%;
+  opacity: .72;
+  filter: saturate(1.25);
+  animation: dcShimmer 12s linear infinite;
+}
+
+.dc-hero > *{ position: relative; z-index: 1; }
+
+@keyframes dcShimmer{
+  0%   { background-position: 0% 12%, 0% 52%, 0% 88%; }
+  100% { background-position: 220% 12%, 220% 52%, 220% 88%; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .dc-hero::before{ animation: none; }
 }
 
 .dc-hero-id{

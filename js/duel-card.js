@@ -47,12 +47,40 @@
     return dd + '.' + mm + '.' + yy + ' ' + hh + ':' + mi;
   }
 
+  function readMeta(name){
+    var m = document.querySelector('meta[name="'+name+'"]');
+    return m ? String(m.getAttribute('content')||'').trim() : '';
+  }
+
+  function apiBase(){
+    var v = '';
+    try { v = (localStorage.getItem('api-base') || ''); } catch(_){}
+    v = v || readMeta('api-base') || (window.API_BASE||'') || 'https://vercel2pr.onrender.com';
+    return String(v||'').trim().replace(/\/+$/,'');
+  }
+
+  function getAuthHeaders(){
+    try{
+      if (typeof window.headers === 'function') return window.headers() || {};
+      if (typeof window.authHeaders === 'function') return window.authHeaders() || {};
+    }catch(_){}
+    return {};
+  }
+
   async function apiJson(path, opts){
+    var base = apiBase();
+    var url = (/^https?:\/\//i.test(path) ? path : (base + path));
     opts = opts || {};
+    var headers = opts.headers || {};
+    // merge auth headers (if any)
+    var H = getAuthHeaders();
+    for (var k in H) headers[k] = H[k];
+    opts.headers = headers;
     opts.credentials = 'include';
+
     var r=null, j=null;
     try{
-      r = await fetch(path, opts);
+      r = await fetch(url, opts);
       try{ j = await r.json(); }catch(_){}
     }catch(_){}
     return { r:r, j:j };
