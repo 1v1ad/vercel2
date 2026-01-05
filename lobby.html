@@ -452,6 +452,104 @@
   font-size:11px;
 }
 
+
+/* lottery hero */
+.lot-hero{
+  display:flex; gap:14px; align-items:stretch; justify-content:space-between;
+  padding:14px; border-radius:16px;
+  border:1px solid var(--border);
+  background: linear-gradient(110deg, rgba(24,36,56,.75), rgba(18,22,33,.55) 40%, rgba(16,48,40,.35));
+  box-shadow: var(--shadow);
+  margin-top:12px;
+}
+.lot-hero .left{ flex:1; min-width:0; }
+.lot-hero .right{ width:230px; display:flex; flex-direction:column; gap:10px; align-items:flex-end; justify-content:space-between; }
+.lot-hero .badge{
+  display:inline-flex; align-items:center; gap:8px;
+  font-weight:900; font-size:12px; letter-spacing:.04em;
+  padding:6px 10px; border-radius:999px;
+  background: rgba(45,212,191,.12);
+  border:1px solid rgba(45,212,191,.35);
+  color: rgba(167,243,208,1);
+}
+.lot-hero .title{ font-size:18px; font-weight:950; margin-top:8px; }
+.lot-hero .sub{ margin-top:6px; color:var(--muted); font-size:13px; line-height:1.35; }
+.lot-hero .prog{ margin-top:10px; }
+.lot-hero .bar{
+  height:10px; border-radius:999px; overflow:hidden;
+  background: rgba(148,163,184,.12);
+  border:1px solid rgba(148,163,184,.16);
+}
+.lot-hero .fill{
+  height:100%;
+  background: linear-gradient(90deg, rgba(34,211,238,.95), rgba(34,197,94,.95));
+  width:34%;
+}
+.lot-hero .meta-line{ margin-top:8px; font-size:12px; color:var(--muted); display:flex; gap:10px; flex-wrap:wrap; }
+.lot-hero .count{
+  width:100%;
+  padding:10px 12px; border-radius:14px;
+  border:1px solid var(--border);
+  background: rgba(18,22,33,.55);
+}
+.lot-hero .count .k{ color:var(--muted); font-size:12px; }
+.lot-hero .count .v{ font-size:16px; font-weight:950; margin-top:4px; }
+
+.lot-table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:12px;
+  overflow:hidden;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background: rgba(18,22,33,.45);
+}
+.lot-table th, .lot-table td{
+  padding:10px 12px;
+  border-bottom:1px solid rgba(148,163,184,.12);
+  font-size:13px;
+}
+.lot-table th{
+  color:var(--muted);
+  font-weight:900;
+  text-align:left;
+  background: rgba(18,22,33,.55);
+}
+.lot-table tr:last-child td{ border-bottom:none; }
+.lot-table .pill{
+  display:inline-flex; padding:4px 10px; border-radius:999px;
+  border:1px solid rgba(148,163,184,.18);
+  background: rgba(148,163,184,.08);
+  font-weight:900;
+}
+.side-sub{
+  margin-top:10px; display:flex; flex-direction:column; gap:6px;
+}
+.side-sub a{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 12px; border-radius:12px;
+  background: rgba(18,22,33,.45);
+  border:1px solid rgba(148,163,184,.12);
+  color: var(--text);
+  text-decoration:none;
+  font-weight:800;
+  font-size:13px;
+  opacity:.9;
+}
+.side-sub a.is-active{
+  border-color: rgba(34,211,238,.4);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.2) inset;
+  opacity:1;
+}
+.side-sub a span{
+  color: var(--muted);
+  font-weight:900;
+  font-size:12px;
+}
+@media (max-width: 980px){
+  .lot-hero{ flex-direction:column; }
+  .lot-hero .right{ width:100%; align-items:stretch; }
+}
 </style>
 </head>
 <body>
@@ -518,6 +616,12 @@
             <div class="side-group">
               <div class="side-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</div>
               <a class="side-link" href="#lottery">Розыгрыши <span>призы</span></a>
+
+<div class="side-sub" id="lottery-subnav" style="display:none">
+  <a href="#lottery" data-lot-jump="active"><span>раздел</span> Активные</a>
+  <a href="#lottery" data-lot-jump="archive"><span>раздел</span> Архив</a>
+  <a href="#lottery" data-lot-jump="mine"><span>раздел</span> Мои билеты</a>
+</div>
             </div>
           </nav>
         </div>
@@ -638,6 +742,28 @@
   </div>
 
   <div class="lot-pane is-active" data-lot-pane="active">
+<div class="lot-hero" aria-label="Активный розыгрыш (UI-заготовка)">
+  <div class="left">
+    <div class="badge">АКТИВНО • РОЗЫГРЫШ НЕДЕЛИ</div>
+    <div class="title">iPhone 17 Pro</div>
+    <div class="sub">Билеты от ₽100 • таймер и механика билетов подключим позже (сейчас — UI).</div>
+    <div class="prog">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="meta-line">
+        <span>Продано: <b>340 / 1000</b></span>
+        <span>Банк: <b>₽34 000</b></span>
+        <span>Финиш: <b>скоро</b></span>
+      </div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="count">
+      <div class="k">Ближайшее завершение</div>
+      <div class="v">скоро</div>
+    </div>
+    <button class="btn primary" type="button" disabled style="opacity:.6; cursor:not-allowed">Купить билет (soon)</button>
+  </div>
+</div>
     <div class="lotteries">
     <div class="stake-chip lottery-card" aria-disabled="true">
       <div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">iPhone</span></div>
@@ -663,22 +789,68 @@
   </div>
 
   <div class="lot-pane" data-lot-pane="archive">
-    <div class="lot-empty">
-      <div class="title">Архив розыгрышей</div>
-      <div class="muted" style="font-size:13px">Здесь появятся завершённые розыгрыши с итогами и проверкой честности. Пока пусто.</div>
-      <div class="lot-row" style="margin-top:10px">
-        <div class="r"><div><div class="k">Последний</div><div class="v">—</div></div><div class="muted" style="font-size:12px">нет данных</div></div>
-      </div>
-    </div>
-  </div>
+<div class="lot-empty">
+  <div class="title">Архив розыгрышей</div>
+  <div class="muted" style="font-size:13px">Пока данные не подключены — но UI уже готов к «живому» архиву.</div>
+
+  <table class="lot-table" aria-label="Архив розыгрышей (заглушка)">
+    <thead>
+      <tr>
+        <th style="width:120px">Дата</th>
+        <th>Приз</th>
+        <th style="width:160px">Победитель</th>
+        <th style="width:140px">Билеты</th>
+        <th style="width:140px">Проверка</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="muted">—</td>
+        <td>—</td>
+        <td><span class="pill">—</span></td>
+        <td class="muted">—</td>
+        <td class="muted">seed/nonce/commit</td>
+      </tr>
+      <tr>
+        <td class="muted">—</td>
+        <td>—</td>
+        <td><span class="pill">—</span></td>
+        <td class="muted">—</td>
+        <td class="muted">seed/nonce/commit</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
 
   <div class="lot-pane" data-lot-pane="mine">
     <div class="lot-empty">
-      <div class="title">Мои билеты</div>
-      <div class="muted" style="font-size:13px">Здесь будет история твоих билетов по розыгрышам (сколько купил, на какие призы, результаты). Пока UI-заготовка.</div>
+  <div class="title">Мои билеты</div>
+  <div class="muted" style="font-size:13px">Будет история билетов: сколько куплено, статус, выигрыш. Пока — UI-заготовка.</div>
 
-      <div class="lot-row" style="margin-top:10px">
-        <div class="r"><div><div class="k">Активных билетов</div><div class="v">—</div></div><div class="muted" style="font-size:12px">скоро</div></div>
+  <div class="lot-row" style="margin-top:12px">
+    <div class="r"><div><div class="k">Активных билетов</div><div class="v">—</div></div><div class="muted" style="font-size:12px">скоро</div></div>
+  </div>
+
+  <table class="lot-table" aria-label="Мои билеты (заглушка)">
+    <thead>
+      <tr>
+        <th style="width:160px">Розыгрыш</th>
+        <th style="width:120px">Билетов</th>
+        <th style="width:140px">Статус</th>
+        <th>Комментарий</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>—</td>
+        <td class="muted">—</td>
+        <td><span class="pill">—</span></td>
+        <td class="muted">данные появятся после подключения билетов</td>
+      </tr>
+    </tbody>
+  </table>
+</div></div><div class="muted" style="font-size:12px">скоро</div></div>
       </div>
 
       <div class="lot-row">
@@ -856,6 +1028,24 @@
       const railDuelsStatus = document.getElementById('rail-duels-status');
       const railLotteryStatus = document.getElementById('rail-lottery-status');
 
+const lotSub = document.getElementById('lottery-subnav');
+const lotSideLinks = Array.from(document.querySelectorAll('[data-lot-jump]'));
+
+if(lotSideLinks.length){
+  lotSideLinks.forEach(a=>{
+    a.addEventListener('click', (e)=>{
+      e.preventDefault();
+      location.hash = '#lottery';
+      const t = a.dataset.lotJump || 'active';
+      if(typeof window.__gg_setLotteryTab === 'function'){
+        window.__gg_setLotteryTab(t);
+      } else {
+        try{ localStorage.setItem('ggroom_lottery_tab_v1', t); }catch(_){}
+      }
+    });
+  });
+}
+
       // Кликабельные заголовки-группы (чтобы по слову «Розыгрыши» тоже открывалось)
       const labelLinks = Array.from(document.querySelectorAll('[data-hash].is-click'));
       labelLinks.forEach(el=>{
@@ -883,6 +1073,14 @@
 
         // разделы: Дуэли vs Розыгрыши
         const isLottery = (h === '#lottery' || h.startsWith('#lottery'));
+
+if(lotSub) lotSub.style.display = isLottery ? '' : 'none';
+if(isLottery){
+  const t = (typeof window.__gg_getLotteryTab === 'function')
+    ? window.__gg_getLotteryTab()
+    : (function(){ try{return localStorage.getItem('ggroom_lottery_tab_v1')||'active';}catch(e){return 'active';} })();
+  lotSideLinks.forEach(a => a.classList.toggle('is-active', a.dataset.lotJump === t));
+}
 
         if (hubDuels) hubDuels.style.display = isLottery ? 'none' : '';
         if (hubLottery) hubLottery.style.display = isLottery ? '' : 'none';
@@ -915,6 +1113,10 @@
         }
 
         btns.forEach(b => b.addEventListener('click', ()=> setTab(b.dataset.lotTab)));
+
+        // expose для сайдбара/других блоков
+        window.__gg_setLotteryTab = setTab;
+        window.__gg_getLotteryTab = getTab;
 
         function syncOnEnter(){
           const h = (location.hash || '#stakes');
