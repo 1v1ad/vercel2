@@ -261,10 +261,7 @@
     .btn.danger{ border-color:rgba(255,59,59,.35); color:#ffb3b3; }
 
     .duels-create{ border-top:1px dashed var(--border); margin-top:12px; padding-top:12px; }
-    .stakes{ display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:10px; margin:10px 0 12px; }
-@media (max-width: 980px){ .stakes{ grid-template-columns:repeat(3, minmax(0,1fr)); } }
-@media (max-width: 560px){ .stakes{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
-
+    .stakes{ display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px; margin:10px 0 12px; }
 .stakes-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0 8px; }
 .stakes-head-right{ display:flex; align-items:center; gap:8px; }
 @media (max-width: 560px){ .stakes-head{ flex-direction:column; align-items:flex-start; } }
@@ -301,9 +298,10 @@
 .stake-kpis .kpi{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
 .stake-kpis .dot{ width:6px; height:6px; border-radius:10px; background: rgba(244,216,138,.95); box-shadow:0 0 0 3px rgba(244,216,138,.14); }
 
-.stake-actions{ position:relative; z-index:1; display:flex; gap:8px; margin-top:auto; }
-.stake-actions .btn{ flex:1; justify-content:center; padding:10px 12px; border-radius:12px; font-weight:900; }
-.stake-actions .btn.ghost{ flex:0 0 auto; min-width:104px; }
+.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:auto; }
+.stake-actions .btn{ width:100%; min-width:0; justify-content:center; padding:10px 12px; border-radius:12px; font-weight:900; }
+@media (max-width: 420px){ .stake-actions{ grid-template-columns:1fr; } }
+
 .stake-actions .btn:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
 
 /* legacy small cards (используем в заглушках розыгрышей) */
