@@ -1,27 +1,23 @@
 <!DOCTYPE html>
+
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Бэкенд и ID бота -->
-  <meta name="api-base" content="https://vercel2pr.onrender.com">
-  <meta name="tg-bot-id" content="8236271394">
-
-  <title>GG ROOM — Лобби</title>
-
-  <!-- FAVICONS -->
-  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png">
-  <link rel="shortcut icon" href="/assets/favicon.ico">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
-  <link rel="manifest" href="/assets/site.webmanifest">
-
-  <!-- UI tokens (единая палитра/радиусы/тени) -->
-  <link rel="stylesheet" href="/css/ui-tokens.css">
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<!-- Бэкенд и ID бота -->
+<meta content="https://vercel2pr.onrender.com" name="api-base"/>
+<meta content="8236271394" name="tg-bot-id"/>
+<title>GG ROOM — Лобби</title>
+<!-- FAVICONS -->
+<link href="/assets/favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="/assets/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="/assets/favicon-16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link href="/assets/favicon.ico" rel="shortcut icon"/>
+<link href="/assets/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="/assets/site.webmanifest" rel="manifest"/>
+<!-- UI tokens (единая палитра/радиусы/тени) -->
+<link href="/css/ui-tokens.css" rel="stylesheet"/>
+<style>
     *{box-sizing:border-box}
     body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
 
@@ -185,40 +181,6 @@
 
     .wrap{ max-width:1280px; margin:0 auto; padding:18px 16px }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px }
-.welcome-card{
-  position:relative;
-  overflow:hidden;
-  margin-bottom:14px;
-}
-.welcome-card::before{
-  content:"";
-  position:absolute;
-  inset:-80px -220px;
-  pointer-events:none;
-  z-index:0;
-  background-image:
-    linear-gradient(110deg,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0) 22%,
-      rgba(10,180,120,.14) 40%,
-      rgba(244,216,138,.16) 52%,
-      rgba(20,130,220,.10) 64%,
-      rgba(0,0,0,0) 78%,
-      rgba(0,0,0,0) 100%),
-    radial-gradient(900px 380px at 35% 20%, rgba(244,216,138,.12), transparent 60%),
-    radial-gradient(800px 420px at 70% 0%, rgba(95,189,255,.10), transparent 65%);
-  background-size: 220% 100%, 140% 100%, 160% 100%;
-  background-position: 0% 12%, 0% 52%, 0% 88%;
-  opacity:.72;
-  filter:saturate(1.25);
-  animation: dcShimmer 12s linear infinite;
-}
-.welcome-card > *{ position:relative; z-index:1; }
-
-@keyframes dcShimmer{
-  0%   { background-position: 0% 12%, 0% 52%, 0% 88%; }
-  100% { background-position: 220% 12%, 140% 52%, 160% 88%; }
-}
     /* =========================
        Layout (Sidebar / Main / Right rail)
        ========================= */
@@ -227,7 +189,7 @@
     .layout{
       display:grid;
       grid-template-columns: 260px minmax(0,1fr) 320px;
-      gap:10px;
+      gap:14px;
       align-items:start;
     }
     .sidebar, .rail{
@@ -239,7 +201,7 @@
 
     .side-card{ padding:14px; }
     .side-title{ font-weight:900; margin:0 0 10px; font-size:14px; letter-spacing:.2px; color:var(--text); }
-    .side-nav{ display:flex; flex-direction:column; gap:10px; }
+    .side-nav{ display:flex; flex-direction:column; gap:14px; }
     .side-group{ display:flex; flex-direction:column; gap:8px; }
     .side-label{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:900; margin:0 10px; }
 
@@ -284,7 +246,7 @@
 
 
     /* --- duels (1v1) --- */
-    .grid{ display:grid; grid-template-columns:1fr; gap:10px; }
+    .grid{ display:grid; grid-template-columns:1fr; gap:14px; }
     .card h2{ margin:0 0 10px; font-size:18px; }
     .muted{ color:var(--muted); }
 
@@ -296,7 +258,7 @@
     .btn.danger{ border-color:rgba(255,59,59,.35); color:#ffb3b3; }
 
     .duels-create{ border-top:1px dashed var(--border); margin-top:12px; padding-top:12px; }
-    .stakes{ display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0 12px; }
+    .stakes{ display:grid; grid-template-columns:1fr; gap:12px; margin:10px 0 12px; }
 
 .stakes-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0 8px; }
 .stakes-head-right{ display:flex; align-items:center; gap:8px; }
@@ -307,9 +269,9 @@
   display:grid;
   /* mobile-first: по умолчанию как на телефоне */
   grid-template-columns: 1fr;
-  gap:10px;
+  gap:14px;
   align-items:stretch;
-  padding:10px 12px 10px;
+  padding:14px 14px 12px;
   border-radius:16px;
   border:1px solid var(--border);
   background: linear-gradient(180deg, rgba(18,22,33,.70), rgba(12,16,24,.92));
@@ -364,7 +326,7 @@
   color:#e6d6ff;
 }
 
-.stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:8px; min-width:0; }
+.stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; min-width:0; }
 .stake-top{ position:relative; z-index:1; display:flex; flex-direction:column; gap:4px; }
 .stake-top .amt{ font-weight:950; font-size:18px; letter-spacing:.2px; }
 .stake-top .meta{ font-size:12px; color:var(--muted); line-height:1.15; }
@@ -380,8 +342,7 @@
   text-shadow:0 0 10px rgba(45,212,191,.22);
   animation:kpiPulse 1.8s ease-in-out infinite;
 }
-.stake-kpis .kpi.is-live .dot,
-  .welcome-card::before{
+.stake-kpis .kpi.is-live .dot{
   background:rgba(45,212,191,.95);
   box-shadow:0 0 0 3px rgba(45,212,191,.16);
   animation:dotPulse 1.8s ease-in-out infinite;
@@ -416,13 +377,13 @@
 }
 
 
-.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr; gap:8px; margin-top:auto; }
+.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr; gap:10px; margin-top:auto; }
 .stake-actions .btn{ justify-content:center; padding:10px 12px; border-radius:12px; font-weight:900; white-space:nowrap; }
 .stake-actions .btn:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
 
 .stake-ill{
   position:relative; z-index:1;
-  height:96px;
+  height:150px;
   border-radius:14px;
   overflow:hidden;
   border:1px solid rgba(255,255,255,.08);
@@ -481,7 +442,7 @@
 
 @media (min-width: 980px){
   .stake-card{ grid-template-columns: minmax(0,1fr) 260px; }
-  .stake-ill{ height:auto; min-height:96px; }
+  .stake-ill{ height:auto; min-height:150px; }
 }
 
 @media (max-width: 420px){
@@ -681,7 +642,7 @@
 
 /* lottery hero */
 .lot-hero{
-  display:flex; gap:10px; align-items:stretch; justify-content:space-between;
+  display:flex; gap:14px; align-items:stretch; justify-content:space-between;
   padding:14px; border-radius:16px;
   border:1px solid var(--border);
   background: linear-gradient(110deg, rgba(24,36,56,.75), rgba(18,22,33,.55) 40%, rgba(16,48,40,.35));
@@ -833,603 +794,598 @@
 .myduels-list .mini-hdr .note{ opacity:.85; margin-left:6px; font-size:11px; text-transform:none; letter-spacing:0; }
 
 
-/* Compact stake cards (2x lower) */
-.stake-top .meta{ font-size:12px; }
-.stake-kpis{ margin-top:0; }
-.stake-card .stake-ill{ border-radius:12px; }
+
+/* --- lobby tweaks: spacing, compact stakes, lottery undercards, admin-like shimmer --- */
+@keyframes dcShimmer{
+  0%   { background-position: 0% 12%, 0% 52%, 0% 88%; }
+  100% { background-position: 120% 12%, 120% 52%, 120% 88%; }
+}
+
+.welcome-card{
+  position:relative;
+  overflow:hidden;
+  margin-bottom:14px;
+}
+
+.welcome-card::before{
+  content:"";
+  position:absolute;
+  inset:-80px -220px;
+  pointer-events:none;
+  z-index:0;
+
+  background-image:
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 22%,
+      rgba(10,132,255,.32) 32%,
+      rgba(46,209,169,.30) 44%,
+      rgba(0,0,0,0) 58%,
+      rgba(0,0,0,0) 100%),
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 18%,
+      rgba(186,141,255,.22) 30%,
+      rgba(255,193,7,.22) 44%,
+      rgba(46,209,169,.26) 58%,
+      rgba(0,0,0,0) 72%,
+      rgba(0,0,0,0) 100%),
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 10%,
+      rgba(46,209,169,.22) 22%,
+      rgba(255,193,7,.22) 34%,
+      rgba(0,0,0,0) 50%,
+      rgba(0,0,0,0) 100%);
+  background-size:220% 220%;
+  background-position: 0% 12%, 0% 52%, 0% 88%;
+  opacity:.72;
+  filter:saturate(1.25);
+  animation: dcShimmer 12s linear infinite;
+}
+
+.welcome-card > *{ position:relative; z-index:1; }
+
+@media (prefers-reduced-motion: reduce){
+  .welcome-card::before{ animation:none; }
+}
+
+/* компактнее карточки ставок (примерно в 2 раза ниже) */
+.stake-card{
+  gap:10px;
+  padding:10px 12px 10px;
+}
+.stake-left{ gap:8px; }
+.stake-actions{ gap:8px; }
+.stake-actions .btn{ padding:9px 10px; font-size:13px; }
+.stake-ill{
+  height:86px;
+  border-radius:12px;
+}
+@media (min-width: 980px){
+  .stake-card{ grid-template-columns: minmax(0,1fr) 240px; }
+  .stake-ill{ min-height:110px; }
+}
+
+/* розыгрыши: PF + статус внутри основной карточки */
+.lottery-under{
+  margin-top:14px;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+@media (min-width: 980px){
+  .lottery-under{ grid-template-columns: 1fr 1fr; }
+}
+
 </style>
 </head>
 <body>
-  <header class="hdr">
-  <div class="hdr-left">
-    <a class="btn hdr-back" href="/index.html" title="На главную">
-      <span aria-hidden="true">←</span>
-      <span class="label">На главную</span>
-    </a>
-
-    <div class="hdr-brand" aria-label="GGROOM">
-      <span class="gg">GG</span><span class="room">ROOM</span>
-    </div>
-    <div class="hdr-title">Лобби</div>
-  </div>
-
-  <nav class="hdr-nav" aria-label="Навигация">
-    <div class="hdr-nav-group" data-group="duels">
-      <span class="hdr-nav-label">Дуэли</span>
-      <a href="#stakes" class="is-active">Ставки</a>
-      <a href="#live">Live</a>
-      <a href="#archive">Архив</a>
-    </div>
-    <div class="hdr-nav-group" data-group="lottery">
-      <span class="hdr-nav-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</span>
-      <a href="#lottery">Розыгрыши</a>
-    </div>
-  </nav>
-
-  <div class="hdr-right">
-    <span class="pill" id="user-balance">
-      ₿ <span class="balance-amount" data-balance="">0</span>
-    </span>
-
-    <a class="btn primary" href="#" id="topup-btn" title="Пополнить баланс">Пополнить</a>
-
-    <button class="btn ghost" id="link-tg" style="display:none" type="button">Связать Telegram</button>
-    <button class="btn ghost" id="link-vk" style="display:none" type="button">Связать ВКонтакте</button>
-
-    <div class="hdr-user">
-      <img id="user-avatar" alt="avatar" referrerpolicy="no-referrer" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' rx='40' fill='%23222'/%3E%3Ctext x='40' y='48' text-anchor='middle' font-size='28' fill='%23aaa' font-family='Arial'%3EGG%3C/text%3E%3C/svg%3E">
-      <div class="name">
-        <strong id="user-name-text">Гость</strong>
-        <span>Профиль</span>
-      </div>
-    </div>
-  </div>
-</header>
-
-
-  <div class="wrap">
-    <div class="layout">
-      <aside class="sidebar" aria-label="Боковая панель">
-        <div class="card side-card">
-          <h3 class="side-title">Навигация</h3>
-          <nav class="side-nav">
-            <div class="side-group">
-              <div class="side-label">Дуэли</div>
-              <a class="side-link" href="#stakes">Ставки <span>создать</span></a>
-              <a class="side-link" href="#live">Live <span>комнаты</span></a>
-              <a class="side-link" href="#archive">Архив <span>история</span></a>
-            </div>
-
-            <div class="side-group">
-              <div class="side-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</div>
-              <a class="side-link" href="#lottery">Розыгрыши <span>призы</span></a>
-
-<div class="side-sub" id="lottery-subnav" style="display:none">
-  <a href="#lottery" data-lot-jump="active"><span>раздел</span> Активные</a>
-  <a href="#lottery" data-lot-jump="archive"><span>раздел</span> Архив</a>
-  <a href="#lottery" data-lot-jump="mine"><span>раздел</span> Мои билеты</a>
+<header class="hdr">
+<div class="hdr-left">
+<a class="btn hdr-back" href="/index.html" title="На главную">
+<span aria-hidden="true">←</span>
+<span class="label">На главную</span>
+</a>
+<div aria-label="GGROOM" class="hdr-brand">
+<span class="gg">GG</span><span class="room">ROOM</span>
 </div>
-            </div>
-          </nav>
-        </div>
-
-        <div class="card side-card" style="margin-top:14px">
-          <h3 class="side-title">Подсказка</h3>
-          <div class="muted" style="font-size:13px; line-height:1.45">
+<div class="hdr-title">Лобби</div>
+</div>
+<nav aria-label="Навигация" class="hdr-nav">
+<div class="hdr-nav-group" data-group="duels">
+<span class="hdr-nav-label">Дуэли</span>
+<a class="is-active" href="#stakes">Ставки</a>
+<a href="#live">Live</a>
+<a href="#archive">Архив</a>
+</div>
+<div class="hdr-nav-group" data-group="lottery">
+<span class="hdr-nav-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</span>
+<a href="#lottery">Розыгрыши</a>
+</div>
+</nav>
+<div class="hdr-right">
+<span class="pill" id="user-balance">
+      ₿ <span class="balance-amount" data-balance="">0</span>
+</span>
+<a class="btn primary" href="#" id="topup-btn" title="Пополнить баланс">Пополнить</a>
+<button class="btn ghost" id="link-tg" style="display:none" type="button">Связать Telegram</button>
+<button class="btn ghost" id="link-vk" style="display:none" type="button">Связать ВКонтакте</button>
+<div class="hdr-user">
+<img alt="avatar" id="user-avatar" referrerpolicy="no-referrer" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' rx='40' fill='%23222'/%3E%3Ctext x='40' y='48' text-anchor='middle' font-size='28' fill='%23aaa' font-family='Arial'%3EGG%3C/text%3E%3C/svg%3E"/>
+<div class="name">
+<strong id="user-name-text">Гость</strong>
+<span>Профиль</span>
+</div>
+</div>
+</div>
+</header>
+<div class="wrap">
+<div class="layout">
+<aside aria-label="Боковая панель" class="sidebar">
+<div class="card side-card">
+<h3 class="side-title">Навигация</h3>
+<nav class="side-nav">
+<div class="side-group">
+<div class="side-label">Дуэли</div>
+<a class="side-link" href="#stakes">Ставки <span>создать</span></a>
+<a class="side-link" href="#live">Live <span>комнаты</span></a>
+<a class="side-link" href="#archive">Архив <span>история</span></a>
+</div>
+<div class="side-group">
+<div class="side-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</div>
+<a class="side-link" href="#lottery">Розыгрыши <span>призы</span></a>
+<div class="side-sub" id="lottery-subnav" style="display:none">
+<a data-lot-jump="active" href="#lottery"><span>раздел</span> Активные</a>
+<a data-lot-jump="archive" href="#lottery"><span>раздел</span> Архив</a>
+<a data-lot-jump="mine" href="#lottery"><span>раздел</span> Мои билеты</a>
+</div>
+</div>
+</nav>
+</div>
+<div class="card side-card" style="margin-top:14px">
+<h3 class="side-title">Подсказка</h3>
+<div class="muted" style="font-size:13px; line-height:1.45">
             Выбирай ставку → создай комнату → дождись соперника.
             Победителя определяет coinflip. Детали дуэли можно открыть по клику в истории.
           </div>
-        </div>
-      </aside>
-
-      <main class="main" aria-label="Основной контент">
-        <div class="grid">
-
-      <div id="hub-duels">
-
-
-      <div class="card welcome-card">
-        <p style="margin:0">Добро пожаловать в лобби.</p>
-        <p id="provider-note" style="margin:8px 0 0; color:var(--muted)"></p>
-      </div>
-
-      <div class="card" id="duels-card">
-        <div id="stakes" class="duels-head">
-          <h2 style="margin:0">Дуэли 1v1</h2>
-          <div class="right">
-            <button class="btn" id="duels-refresh" type="button">Обновить</button>
-          </div>
-        </div>
-
-        <div class="duels-create">
-          <div class="muted" style="font-size:13px">
+</div>
+</aside>
+<main aria-label="Основной контент" class="main">
+<div class="grid">
+<div id="hub-duels">
+<div class="card welcome-card" id="welcome-card">
+<p style="margin:0">Добро пожаловать в лобби.</p>
+<p id="provider-note" style="margin:8px 0 0; color:var(--muted)"></p>
+</div>
+<div class="card" id="duels-card">
+<div class="duels-head" id="stakes">
+<h2 style="margin:0">Дуэли 1v1</h2>
+<div class="right">
+<button class="btn" id="duels-refresh" type="button">Обновить</button>
+</div>
+</div>
+<div class="duels-create">
+<div class="muted" style="font-size:13px">
             Создай комнату со ставкой — второй игрок заходит, и система честно кидает монету (coinflip).
           </div>
-
-          
-          <div class="stakes-head">
-            <div class="muted" style="font-size:13px">Выбери ставку</div>
-            <div class="stakes-head-right">
-              <span class="mode-pill" id="create-mode-pill"><span class="tag">1v1</span> Публичная дуэль</span>
-              <button class="btn ghost icon" id="create-mode-btn" type="button" title="Режим комнаты" aria-label="Режим комнаты">⚙</button>
-            </div>
-          </div>
-
-                    <div class="stakes" aria-label="Ставки">
-            <div class="stake-card is-selected" data-stake="100">
-              <div class="stake-badge" aria-hidden="true"></div>
-              <div class="stake-left">
-                <div class="stake-top">
-                  <div class="amt">₽100</div>
-                  <div class="meta">pot ₽200 • fee ~₽10</div>
-                </div>
-                <div class="stake-kpis">
-                  <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="100">—</b></span>
-                </div>
-                <div class="stake-actions">
-                  <button class="btn primary" type="button" data-action="quick" data-stake="100">Быстрый матч</button>
-                  <button class="btn ghost" type="button" data-action="create" data-stake="100">Создать</button>
-                </div>
-              </div>
-              <div class="stake-ill" aria-hidden="true">
-                <img src="/assets/stakes/stake-100.svg" alt="" loading="lazy">
-              </div>
-            </div>
-
-            <div class="stake-card" data-stake="250">
-              <div class="stake-badge" aria-hidden="true"></div>
-              <div class="stake-left">
-                <div class="stake-top">
-                  <div class="amt">₽250</div>
-                  <div class="meta">pot ₽500 • fee ~₽25</div>
-                </div>
-                <div class="stake-kpis">
-                  <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="250">—</b></span>
-                </div>
-                <div class="stake-actions">
-                  <button class="btn primary" type="button" data-action="quick" data-stake="250">Быстрый матч</button>
-                  <button class="btn ghost" type="button" data-action="create" data-stake="250">Создать</button>
-                </div>
-              </div>
-              <div class="stake-ill" aria-hidden="true">
-                <img src="/assets/stakes/stake-250.svg" alt="" loading="lazy">
-              </div>
-            </div>
-
-            <div class="stake-card has-shine" data-stake="500">
-              <div class="stake-badge" aria-hidden="true"></div>
-              <div class="stake-left">
-                <div class="stake-top">
-                  <div class="amt">₽500</div>
-                  <div class="meta">pot ₽1 000 • fee ~₽50</div>
-                </div>
-                <div class="stake-kpis">
-                  <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="500">—</b></span>
-                </div>
-                <div class="stake-actions">
-                  <button class="btn primary" type="button" data-action="quick" data-stake="500">Быстрый матч</button>
-                  <button class="btn ghost" type="button" data-action="create" data-stake="500">Создать</button>
-                </div>
-              </div>
-              <div class="stake-ill" aria-hidden="true">
-                <img src="/assets/stakes/stake-500.svg" alt="" loading="lazy">
-              </div>
-            </div>
-
-            <div class="stake-card has-shine" data-stake="1000">
-              <div class="stake-badge" aria-hidden="true"></div>
-              <div class="stake-left">
-                <div class="stake-top">
-                  <div class="amt">₽1 000</div>
-                  <div class="meta">pot ₽2 000 • fee ~₽100</div>
-                </div>
-                <div class="stake-kpis">
-                  <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="1000">—</b></span>
-                </div>
-                <div class="stake-actions">
-                  <button class="btn primary" type="button" data-action="quick" data-stake="1000">Быстрый матч</button>
-                  <button class="btn ghost" type="button" data-action="create" data-stake="1000">Создать</button>
-                </div>
-              </div>
-              <div class="stake-ill" aria-hidden="true">
-                <img src="/assets/stakes/stake-1000.svg" alt="" loading="lazy">
-              </div>
-            </div>
-
-            <div class="stake-card has-shine" data-stake="2500">
-              <div class="stake-badge" aria-hidden="true"></div>
-              <div class="stake-left">
-                <div class="stake-top">
-                  <div class="amt">₽2 500</div>
-                  <div class="meta">pot ₽5 000 • fee ~₽250</div>
-                </div>
-                <div class="stake-kpis">
-                  <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="2500">—</b></span>
-                </div>
-                <div class="stake-actions">
-                  <button class="btn primary" type="button" data-action="quick" data-stake="2500">Быстрый матч</button>
-                  <button class="btn ghost" type="button" data-action="create" data-stake="2500">Создать</button>
-                </div>
-              </div>
-              <div class="stake-ill" aria-hidden="true">
-                <img src="/assets/stakes/stake-2500.svg" alt="" loading="lazy">
-              </div>
-            </div>
-
-            <div class="stake-card stake-vip" data-stake="vip" data-disabled="1">
-              <div class="stake-badge" aria-hidden="true"></div>
-              <div class="stake-left">
-                <div class="stake-top">
-                  <div class="amt">VIP</div>
-                  <div class="meta">Особые условия • приватные дуэли • скоро</div>
-                </div>
-                <div class="stake-kpis">
-                  <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="vip">—</b></span>
-                </div>
-                <div class="stake-actions">
-                  <button class="btn primary" type="button" disabled>Скоро</button>
-                  <button class="btn ghost" type="button" disabled>Создать</button>
-                </div>
-              </div>
-              <div class="stake-ill" aria-hidden="true">
-                <img src="/assets/stakes/stake-vip.svg" alt="" loading="lazy">
-              </div>
-            </div>
-          </div>
-
-          <div class="mode-line" aria-label="Режим создания">
-            <span class="muted">Режим:</span>
-            <a class="mode-link" href="#" id="create-mode-link">изменить</a>
-          </div>
-
-          <div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
-        </div>
-
-        <div class="section-title" id="live" style="margin-top:18px">
-  <div class="h3">Активные дуэли (Live)</div>
-  <div class="muted">открытые комнаты — ожидание соперника</div>
+<div class="stakes-head">
+<div class="muted" style="font-size:13px">Выбери ставку</div>
+<div class="stakes-head-right">
+<span class="mode-pill" id="create-mode-pill"><span class="tag">1v1</span> Публичная дуэль</span>
+<button aria-label="Режим комнаты" class="btn ghost icon" id="create-mode-btn" title="Режим комнаты" type="button">⚙</button>
 </div>
-   <div class="duels-list live-list" id="duels-list">
-  <div class="muted">Загружаю комнаты…</div>
 </div>
-
+<div aria-label="Ставки" class="stakes">
+<div class="stake-card is-selected" data-stake="100">
+<div aria-hidden="true" class="stake-badge"></div>
+<div class="stake-left">
+<div class="stake-top">
+<div class="amt">₽100</div>
+<div class="meta">pot ₽200 • fee ~₽10</div>
+</div>
+<div class="stake-kpis">
+<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="100">—</b></span>
+</div>
+<div class="stake-actions">
+<button class="btn primary" data-action="quick" data-stake="100" type="button">Быстрый матч</button>
+<button class="btn ghost" data-action="create" data-stake="100" type="button">Создать</button>
+</div>
+</div>
+<div aria-hidden="true" class="stake-ill">
+<img alt="" loading="lazy" src="/assets/stakes/stake-100.svg"/>
+</div>
+</div>
+<div class="stake-card" data-stake="250">
+<div aria-hidden="true" class="stake-badge"></div>
+<div class="stake-left">
+<div class="stake-top">
+<div class="amt">₽250</div>
+<div class="meta">pot ₽500 • fee ~₽25</div>
+</div>
+<div class="stake-kpis">
+<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="250">—</b></span>
+</div>
+<div class="stake-actions">
+<button class="btn primary" data-action="quick" data-stake="250" type="button">Быстрый матч</button>
+<button class="btn ghost" data-action="create" data-stake="250" type="button">Создать</button>
+</div>
+</div>
+<div aria-hidden="true" class="stake-ill">
+<img alt="" loading="lazy" src="/assets/stakes/stake-250.svg"/>
+</div>
+</div>
+<div class="stake-card has-shine" data-stake="500">
+<div aria-hidden="true" class="stake-badge"></div>
+<div class="stake-left">
+<div class="stake-top">
+<div class="amt">₽500</div>
+<div class="meta">pot ₽1 000 • fee ~₽50</div>
+</div>
+<div class="stake-kpis">
+<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="500">—</b></span>
+</div>
+<div class="stake-actions">
+<button class="btn primary" data-action="quick" data-stake="500" type="button">Быстрый матч</button>
+<button class="btn ghost" data-action="create" data-stake="500" type="button">Создать</button>
+</div>
+</div>
+<div aria-hidden="true" class="stake-ill">
+<img alt="" loading="lazy" src="/assets/stakes/stake-500.svg"/>
+</div>
+</div>
+<div class="stake-card has-shine" data-stake="1000">
+<div aria-hidden="true" class="stake-badge"></div>
+<div class="stake-left">
+<div class="stake-top">
+<div class="amt">₽1 000</div>
+<div class="meta">pot ₽2 000 • fee ~₽100</div>
+</div>
+<div class="stake-kpis">
+<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="1000">—</b></span>
+</div>
+<div class="stake-actions">
+<button class="btn primary" data-action="quick" data-stake="1000" type="button">Быстрый матч</button>
+<button class="btn ghost" data-action="create" data-stake="1000" type="button">Создать</button>
+</div>
+</div>
+<div aria-hidden="true" class="stake-ill">
+<img alt="" loading="lazy" src="/assets/stakes/stake-1000.svg"/>
+</div>
+</div>
+<div class="stake-card has-shine" data-stake="2500">
+<div aria-hidden="true" class="stake-badge"></div>
+<div class="stake-left">
+<div class="stake-top">
+<div class="amt">₽2 500</div>
+<div class="meta">pot ₽5 000 • fee ~₽250</div>
+</div>
+<div class="stake-kpis">
+<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="2500">—</b></span>
+</div>
+<div class="stake-actions">
+<button class="btn primary" data-action="quick" data-stake="2500" type="button">Быстрый матч</button>
+<button class="btn ghost" data-action="create" data-stake="2500" type="button">Создать</button>
+</div>
+</div>
+<div aria-hidden="true" class="stake-ill">
+<img alt="" loading="lazy" src="/assets/stakes/stake-2500.svg"/>
+</div>
+</div>
+<div class="stake-card stake-vip" data-disabled="1" data-stake="vip">
+<div aria-hidden="true" class="stake-badge"></div>
+<div class="stake-left">
+<div class="stake-top">
+<div class="amt">VIP</div>
+<div class="meta">Особые условия • приватные дуэли • скоро</div>
+</div>
+<div class="stake-kpis">
+<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="vip">—</b></span>
+</div>
+<div class="stake-actions">
+<button class="btn primary" disabled="" type="button">Скоро</button>
+<button class="btn ghost" disabled="" type="button">Создать</button>
+</div>
+</div>
+<div aria-hidden="true" class="stake-ill">
+<img alt="" loading="lazy" src="/assets/stakes/stake-vip.svg"/>
+</div>
+</div>
+</div>
+<div aria-label="Режим создания" class="mode-line">
+<span class="muted">Режим:</span>
+<a class="mode-link" href="#" id="create-mode-link">изменить</a>
+</div>
+<div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
+</div>
+<div class="section-title" id="live" style="margin-top:18px">
+<div class="h3">Активные дуэли (Live)</div>
+<div class="muted">открытые комнаты — ожидание соперника</div>
+</div>
+<div class="duels-list live-list" id="duels-list">
+<div class="muted">Загружаю комнаты…</div>
+</div>
 <div class="section-title" id="archive">
-  <div class="h3">Мои дуэли</div>
-  <div class="muted">созданные • активные • архив</div>
+<div class="h3">Мои дуэли</div>
+<div class="muted">созданные • активные • архив</div>
 </div>
-
-<div class="myduels-tabs" role="tablist" aria-label="Мои дуэли">
-  <button type="button" class="is-active" data-myduels-tab="active">Активные <span class="cnt" id="myduels-count-active">0</span></button>
-  <button type="button" data-myduels-tab="created">Созданные <span class="cnt" id="myduels-count-created">0</span></button>
-  <button type="button" data-myduels-tab="archive">Архив <span class="cnt" id="myduels-count-archive">0</span></button>
+<div aria-label="Мои дуэли" class="myduels-tabs" role="tablist">
+<button class="is-active" data-myduels-tab="active" type="button">Активные <span class="cnt" id="myduels-count-active">0</span></button>
+<button data-myduels-tab="created" type="button">Созданные <span class="cnt" id="myduels-count-created">0</span></button>
+<button data-myduels-tab="archive" type="button">Архив <span class="cnt" id="myduels-count-archive">0</span></button>
 </div>
-
 <div class="myduels-pane is-active" id="myduels-pane-active">
-  <div class="duels-list live-list" id="myduels-active-list">
-    <div class="muted">Загружаю…</div>
-  </div>
+<div class="duels-list live-list" id="myduels-active-list">
+<div class="muted">Загружаю…</div>
 </div>
-
+</div>
 <div class="myduels-pane" id="myduels-pane-created">
-  <div class="myduels-list" id="myduels-created-list">
-    <div class="muted">Загружаю…</div>
-  </div>
+<div class="myduels-list" id="myduels-created-list">
+<div class="muted">Загружаю…</div>
 </div>
-
+</div>
 <div class="myduels-pane" id="myduels-pane-archive">
-  <div class="history-list" id="history-list">
-    <div class="muted">Загружаю историю…</div>
-  </div>
+<div class="history-list" id="history-list">
+<div class="muted">Загружаю историю…</div>
 </div>
-      </div>
-
-
-
-      </div>
-
-      <div id="hub-lottery" style="display:none">
+</div>
+</div>
+</div>
+<div id="hub-lottery" style="display:none">
 <div class="card" id="lottery-card" style="margin-top:14px">
-  <div id="lottery" class="duels-head">
-    <h2 style="margin:0">Розыгрыши</h2>
-    <div class="right">
-      <span class="pill" style="background:rgba(18,22,33,.55); border:1px solid var(--border); color:var(--muted); font-weight:800;">
+<div class="duels-head" id="lottery">
+<h2 style="margin:0">Розыгрыши</h2>
+<div class="right">
+<span class="pill" style="background:rgba(18,22,33,.55); border:1px solid var(--border); color:var(--muted); font-weight:800;">
         Скоро
       </span>
-    </div>
-  </div>
-
-  <div class="muted" style="font-size:13px; margin-top:8px">
+</div>
+</div>
+<div class="muted" style="font-size:13px; margin-top:8px">
     Розыгрыши — отдельный раздел GGRoom (айфон/авто/кеш и т.д.). Сейчас готовим UI и механику билетов.
   </div>
-
-  <div class="seg lot-tabs" role="tablist" aria-label="Розыгрыши">
-    <button type="button" class="is-active" data-lot-tab="active">Активные</button>
-    <button type="button" data-lot-tab="archive">Архив</button>
-    <button type="button" data-lot-tab="mine">Мои билеты</button>
-  </div>
-
-  <div class="lot-pane is-active" data-lot-pane="active">
-<div class="lot-hero" aria-label="Активный розыгрыш (UI-заготовка)">
-  <div class="left">
-    <div class="badge">АКТИВНО • РОЗЫГРЫШ НЕДЕЛИ</div>
-    <div class="title">iPhone 17 Pro</div>
-    <div class="sub">Билеты от ₽100 • таймер и механика билетов подключим позже (сейчас — UI).</div>
-    <div class="prog">
-      <div class="bar"><div class="fill"></div></div>
-      <div class="meta-line">
-        <span>Продано: <b>340 / 1000</b></span>
-        <span>Банк: <b>₽34 000</b></span>
-        <span>Финиш: <b>скоро</b></span>
-      </div>
-    </div>
-  </div>
-  <div class="right">
-    <div class="count">
-      <div class="k">Ближайшее завершение</div>
-      <div class="v">скоро</div>
-    </div>
-    <button class="btn primary" type="button" disabled style="opacity:.6; cursor:not-allowed">Купить билет (soon)</button>
-  </div>
+<div aria-label="Розыгрыши" class="seg lot-tabs" role="tablist">
+<button class="is-active" data-lot-tab="active" type="button">Активные</button>
+<button data-lot-tab="archive" type="button">Архив</button>
+<button data-lot-tab="mine" type="button">Мои билеты</button>
 </div>
-    <div class="lotteries">
-    <div class="stake-chip lottery-card" aria-disabled="true">
-      <div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">iPhone</span></div>
-      <div class="amt">iPhone 17 Pro</div>
-      <div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
-      <button class="btn ghost" type="button" disabled style="margin-top:10px; opacity:.6; cursor:not-allowed">Скоро</button>
-    </div>
-
-    <div class="stake-chip lottery-card" aria-disabled="true">
-      <div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">Авто</span></div>
-      <div class="amt">Largus</div>
-      <div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
-      <button class="btn ghost" type="button" disabled style="margin-top:10px; opacity:.6; cursor:not-allowed">Скоро</button>
-    </div>
-
-    <div class="stake-chip lottery-card" aria-disabled="true">
-      <div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">Cash</span></div>
-      <div class="amt">Денежный приз</div>
-      <div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
-      <button class="btn ghost" type="button" disabled style="margin-top:10px; opacity:.6; cursor:not-allowed">Скоро</button>
-    </div>
-  </div>
-  </div>
-
-  <div class="lot-pane" data-lot-pane="archive">
+<div class="lot-pane is-active" data-lot-pane="active">
+<div aria-label="Активный розыгрыш (UI-заготовка)" class="lot-hero">
+<div class="left">
+<div class="badge">АКТИВНО • РОЗЫГРЫШ НЕДЕЛИ</div>
+<div class="title">iPhone 17 Pro</div>
+<div class="sub">Билеты от ₽100 • таймер и механика билетов подключим позже (сейчас — UI).</div>
+<div class="prog">
+<div class="bar"><div class="fill"></div></div>
+<div class="meta-line">
+<span>Продано: <b>340 / 1000</b></span>
+<span>Банк: <b>₽34 000</b></span>
+<span>Финиш: <b>скоро</b></span>
+</div>
+</div>
+</div>
+<div class="right">
+<div class="count">
+<div class="k">Ближайшее завершение</div>
+<div class="v">скоро</div>
+</div>
+<button class="btn primary" disabled="" style="opacity:.6; cursor:not-allowed" type="button">Купить билет (soon)</button>
+</div>
+</div>
+<div class="lotteries">
+<div aria-disabled="true" class="stake-chip lottery-card">
+<div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">iPhone</span></div>
+<div class="amt">iPhone 17 Pro</div>
+<div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
+<button class="btn ghost" disabled="" style="margin-top:10px; opacity:.6; cursor:not-allowed" type="button">Скоро</button>
+</div>
+<div aria-disabled="true" class="stake-chip lottery-card">
+<div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">Авто</span></div>
+<div class="amt">Largus</div>
+<div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
+<button class="btn ghost" disabled="" style="margin-top:10px; opacity:.6; cursor:not-allowed" type="button">Скоро</button>
+</div>
+<div aria-disabled="true" class="stake-chip lottery-card">
+<div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">Cash</span></div>
+<div class="amt">Денежный приз</div>
+<div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
+<button class="btn ghost" disabled="" style="margin-top:10px; opacity:.6; cursor:not-allowed" type="button">Скоро</button>
+</div>
+</div>
+</div>
+<div class="lot-pane" data-lot-pane="archive">
 <div class="lot-empty">
-  <div class="title">Архив розыгрышей</div>
-  <div class="muted" style="font-size:13px">Пока данные не подключены — но UI уже готов к «живому» архиву.</div>
-
-  <table class="lot-table" aria-label="Архив розыгрышей (заглушка)">
-    <thead>
-      <tr>
-        <th style="width:120px">Дата</th>
-        <th>Приз</th>
-        <th style="width:160px">Победитель</th>
-        <th style="width:140px">Билеты</th>
-        <th style="width:140px">Проверка</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="muted">—</td>
-        <td>—</td>
-        <td><span class="pill">—</span></td>
-        <td class="muted">—</td>
-        <td class="muted">seed/nonce/commit</td>
-      </tr>
-      <tr>
-        <td class="muted">—</td>
-        <td>—</td>
-        <td><span class="pill">—</span></td>
-        <td class="muted">—</td>
-        <td class="muted">seed/nonce/commit</td>
-      </tr>
-    </tbody>
-  </table>
+<div class="title">Архив розыгрышей</div>
+<div class="muted" style="font-size:13px">Пока данные не подключены — но UI уже готов к «живому» архиву.</div>
+<table aria-label="Архив розыгрышей (заглушка)" class="lot-table">
+<thead>
+<tr>
+<th style="width:120px">Дата</th>
+<th>Приз</th>
+<th style="width:160px">Победитель</th>
+<th style="width:140px">Билеты</th>
+<th style="width:140px">Проверка</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="muted">—</td>
+<td>—</td>
+<td><span class="pill">—</span></td>
+<td class="muted">—</td>
+<td class="muted">seed/nonce/commit</td>
+</tr>
+<tr>
+<td class="muted">—</td>
+<td>—</td>
+<td><span class="pill">—</span></td>
+<td class="muted">—</td>
+<td class="muted">seed/nonce/commit</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
-
-  <div class="lot-pane" data-lot-pane="mine">
-    <div class="lot-empty">
-  <div class="title">Мои билеты</div>
-  <div class="muted" style="font-size:13px">Будет история билетов: сколько куплено, статус, выигрыш. Пока — UI-заготовка.</div>
-
-  <div class="lot-row" style="margin-top:12px">
-    <div class="r"><div><div class="k">Активных билетов</div><div class="v">—</div></div><div class="muted" style="font-size:12px">скоро</div></div>
-  </div>
-
-  <table class="lot-table" aria-label="Мои билеты (заглушка)">
-    <thead>
-      <tr>
-        <th style="width:160px">Розыгрыш</th>
-        <th style="width:120px">Билетов</th>
-        <th style="width:140px">Статус</th>
-        <th>Комментарий</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>—</td>
-        <td class="muted">—</td>
-        <td><span class="pill">—</span></td>
-        <td class="muted">данные появятся после подключения билетов</td>
-      </tr>
-    </tbody>
-  </table>
-</div></div><div class="muted" style="font-size:12px">скоро</div></div>
-
-<div class="lottery-under" style="margin-top:14px">
+<div class="lot-pane" data-lot-pane="mine">
+<div class="lot-empty">
+<div class="title">Мои билеты</div>
+<div class="muted" style="font-size:13px">Будет история билетов: сколько куплено, статус, выигрыш. Пока — UI-заготовка.</div>
+<div class="lot-row" style="margin-top:12px">
+<div class="r"><div><div class="k">Активных билетов</div><div class="v">—</div></div><div class="muted" style="font-size:12px">скоро</div></div>
+</div>
+<table aria-label="Мои билеты (заглушка)" class="lot-table">
+<thead>
+<tr>
+<th style="width:160px">Розыгрыш</th>
+<th style="width:120px">Билетов</th>
+<th style="width:140px">Статус</th>
+<th>Комментарий</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>—</td>
+<td class="muted">—</td>
+<td><span class="pill">—</span></td>
+<td class="muted">данные появятся после подключения билетов</td>
+</tr>
+</tbody>
+</table>
+</div></div><div class="muted" style="font-size:12px">скоро</div><div class="lottery-under">
 <div class="card" id="lottery-pf-card">
-  <h3>Честность розыгрышей</h3>
-  <div class="small">
+<h3>Честность розыгрышей</h3>
+<div class="small">
     Розыгрыши будут отдельным режимом: прозрачные правила, публичные результаты,
     и проверяемый механизм выбора победителя (по аналогии с provably fair).
   </div>
 </div>
-
 <div class="card" id="lottery-status-card">
-  <h3>Статус розыгрышей</h3>
-  <div class="small">Здесь появятся активные розыгрыши и прогресс по билетам.</div>
+<h3>Статус розыгрышей</h3>
+<div class="small">Здесь появятся активные розыгрыши и прогресс по билетам.</div>
+</div>
+
+</div></div>
+
+</div>
+
+</div>
+</main></div>
 </div>
 
 
-  <div class="kpi">
-    <div class="k"><div class="t">Активных</div><div class="v" id="kpi-lot-active">Скоро</div></div>
-    <div class="k"><div class="t">Ближайший</div><div class="v" id="kpi-lot-next">Скоро</div></div>
-    <div class="k"><div class="t">Мои билеты</div><div class="v" id="kpi-lot-mine">—</div></div>
-    <div class="k"><div class="t">Призы</div><div class="v" id="kpi-lot-prizes">iPhone · авто · cash</div></div>
-  </div>
-</div>
 
 
-      </div>
-
-      <div class="lot-row">
-        <div class="r"><div><div class="k">Последний приз</div><div class="v">—</div></div><div class="muted" style="font-size:12px">скоро</div></div>
-      </div>
-    </div>
-  </div>
-
-  </div>
-</div>
-      </div>
-
-
-        </div>
-      </main>
-
-      <aside class="rail" aria-label="Правая панель">
-        <div class="card" id="rail-duels-pf">
-          <h3>Provably fair</h3>
-          <div class="small">
+<aside aria-label="Правая панель" class="rail">
+<div class="card" id="rail-duels-pf">
+<h3>Provably fair</h3>
+<div class="small">
             Каждая дуэль имеет проверяемую «монетку»: commit → reveal → вычисление winner.
             В карточке дуэли можно увидеть seed/nonce/commit и повторить расчёт.
           </div>
-        </div>
-        </div>
+</div>
 
-        <div class="card" id="rail-duels-status" style="margin-top:14px">
-          <h3>Статус дуэлей</h3>
-          <div class="small">Коротко о лобби прямо сейчас — чтобы не гадать, живо ли оно.</div>
-          <div class="kpi">
-            <div class="k"><div class="t">Открытых</div><div class="v" id="kpi-open">—</div></div>
-            <div class="k"><div class="t">Моих open</div><div class="v" id="kpi-myopen">—</div></div>
-            <div class="k"><div class="t">Архив</div><div class="v" id="kpi-history">—</div></div>
-            <div class="k"><div class="t">Связи</div><div class="v" id="kpi-links">—</div></div>
-          </div>
-        </div>
-        </div>
-      </aside>
-    </div>
-  </div>
+<div class="card" id="rail-duels-status" style="margin-top:14px">
+<h3>Статус дуэлей</h3>
+<div class="small">Коротко о лобби прямо сейчас — чтобы не гадать, живо ли оно.</div>
+<div class="kpi">
+<div class="k"><div class="t">Открытых</div><div class="v" id="kpi-open">—</div></div>
+<div class="k"><div class="t">Моих open</div><div class="v" id="kpi-myopen">—</div></div>
+<div class="k"><div class="t">Архив</div><div class="v" id="kpi-history">—</div></div>
+<div class="k"><div class="t">Связи</div><div class="v" id="kpi-links">—</div></div>
+</div>
+</div>
+
+</aside>
 
 
 <!-- Детали дуэли -->
-
 <div class="modal-backdrop" id="duel-modal">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="duel-modal-title">Дуэль</div>
-      <button class="modal-close" id="duel-modal-close">Закрыть</button>
-    </div>
-    <div class="modal-body">
-      <div class="kv" id="duel-modal-kv"></div>
-    </div>
-  </div>
+<div class="modal">
+<div class="modal-head">
+<div class="modal-title" id="duel-modal-title">Дуэль</div>
+<button class="modal-close" id="duel-modal-close">Закрыть</button>
 </div>
-
-
+<div class="modal-body">
+<div class="kv" id="duel-modal-kv"></div>
+</div>
+</div>
+</div>
 <!-- Создание комнаты (режимы) -->
 <div class="modal-backdrop" id="create-modal">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">Создать комнату</div>
-      <button class="modal-close" id="create-modal-close" type="button">Закрыть</button>
-    </div>
-    <div class="modal-body">
-      <div class="muted" style="font-size:13px; line-height:1.4">
+<div class="modal">
+<div class="modal-head">
+<div class="modal-title">Создать комнату</div>
+<button class="modal-close" id="create-modal-close" type="button">Закрыть</button>
+</div>
+<div class="modal-body">
+<div class="muted" style="font-size:13px; line-height:1.4">
         Выбери формат. Сейчас полноценно работает только <b>публичная дуэль 1v1</b> — остальные режимы уже «на рельсах», но появятся чуть позже.
       </div>
-
-      <div class="seg" role="tablist" aria-label="Режим комнаты">
-        <button type="button" class="is-active" data-mode="duel_1v1_public">1v1</button>
-        <button type="button" data-mode="duel_invite">Invite <span class="badge-soon" style="margin-left:6px">soon</span></button>
-        <button type="button" data-mode="duel_multi">3/6/10 <span class="badge-soon" style="margin-left:6px">soon</span></button>
+<div aria-label="Режим комнаты" class="seg" role="tablist">
+<button class="is-active" data-mode="duel_1v1_public" type="button">1v1</button>
+<button data-mode="duel_invite" type="button">Invite <span class="badge-soon" style="margin-left:6px">soon</span></button>
+<button data-mode="duel_multi" type="button">3/6/10 <span class="badge-soon" style="margin-left:6px">soon</span></button>
 </div>
-
-      <div class="mode-pane is-active" data-pane="duel_1v1_public">
-        <div style="font-weight:900; margin-top:2px;">Публичная дуэль 1v1</div>
-        <div class="muted" style="font-size:13px; margin-top:6px;">
+<div class="mode-pane is-active" data-pane="duel_1v1_public">
+<div style="font-weight:900; margin-top:2px;">Публичная дуэль 1v1</div>
+<div class="muted" style="font-size:13px; margin-top:6px;">
           Комната попадёт в Live. Победитель определяется coinflip. Детали будут в карточке дуэли.
         </div>
-      </div>
-
-      <div class="mode-pane" data-pane="duel_invite">
-        <div style="font-weight:900; margin-top:2px;">Приглашение конкретного игрока</div>
-        <div class="muted" style="font-size:13px; margin-top:6px;">
+</div>
+<div class="mode-pane" data-pane="duel_invite">
+<div style="font-weight:900; margin-top:2px;">Приглашение конкретного игрока</div>
+<div class="muted" style="font-size:13px; margin-top:6px;">
           Приватная комната: видна только вам двоим, по приглашению. Отлично для «вызова».
         </div>
-        <div class="field">
-          <label for="invite-user-id">Кого приглашаем (user_id)</label>
-          <input id="invite-user-id" type="number" min="1" placeholder="например: 97">
-        </div>
-      </div>
-
-      <div class="mode-pane" data-pane="duel_multi">
-        <div style="font-weight:900; margin-top:2px;">Комнаты на несколько участников</div>
-        <div class="muted" style="font-size:13px; margin-top:6px;">
+<div class="field">
+<label for="invite-user-id">Кого приглашаем (user_id)</label>
+<input id="invite-user-id" min="1" placeholder="например: 97" type="number"/>
+</div>
+</div>
+<div class="mode-pane" data-pane="duel_multi">
+<div style="font-weight:900; margin-top:2px;">Комнаты на несколько участников</div>
+<div class="muted" style="font-size:13px; margin-top:6px;">
           Формат «на компанию»: 3 / 6 / 10 человек. Механика будет похожа, но с иным распределением побед.
         </div>
-        <div class="field">
-          <label for="multi-size">Количество участников</label>
-          <select id="multi-size">
-            <option value="3">3</option>
-            <option value="6">6</option>
-            <option value="10">10</option>
-          </select>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="modal-foot">
-      <div class="left">Подготовительный UI-шаг: сохраняем выбор, но создаём пока только 1v1.</div>
-      <div class="actions">
-        <button class="btn" id="create-modal-cancel" type="button">Отмена</button>
-        <button class="btn primary" id="create-modal-save" type="button">Сохранить режим</button>
-        <button class="btn primary" id="create-modal-create" type="button">Создать сейчас</button>
-      </div>
-    </div>
-  </div>
+<div class="field">
+<label for="multi-size">Количество участников</label>
+<select id="multi-size">
+<option value="3">3</option>
+<option value="6">6</option>
+<option value="10">10</option>
+</select>
 </div>
-
-
+</div>
+</div>
+<div class="modal-foot">
+<div class="left">Подготовительный UI-шаг: сохраняем выбор, но создаём пока только 1v1.</div>
+<div class="actions">
+<button class="btn" id="create-modal-cancel" type="button">Отмена</button>
+<button class="btn primary" id="create-modal-save" type="button">Сохранить режим</button>
+<button class="btn primary" id="create-modal-create" type="button">Создать сейчас</button>
+</div>
+</div>
+</div>
+</div>
 <!-- Монетка (3–4 секунды) -->
 <div class="coin-overlay" id="coin-overlay">
-  <div class="coin-card">
-    <div style="font-weight:800; font-size:18px;">Монетка решает судьбу…</div>
-    <div class="coin" aria-hidden="true"></div>
-    <div class="coin-text">Секунду. Мы честно кидаем coinflip.</div>
-  </div>
+<div class="coin-card">
+<div style="font-weight:800; font-size:18px;">Монетка решает судьбу…</div>
+<div aria-hidden="true" class="coin"></div>
+<div class="coin-text">Секунду. Мы честно кидаем coinflip.</div>
 </div>
-
-  <div class="toast" id="toast">
-    <div class="t" id="toast-title"></div>
-    <div class="b" id="toast-body"></div>
-  </div>
-
-  <!-- Telegram Login (асинхронно) -->
-  <script async src="https://telegram.org/js/telegram-widget.js?22"></script>
-
-  <!-- Весь JS — в одном файле. Он тянет HUM-баланс, делает proof-link и меняет кнопку на «… связан». -->
-  <script src="/js/lobby-balance-fix.js"></script>
-
-  <!-- Дуэли 1v1: список, создание, join/cancel -->
-  <script src="/js/duels-lobby.js?v=12"></script>
-
-
-  <script>
+</div>
+<div class="toast" id="toast">
+<div class="t" id="toast-title"></div>
+<div class="b" id="toast-body"></div>
+</div>
+<!-- Telegram Login (асинхронно) -->
+<script async="" src="https://telegram.org/js/telegram-widget.js?22"></script>
+<!-- Весь JS — в одном файле. Он тянет HUM-баланс, делает proof-link и меняет кнопку на «… связан». -->
+<script src="/js/lobby-balance-fix.js"></script>
+<!-- Дуэли 1v1: список, создание, join/cancel -->
+<script src="/js/duels-lobby.js?v=12"></script>
+<script>
     // Подсветка активной вкладки (topbar + sidebar) по hash + переключение разделов
     (function(){
       const topLinks = Array.from(document.querySelectorAll('.hdr-nav a'));
@@ -1555,9 +1511,7 @@ if(isLottery){
         syncOnEnter();
       })();
   </script>
-
-
-  <script>
+<script>
     // ===== Step 1.5: режимы комнат (UI-слой, без изменения логики 1v1) =====
     (function(){
       const $ = (s, r=document) => r.querySelector(s);
@@ -1714,8 +1668,6 @@ if(isLottery){
       renderMode();
     })();
   </script>
-
-
-  <script defer src="/gg-linker.js"></script>
+<script defer="" src="/gg-linker.js"></script>
 </body>
 </html>
