@@ -276,12 +276,35 @@ function setSelectedStake(v){
 
   window.__gg_duels_create_selected = createWithSelectedStake;
 
+
+  function isDuelsView(){
+    var h = String(location.hash || '#stakes').toLowerCase();
+    if (!h || h === '#') h = '#stakes';
+    // дуэльные разделы лобби, где реально нужен список open-комнат
+    return (h === '#stakes' || h === '#live' || h === '#archive');
+  }
+
+  function syncOpenPolling(){
+    // Если мы не в дуэльном разделе — стопаем любые бэкенд-поллинги.
+    if (!isDuelsView()){
+      if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+      return;
+    }
+    // В дуэльном разделе поллим только когда есть моя open-комната (чтобы баланс/история подтягивались, когда её заджойнят)
+    var has = false;
+    for (var k in lastMyOpenIds){ has = true; break; }
+    if (has) setPollEnabled(true);
+  }
+
 function setPollEnabled(enabled){
     if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+    // не поллим открытые комнаты вне дуэльных разделов (например, в Розыгрышах)
+    if (!isDuelsView()) return;
     if (!enabled) return;
 
     pollTimer = setTimeout(async function tick(){
       pollTimer = null;
+      if (!isDuelsView()) return;
       try { await pollOpenOnce(); } catch(_){}
       // пересчитаем условие после pollOpenOnce
       var has = false;
@@ -1252,9 +1275,18 @@ async function loadOpen(){
       }
     } catch(_){}
 
-    // initial load
-    await pollOpenOnce();
+    // initial load: не дёргаем open-дуэли, если пользователь сразу в Розыгрышах
+    if (isDuelsView()){
+      await pollOpenOnce();
+    }
     await loadHistory();
+
+    // следим за переключением разделов (hash)
+    try{
+      window.addEventListener('hashchange', syncOpenPolling);
+      window.addEventListener('ggroom:lottery-tab', syncOpenPolling);
+    }catch(_){ }
+    syncOpenPolling();
   }
 
   // старт
