@@ -21,7 +21,64 @@
     *{box-sizing:border-box}
     body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
 
-    /* =========================
+    .welcome-card{
+  position:relative;
+  overflow:hidden;
+  margin-bottom:14px;
+  background: var(--surface);
+}
+.welcome-card > *{ position:relative; z-index:2; }
+.welcome-card::before{
+  /* base GG-style wash across the whole card */
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+  background: linear-gradient(90deg,
+    rgba(10,132,255,.26) 0%,
+    rgba(46,209,169,.22) 55%,
+    rgba(0,0,0,0) 100%);
+  opacity:.9;
+}
+.welcome-card::after{
+  /* moving shimmer exactly like admin duel-card header */
+  content:"";
+  position:absolute;
+  inset: -80px -220px;
+  pointer-events:none;
+  z-index:1;
+
+  background-image:
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 22%,
+      rgba(10,132,255,.32) 32%,
+      rgba(46,209,169,.30) 44%,
+      rgba(0,0,0,0) 58%,
+      rgba(0,0,0,0) 100%),
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 36%,
+      rgba(255,193,7,.26) 46%,
+      rgba(10,132,255,.26) 58%,
+      rgba(0,0,0,0) 72%,
+      rgba(0,0,0,0) 100%),
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 10%,
+      rgba(46,209,169,.22) 22%,
+      rgba(255,193,7,.22) 34%,
+      rgba(0,0,0,0) 50%,
+      rgba(0,0,0,0) 100%);
+  background-size:220% 220%;
+  background-position: 0% 12%, 0% 52%, 0% 88%;
+  opacity:.72;
+  filter:saturate(1.25);
+  animation: dcShimmer 12s linear infinite;
+}
+
+/* =========================
    TopBar (покерный стиль)
    ========================= */
 .hdr{
@@ -876,53 +933,8 @@
   100% { background-position: 120% 12%, 120% 52%, 120% 88%; }
 }
 
-.welcome-card{
-  position:relative;
-  overflow:hidden;
-  margin-bottom:14px;
-}
-
-.welcome-card::before{
-  content:"";
-  position:absolute;
-  inset:0; height:62px;
-  pointer-events:none;
-  z-index:0;
-
-  background-image:
-    linear-gradient(110deg,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0) 22%,
-      rgba(10,132,255,.32) 32%,
-      rgba(46,209,169,.30) 44%,
-      rgba(0,0,0,0) 58%,
-      rgba(0,0,0,0) 100%),
-    linear-gradient(110deg,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0) 18%,
-      rgba(186,141,255,.22) 30%,
-      rgba(255,193,7,.22) 44%,
-      rgba(46,209,169,.26) 58%,
-      rgba(0,0,0,0) 72%,
-      rgba(0,0,0,0) 100%),
-    linear-gradient(110deg,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0) 10%,
-      rgba(46,209,169,.22) 22%,
-      rgba(255,193,7,.22) 34%,
-      rgba(0,0,0,0) 50%,
-      rgba(0,0,0,0) 100%);
-  background-size:220% 220%;
-  background-position: 0% 12%, 0% 52%, 0% 88%;
-  opacity:.72;
-  filter:saturate(1.25);
-  animation: dcShimmer 12s linear infinite;
-}
-
-.welcome-card > *{ position:relative; z-index:1; }
-
 @media (prefers-reduced-motion: reduce){
-  .welcome-card::before{ animation:none; }
+  .welcome-card::after{ animation:none; }
 }
 
 /* компактнее карточки ставок (примерно в 2 раза ниже) */
@@ -963,6 +975,24 @@
       .main .grid{ max-width:none; margin:0; }
     }
 
+
+
+
+/* History rows: compact poker-style */
+.history-row{ padding:10px 12px; }
+.history-avatars img{ width:28px; height:28px; }
+.history-info .duel-sub{ display:none !important; }
+.history-title-row{ gap:8px; }
+.history-right{
+  min-width:92px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
+  gap:6px;
+  font-variant-numeric: tabular-nums;
+}
+.history-right .pill{ margin-left:0; }
 
 </style>
 </head>

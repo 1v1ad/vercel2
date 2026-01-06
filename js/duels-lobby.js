@@ -442,6 +442,7 @@ function setPollEnabled(enabled){
     try{ updateWaitNodes(); }catch(_){}
   }
 
+
 function renderHistory(items){
     var list = byId('history-list');
     if (!list) return;
@@ -459,9 +460,25 @@ function renderHistory(items){
       var it = items[i];
 
       var row = document.createElement('div');
-      row.className = 'history-item';
-      row.onclick = (function(id){
-        return function(){ openUserDuelCard(id); };
+      row.className = 'history-row';
+      row.tabIndex = 0;
+
+      // click → duel-card
+      (function(id){
+        row.onclick = function(){
+          try{
+            var back = encodeURIComponent('/lobby.html#archive');
+            window.location.href = '/duel-card.html?id=' + encodeURIComponent(id) + '&back=' + back;
+          }catch(_){}
+        };
+        row.onkeydown = function(ev){
+          ev = ev || window.event;
+          if (!ev) return;
+          if (ev.key === 'Enter' || ev.key === ' '){
+            try{ ev.preventDefault(); }catch(_){}
+            try{ row.click(); }catch(_){}
+          }
+        };
       })(it.id);
 
       var left = document.createElement('div');
@@ -473,7 +490,7 @@ function renderHistory(items){
       var cName = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
       var oName = fullName(it.opponent_first_name, it.opponent_last_name, it.opponent_user_id || '—');
 
-      // аватары + заголовок как "строка" (ближе к покеру/лобби)
+      // avatars
       var avatars = document.createElement('div');
       avatars.className = 'history-avatars';
       avatars.appendChild(makeAvatarImg(it.creator_avatar, cName));
@@ -489,14 +506,23 @@ function renderHistory(items){
       title.className = 'duel-title';
       title.textContent = fmtRub(it.stake||0) + ' · ' + cName + ' vs ' + oName;
 
+      titleRow.appendChild(title);
+      info.appendChild(titleRow);
+
+      var top = document.createElement('div');
+      top.className = 'history-top';
+      top.appendChild(avatars);
+      top.appendChild(info);
+
+      left.appendChild(top);
+
+      // right side: outcome (if my duel) + id stacked
       var idLink = document.createElement('a');
       idLink.className = 'pill pill-id';
       idLink.href = '/duel-card.html?id=' + encodeURIComponent(it.id) + '&back=' + encodeURIComponent('/lobby.html#archive');
       idLink.textContent = '#' + String(it.id);
       idLink.onclick = function(ev){ try{ ev.stopPropagation(); }catch(_){} };
 
-
-      // outcome-плашка (если это "моя" дуэль)
       var pillText = '';
       var pillClass = '';
       try{
@@ -508,64 +534,20 @@ function renderHistory(items){
         } else if (st === 'cancelled'){ pillText = 'отмена'; pillClass = 'lose'; }
       }catch(_){}
 
-      titleRow.appendChild(title);
-      titleRow.appendChild(idLink);
       if (pillText){
         var pill = document.createElement('span');
         pill.className = 'pill ' + pillClass;
         pill.textContent = pillText;
-        titleRow.appendChild(pill);
+        right.appendChild(pill);
       }
-
-      var sub = document.createElement('div');
-      sub.className = 'duel-sub';
-
-      var pot = 0, fee = 0;
-      try {
-        if (it.result){
-          if (typeof it.result === 'string') {
-            var rr = JSON.parse(it.result);
-            pot = Number(rr.pot||0);
-            fee = Number(rr.fee||0);
-          } else {
-            pot = Number(it.result.pot||0);
-            fee = Number(it.result.fee||0);
-          }
-        }
-      } catch(_){}
-
-      var dt = it.finished_at ? new Date(it.finished_at) : (it.updated_at ? new Date(it.updated_at) : null);
-      var tstr = dt ? (String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0')+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')) : '';
-      var w = '';
-      if (it.winner_user_id){
-        var wName = (Number(it.winner_user_id)===Number(it.creator_user_id)) ? cName : oName;
-        w = ' · победил: ' + wName;
-      }
-      sub.textContent = (it.status||'') + (tstr?(' · '+tstr):'') + w;
-
-      info.appendChild(titleRow);
-      info.appendChild(sub);
-
-      var top = document.createElement('div');
-      top.className = 'history-top';
-      top.appendChild(avatars);
-      top.appendChild(info);
-
-      left.appendChild(top);
-
-      var r1 = document.createElement('div');
-      r1.textContent = 'pot ' + String(pot||0);
-      var r2 = document.createElement('div');
-      r2.textContent = 'fee ' + String(fee||0);
-
-      right.appendChild(r1);
-      right.appendChild(r2);
+      right.appendChild(idLink);
 
       row.appendChild(left);
       row.appendChild(right);
       list.appendChild(row);
     }
   }
+
 
 
   // --------------------- My Duels tabs (step 3.2) ---------------------
