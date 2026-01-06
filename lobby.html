@@ -185,6 +185,40 @@
 
     .wrap{ max-width:1280px; margin:0 auto; padding:18px 16px }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px }
+.welcome-card{
+  position:relative;
+  overflow:hidden;
+  margin-bottom:14px;
+}
+.welcome-card::before{
+  content:"";
+  position:absolute;
+  inset:-80px -220px;
+  pointer-events:none;
+  z-index:0;
+  background-image:
+    linear-gradient(110deg,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0) 22%,
+      rgba(10,180,120,.14) 40%,
+      rgba(244,216,138,.16) 52%,
+      rgba(20,130,220,.10) 64%,
+      rgba(0,0,0,0) 78%,
+      rgba(0,0,0,0) 100%),
+    radial-gradient(900px 380px at 35% 20%, rgba(244,216,138,.12), transparent 60%),
+    radial-gradient(800px 420px at 70% 0%, rgba(95,189,255,.10), transparent 65%);
+  background-size: 220% 100%, 140% 100%, 160% 100%;
+  background-position: 0% 12%, 0% 52%, 0% 88%;
+  opacity:.72;
+  filter:saturate(1.25);
+  animation: dcShimmer 12s linear infinite;
+}
+.welcome-card > *{ position:relative; z-index:1; }
+
+@keyframes dcShimmer{
+  0%   { background-position: 0% 12%, 0% 52%, 0% 88%; }
+  100% { background-position: 220% 12%, 140% 52%, 160% 88%; }
+}
     /* =========================
        Layout (Sidebar / Main / Right rail)
        ========================= */
@@ -193,7 +227,7 @@
     .layout{
       display:grid;
       grid-template-columns: 260px minmax(0,1fr) 320px;
-      gap:14px;
+      gap:10px;
       align-items:start;
     }
     .sidebar, .rail{
@@ -205,7 +239,7 @@
 
     .side-card{ padding:14px; }
     .side-title{ font-weight:900; margin:0 0 10px; font-size:14px; letter-spacing:.2px; color:var(--text); }
-    .side-nav{ display:flex; flex-direction:column; gap:14px; }
+    .side-nav{ display:flex; flex-direction:column; gap:10px; }
     .side-group{ display:flex; flex-direction:column; gap:8px; }
     .side-label{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:900; margin:0 10px; }
 
@@ -250,7 +284,7 @@
 
 
     /* --- duels (1v1) --- */
-    .grid{ display:grid; grid-template-columns:1fr; gap:14px; }
+    .grid{ display:grid; grid-template-columns:1fr; gap:10px; }
     .card h2{ margin:0 0 10px; font-size:18px; }
     .muted{ color:var(--muted); }
 
@@ -262,7 +296,7 @@
     .btn.danger{ border-color:rgba(255,59,59,.35); color:#ffb3b3; }
 
     .duels-create{ border-top:1px dashed var(--border); margin-top:12px; padding-top:12px; }
-    .stakes{ display:grid; grid-template-columns:1fr; gap:12px; margin:10px 0 12px; }
+    .stakes{ display:grid; grid-template-columns:1fr; gap:10px; margin:10px 0 12px; }
 
 .stakes-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0 8px; }
 .stakes-head-right{ display:flex; align-items:center; gap:8px; }
@@ -273,9 +307,9 @@
   display:grid;
   /* mobile-first: по умолчанию как на телефоне */
   grid-template-columns: 1fr;
-  gap:14px;
+  gap:10px;
   align-items:stretch;
-  padding:14px 14px 12px;
+  padding:10px 12px 10px;
   border-radius:16px;
   border:1px solid var(--border);
   background: linear-gradient(180deg, rgba(18,22,33,.70), rgba(12,16,24,.92));
@@ -330,7 +364,7 @@
   color:#e6d6ff;
 }
 
-.stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:8px; min-width:0; }
 .stake-top{ position:relative; z-index:1; display:flex; flex-direction:column; gap:4px; }
 .stake-top .amt{ font-weight:950; font-size:18px; letter-spacing:.2px; }
 .stake-top .meta{ font-size:12px; color:var(--muted); line-height:1.15; }
@@ -346,7 +380,8 @@
   text-shadow:0 0 10px rgba(45,212,191,.22);
   animation:kpiPulse 1.8s ease-in-out infinite;
 }
-.stake-kpis .kpi.is-live .dot{
+.stake-kpis .kpi.is-live .dot,
+  .welcome-card::before{
   background:rgba(45,212,191,.95);
   box-shadow:0 0 0 3px rgba(45,212,191,.16);
   animation:dotPulse 1.8s ease-in-out infinite;
@@ -381,13 +416,13 @@
 }
 
 
-.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr; gap:10px; margin-top:auto; }
+.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr; gap:8px; margin-top:auto; }
 .stake-actions .btn{ justify-content:center; padding:10px 12px; border-radius:12px; font-weight:900; white-space:nowrap; }
 .stake-actions .btn:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
 
 .stake-ill{
   position:relative; z-index:1;
-  height:150px;
+  height:96px;
   border-radius:14px;
   overflow:hidden;
   border:1px solid rgba(255,255,255,.08);
@@ -446,7 +481,7 @@
 
 @media (min-width: 980px){
   .stake-card{ grid-template-columns: minmax(0,1fr) 260px; }
-  .stake-ill{ height:auto; min-height:150px; }
+  .stake-ill{ height:auto; min-height:96px; }
 }
 
 @media (max-width: 420px){
@@ -646,7 +681,7 @@
 
 /* lottery hero */
 .lot-hero{
-  display:flex; gap:14px; align-items:stretch; justify-content:space-between;
+  display:flex; gap:10px; align-items:stretch; justify-content:space-between;
   padding:14px; border-radius:16px;
   border:1px solid var(--border);
   background: linear-gradient(110deg, rgba(24,36,56,.75), rgba(18,22,33,.55) 40%, rgba(16,48,40,.35));
@@ -797,6 +832,11 @@
 .myduels-list .mini-hdr strong{ color:var(--text); letter-spacing:.02em; text-transform:none; font-size:12px; }
 .myduels-list .mini-hdr .note{ opacity:.85; margin-left:6px; font-size:11px; text-transform:none; letter-spacing:0; }
 
+
+/* Compact stake cards (2x lower) */
+.stake-top .meta{ font-size:12px; }
+.stake-kpis{ margin-top:0; }
+.stake-card .stake-ill{ border-radius:12px; }
 </style>
 </head>
 <body>
@@ -888,7 +928,7 @@
       <div id="hub-duels">
 
 
-      <div class="card">
+      <div class="card welcome-card">
         <p style="margin:0">Добро пожаловать в лобби.</p>
         <p id="provider-note" style="margin:8px 0 0; color:var(--muted)"></p>
       </div>
