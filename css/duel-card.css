@@ -1,6 +1,6 @@
 /* /css/duel-card.css — user duel card (mobile-first) */
 :root{
-  --dc-max: 980px;
+  --dc-max: 760px;
 }
 
 body{
@@ -367,3 +367,13 @@ body{
 .dc-player.is-lose{
   border: 1px solid rgba(255,105,97,.26);
 }
+
+
+/* accordions (hide secondary by default) */
+.dc-accordion{ padding:0; }
+.dc-accordion > summary{ list-style:none; cursor:pointer; }
+.dc-accordion > summary::-webkit-details-marker{ display:none; }
+.dc-accordion .dc-card-h{ padding:14px; margin:0; display:flex; align-items:center; gap:10px; }
+.dc-accordion .dc-card-h .muted{ margin-left:auto; }
+.dc-accordion[open] .dc-card-h{ border-bottom:1px solid rgba(255,255,255,.08); }
+.dc-accordion .dc-acc-body{ padding:14px; padding-top:12px; }

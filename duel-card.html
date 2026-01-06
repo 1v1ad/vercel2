@@ -110,9 +110,10 @@
       </article>
 
             <article class="dc-card dc-card-wide">
-        <div class="dc-card-h">Честность (PF)</div>
-
-        <div class="dc-kv">
+        <details class="dc-accordion" id="pfBlock">
+  <summary class="dc-card-h">Проверка честности (PF) <span class="muted" style="font-weight:700; font-size:12px">— скрыто по умолчанию</span></summary>
+  <div class="dc-acc-body">
+<div class="dc-kv">
           <div class="dc-k">commit</div><div class="dc-v mono" id="pfCommit">—</div>
           <div class="dc-k">nonce</div><div class="dc-v mono" id="pfNonce">—</div>
           <div class="dc-k">client_seed</div><div class="dc-v mono" id="pfClientSeed">—</div>
@@ -128,6 +129,9 @@
           <div class="dc-kv" id="pfKv"></div>
           <div class="dc-muted dc-tiny" id="pfNote"></div>
         </details>
+  </div>
+</details>
+
       </article>
     </section>
 

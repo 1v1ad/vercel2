@@ -181,21 +181,91 @@
 
     .wrap{ max-width:1280px; margin:0 auto; padding:18px 16px }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px }
-    /* =========================
+    /* --- mini tiles (GGpoker-like quick actions) --- */
+.hdr-minis{
+  display:flex; align-items:center; gap:8px;
+  margin-right:10px;
+}
+.mini-tile{
+  position:relative;
+  display:flex; align-items:center; gap:8px;
+  height:34px;
+  padding:0 10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.12));
+  color: var(--text);
+  font-weight:900;
+  font-size:12px;
+  letter-spacing:.2px;
+  text-decoration:none;
+  cursor:pointer;
+  user-select:none;
+  overflow:hidden;
+  box-shadow: 0 10px 18px rgba(0,0,0,.18);
+}
+.mini-tile::before{
+  content:"";
+  position:absolute; inset:-1px;
+  border-radius:10px;
+  background: radial-gradient(180px 70px at 25% 0%, rgba(244,216,138,.12), transparent 55%);
+  pointer-events:none;
+  opacity:.9;
+}
+.mini-tile::after{
+  content:"";
+  position:absolute;
+  inset:-60px -160px;
+  background-image: linear-gradient(110deg,
+    rgba(0,0,0,0) 0%,
+    rgba(0,0,0,0) 34%,
+    rgba(10,132,255,.28) 46%,
+    rgba(46,209,169,.24) 55%,
+    rgba(0,0,0,0) 68%,
+    rgba(0,0,0,0) 100%);
+  background-size:220% 220%;
+  background-position:0% 50%;
+  opacity:.0;
+  pointer-events:none;
+  transition: opacity .18s ease;
+}
+.mini-tile:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.22); }
+.mini-tile:hover::after{ opacity:.55; animation: dcShimmer 2.8s linear infinite; }
+.mini-ico{ width:18px; height:18px; display:block; color: rgba(244,216,138,.95); }
+.mini-lbl{ white-space:nowrap; }
+@media (max-width: 980px){
+  .hdr-minis{ order:2; margin-right:0; }
+  .mini-tile{ padding:0 8px; gap:6px; }
+}
+@media (max-width: 560px){
+  .mini-lbl{ display:none; }
+  .mini-tile{ width:34px; justify-content:center; padding:0; }
+}
+
+/* =========================
        Layout (Sidebar / Main / Right rail)
        ========================= */
     html{ scroll-behavior:smooth; }
 
     .layout{
       display:grid;
-      grid-template-columns: 260px minmax(0,1fr) 320px;
+      grid-template-columns: 240px minmax(0,1fr);
       gap:14px;
       align-items:start;
     }
-    .sidebar, .rail{
+    .sidebar{
       position:sticky;
       top:74px; /* высота topbar + небольшой отступ */
       align-self:start;
+    }
+    .rail{
+      position:static;
+      grid-column: 2;
+      align-self:start;
+      max-width:760px;
+      width:100%;
+      justify-self:center;
+      margin-top:14px;
     }
     .main{ min-width:0; }
 
@@ -235,7 +305,12 @@
     .rail .kpi .k .v{ font-size:16px; font-weight:900; margin-top:4px; }
 
     @media (max-width: 1180px){
-      .layout{ grid-template-columns: 240px minmax(0,1fr); }
+      .layout{ grid-template-columns: 72px minmax(0,1fr); }
+      .sidebar{ top:74px; }
+      .side-label{ display:none; }
+      .side-link span{ display:none; }
+      .side-link{ justify-content:center; padding:10px 8px; }
+      .side-link::before{ margin-right:0; }
       .rail{ position:static; grid-column: 2; justify-self:stretch; }
     }
     @media (max-width: 900px){
@@ -269,9 +344,9 @@
   display:grid;
   /* mobile-first: по умолчанию как на телефоне */
   grid-template-columns: 1fr;
-  gap:14px;
+  gap:10px;
   align-items:stretch;
-  padding:14px 14px 12px;
+  padding:10px 12px 10px;
   border-radius:16px;
   border:1px solid var(--border);
   background: linear-gradient(180deg, rgba(18,22,33,.70), rgba(12,16,24,.92));
@@ -383,7 +458,7 @@
 
 .stake-ill{
   position:relative; z-index:1;
-  height:150px;
+  height:82px;
   border-radius:14px;
   overflow:hidden;
   border:1px solid rgba(255,255,255,.08);
@@ -441,8 +516,8 @@
 }
 
 @media (min-width: 980px){
-  .stake-card{ grid-template-columns: minmax(0,1fr) 260px; }
-  .stake-ill{ height:auto; min-height:150px; }
+  .stake-card{ grid-template-columns: minmax(0,1fr) 220px; }
+  .stake-ill{ height:auto; min-height:110px; }
 }
 
 @media (max-width: 420px){
@@ -810,7 +885,7 @@
 .welcome-card::before{
   content:"";
   position:absolute;
-  inset:-80px -220px;
+  inset:0; height:62px;
   pointer-events:none;
   z-index:0;
 
@@ -878,6 +953,17 @@
   .lottery-under{ grid-template-columns: 1fr 1fr; }
 }
 
+    /* mobile-first even on desktop: держим основной контент компактным */
+    .main .grid{ max-width:760px; margin:0 auto; }
+
+
+    @media (min-width: 1400px){
+      .layout{ grid-template-columns: 260px minmax(0,1fr) 320px; }
+      .rail{ position:sticky; top:74px; grid-column:auto; max-width:none; width:auto; justify-self:stretch; margin-top:0; }
+      .main .grid{ max-width:none; margin:0; }
+    }
+
+
 </style>
 </head>
 <body>
@@ -905,6 +991,20 @@
 </div>
 </nav>
 <div class="hdr-right">
+<div class="hdr-minis" aria-label="Быстрые действия">
+  <button class="mini-tile" id="mini-cashier" type="button" title="Касса">
+    <svg class="mini-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4z"/><path d="M7 10h3v4H7zM14 10h3v4h-3z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 5h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <span class="mini-lbl">Касса</span>
+  </button>
+  <a class="mini-tile" href="#stakes" data-mini="duels" title="Дуэли">
+    <svg class="mini-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17l10-10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6.5 7.5c2-2 5-2 7 0s2 5 0 7-5 2-7 0-2-5 0-7z" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".9"/></svg>
+    <span class="mini-lbl">Дуэли</span>
+  </a>
+  <a class="mini-tile" href="#lottery" data-mini="lottery" title="Розыгрыши">
+    <svg class="mini-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12v12H6z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v12" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 6c0 1.7 1.3 2 3 2s3-.3 3-2-1.3-2-3-2-3 .3-3 2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+    <span class="mini-lbl">Розыгрыши</span>
+  </a>
+</div>
 <span class="pill" id="user-balance">
       ₿ <span class="balance-amount" data-balance="">0</span>
 </span>

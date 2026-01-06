@@ -281,7 +281,7 @@ function setSelectedStake(v){
     var h = String(location.hash || '#stakes').toLowerCase();
     if (!h || h === '#') h = '#stakes';
     // дуэльные разделы лобби, где реально нужен список open-комнат
-    return (h === '#stakes' || h === '#live' || h === '#archive');
+    return (h === '#stakes' || h === '#live');
   }
 
   function syncOpenPolling(){
@@ -1179,6 +1179,12 @@ async function loadOpen(){
   }
 
   async function init(){
+    // mini tiles
+    try{
+      var mc = byId('mini-cashier');
+      if (mc) mc.onclick = function(){ var b = byId('topup-btn'); if (b) b.click(); };
+    }catch(_){ }
+
     // close modal handlers
     var closeBtn = byId('duel-modal-close');
     if (closeBtn) closeBtn.onclick = hideModal;
