@@ -460,7 +460,8 @@ function renderHistory(items){
       var it = items[i];
 
       var row = document.createElement('div');
-      row.className = 'history-row';
+      // reuse framing from .history-item and mark as compact archive row
+      row.className = 'history-item history-row';
       row.tabIndex = 0;
 
       // click → duel-card
@@ -485,7 +486,8 @@ function renderHistory(items){
       left.className = 'history-left';
 
       var right = document.createElement('div');
-      right.className = 'history-right';
+      // inline: keep id and outcome in one line (id first)
+      right.className = 'history-right history-right-inline';
 
       var cName = fullName(it.creator_first_name, it.creator_last_name, it.creator_user_id);
       var oName = fullName(it.opponent_first_name, it.opponent_last_name, it.opponent_user_id || '—');
@@ -534,13 +536,14 @@ function renderHistory(items){
         } else if (st === 'cancelled'){ pillText = 'отмена'; pillClass = 'lose'; }
       }catch(_){}
 
+      // order: #id then outcome (single line)
+      right.appendChild(idLink);
       if (pillText){
         var pill = document.createElement('span');
         pill.className = 'pill ' + pillClass;
         pill.textContent = pillText;
         right.appendChild(pill);
       }
-      right.appendChild(idLink);
 
       row.appendChild(left);
       row.appendChild(right);

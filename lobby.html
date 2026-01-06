@@ -979,7 +979,7 @@
 
 
 /* History rows: compact poker-style */
-.history-row{ padding:10px 12px; }
+.history-row{ padding:8px 12px; }
 .history-avatars img{ width:28px; height:28px; }
 .history-info .duel-sub{ display:none !important; }
 .history-title-row{ gap:8px; }
@@ -993,6 +993,16 @@
   font-variant-numeric: tabular-nums;
 }
 .history-right .pill{ margin-left:0; }
+
+/* archive: id + outcome in one line */
+.history-right-inline{
+  min-width:0;
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  white-space:nowrap;
+}
 
 </style>
 </head>
