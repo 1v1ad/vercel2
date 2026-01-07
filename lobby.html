@@ -81,6 +81,66 @@
 /* =========================
    TopBar (покерный стиль)
    ========================= */
+
+    /* --- mobile nav card (Path A) --- */
+    #mobile-nav-card{ display:none; padding:12px 14px; }
+    #mobile-nav-card .mnav-group{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:rgba(8,10,14,.55);
+      overflow:hidden;
+    }
+    #mobile-nav-card .mnav-group + .mnav-group{ margin-top:10px; }
+    #mobile-nav-card .mnav-group.is-active{ border-color:rgba(244,216,138,.30); box-shadow: 0 0 0 1px rgba(244,216,138,.10) inset; }
+    #mobile-nav-card summary{
+      list-style:none;
+      cursor:pointer;
+      padding:10px 12px;
+      font-weight:900;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color:var(--text);
+    }
+    #mobile-nav-card summary::-webkit-details-marker{ display:none; }
+    #mobile-nav-card summary:after{
+      content:"▾";
+      opacity:.8;
+      transform: translateY(-1px);
+      transition: transform .18s ease, opacity .18s ease;
+    }
+    #mobile-nav-card details[open] > summary:after{
+      transform: rotate(180deg) translateY(1px);
+      opacity:1;
+    }
+    #mobile-nav-card .mnav-links{
+      padding:10px 12px 12px;
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:8px;
+    }
+    @media (max-width: 420px){
+      #mobile-nav-card .mnav-links{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    #mobile-nav-card a{
+      text-decoration:none;
+      text-align:center;
+      padding:9px 10px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      color:var(--text);
+      background:rgba(12,16,24,.72);
+      font-weight:800;
+      letter-spacing:.1px;
+      -webkit-tap-highlight-color: transparent;
+      user-select:none;
+    }
+    #mobile-nav-card a:hover{ filter:brightness(1.06); }
+    #mobile-nav-card a.is-active{
+      border-color:rgba(244,216,138,.45);
+      box-shadow: 0 0 0 1px rgba(244,216,138,.10) inset;
+    }
 .hdr{
   position:sticky; top:0; z-index:50;
   display:flex; align-items:center; justify-content:space-between;
@@ -372,8 +432,12 @@
     }
     @media (max-width: 900px){
       .layout{ grid-template-columns: 1fr; }
-      .sidebar{ position:static; }
-      .rail{ position:static; grid-column: 2; justify-self:stretch; }
+      /* На мобиле сайдбар заменяем на карточку навигации под Welcome */
+      .sidebar{ display:none; }
+      .hdr-nav{ display:none; }
+      #mobile-nav-card{ display:block; }
+
+      .rail{ position:static; grid-column: 1; justify-self:stretch; max-width:none; margin-top:14px; }
     }
 
 
@@ -1127,11 +1191,30 @@
 </aside>
 <main aria-label="Основной контент" class="main">
 <div class="grid">
-<div id="hub-duels">
 <div class="card welcome-card" id="welcome-card">
 <p style="margin:0">Добро пожаловать в лобби.</p>
 <p id="provider-note" style="margin:8px 0 0; color:var(--muted)"></p>
 </div>
+<div class="card mobile-nav-card" id="mobile-nav-card" aria-label="Навигация (мобильная)">
+  <details class="mnav-group" id="mnav-duels">
+    <summary>Дуэли</summary>
+    <div class="mnav-links">
+      <a href="#stakes">Ставки</a>
+      <a href="#live">Live</a>
+      <a href="#archive">Архив</a>
+    </div>
+  </details>
+
+  <details class="mnav-group" id="mnav-lottery">
+    <summary>Розыгрыши</summary>
+    <div class="mnav-links">
+      <a href="#lottery" data-lot-jump="active">Активные</a>
+      <a href="#lottery" data-lot-jump="archive">Архив</a>
+      <a href="#lottery" data-lot-jump="mine">Мои билеты</a>
+    </div>
+  </details>
+</div>
+<div id="hub-duels">
 <div class="card" id="duels-card">
 <div class="duels-head" id="stakes">
 <h2 style="margin:0">Дуэли 1v1</h2>
@@ -1561,6 +1644,11 @@
       const topLinks = Array.from(document.querySelectorAll('.hdr-nav a'));
       const sideLinks = Array.from(document.querySelectorAll('.side-nav a'));
 
+      const mobileNav = document.getElementById('mobile-nav-card');
+      const mobileLinks = mobileNav ? Array.from(mobileNav.querySelectorAll('a')) : [];
+      const mnavDuels = document.getElementById('mnav-duels');
+      const mnavLottery = document.getElementById('mnav-lottery');
+
       const hubDuels = document.getElementById('hub-duels');
       const hubLottery = document.getElementById('hub-lottery');
 
@@ -1585,9 +1673,7 @@ if(lotSideLinks.length){
       }
     });
   });
-}
-
-      // Кликабельные заголовки-группы (чтобы по слову «Розыгрыши» тоже открывалось)
+}      // Кликабельные заголовки-группы (чтобы по слову «Розыгрыши» тоже открывалось)
       const labelLinks = Array.from(document.querySelectorAll('[data-hash].is-click'));
       labelLinks.forEach(el=>{
         el.addEventListener('click', ()=>{ location.hash = el.dataset.hash; });
@@ -1599,7 +1685,14 @@ if(lotSideLinks.length){
         });
       });
 
+      // mobile nav: открываем один раздел за раз
+      if(mnavDuels && mnavLottery){
+        mnavDuels.addEventListener('toggle', ()=>{ if(mnavDuels.open) mnavLottery.open = false; });
+        mnavLottery.addEventListener('toggle', ()=>{ if(mnavLottery.open) mnavDuels.open = false; });
+      }
+
       function norm(h){
+
         if(!h) return '#stakes';
         if(!h.startsWith('#')) return '#stakes';
         return h;
@@ -1612,8 +1705,21 @@ if(lotSideLinks.length){
         topLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
         sideLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
 
+        // mobile nav: подсветка дуэльных вкладок (lottery-подвкладки подсвечиваем отдельно)
+        mobileLinks.forEach(a => {
+          if(a && a.dataset && a.dataset.lotJump) return;
+          a.classList.toggle('is-active', a.getAttribute('href') === h);
+        });
+
         // разделы: Дуэли vs Розыгрыши
         const isLottery = (h === '#lottery' || h.startsWith('#lottery'));
+
+        if(mnavDuels && mnavLottery){
+          mnavDuels.open = !isLottery;
+          mnavLottery.open = isLottery;
+          mnavDuels.classList.toggle('is-active', !isLottery);
+          mnavLottery.classList.toggle('is-active', isLottery);
+        }
 
 if(lotSub) lotSub.style.display = isLottery ? '' : 'none';
 if(isLottery){
