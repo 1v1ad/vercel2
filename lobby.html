@@ -1004,6 +1004,40 @@
   white-space:nowrap;
 }
 
+
+
+/* --- Live list refresh: без "прыжков" высоты --- */
+.duels-list{ position:relative; }
+.duels-list.is-loading{ }
+.duels-list.is-loading::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent);
+  transform: translateX(-65%);
+  animation: listShine 1.25s linear infinite;
+}
+@keyframes listShine{
+  0%{ transform: translateX(-65%); }
+  100%{ transform: translateX(65%); }
+}
+.duel-item.skeleton{
+  height:64px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background: rgba(255,255,255,.04);
+  overflow:hidden;
+  position:relative;
+}
+.duel-item.skeleton::before{
+  content:'';
+  position:absolute;
+  inset:-40px -140px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+  animation: listShine 1.35s linear infinite;
+}
+
 </style>
 </head>
 <body>

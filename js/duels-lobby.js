@@ -271,7 +271,7 @@ function setSelectedStake(v){
     var m = Number(selectedStake||0);
     if (!m || m <= 0){ toast('Ошибка', 'Не выбрана ставка'); return; }
     await createDuel(m);
-    await pollOpenOnce();
+    await pollOpenOnce({silent:true});
   }
 
   window.__gg_duels_create_selected = createWithSelectedStake;
@@ -285,33 +285,38 @@ function setSelectedStake(v){
   }
 
   function syncOpenPolling(){
-    // Если мы не в дуэльном разделе — стопаем любые бэкенд-поллинги.
-    if (!isDuelsView()){
-      if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+    // Поллим open-комнаты ТОЛЬКО когда пользователь реально находится в лобби открытых дуэлей (#stakes/#live)
+    // и вкладка активна (Render не должен страдать).
+    if (!isDuelsView() || document.hidden){
+      setPollEnabled(false);
       return;
     }
-    // В дуэльном разделе поллим только когда есть моя open-комната (чтобы баланс/история подтягивались, когда её заджойнят)
-    var has = false;
-    for (var k in lastMyOpenIds){ has = true; break; }
-    if (has) setPollEnabled(true);
+    setPollEnabled(true);
   }
 
+  var pollEnabled = false;
+
 function setPollEnabled(enabled){
+    pollEnabled = !!enabled;
     if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
-    // не поллим открытые комнаты вне дуэльных разделов (например, в Розыгрышах)
-    if (!isDuelsView()) return;
-    if (!enabled) return;
+    if (!pollEnabled) return;
+
+    // не поллим вне дуэльных разделов и когда вкладка скрыта
+    if (!isDuelsView() || document.hidden) return;
+
+    // мягкая частота, чтобы не душить Render
+    var delayMs = 9000 + Math.floor(Math.random()*2500);
 
     pollTimer = setTimeout(async function tick(){
       pollTimer = null;
-      if (!isDuelsView()) return;
-      try { await pollOpenOnce(); } catch(_){}
-      // пересчитаем условие после pollOpenOnce
-      var has = false;
-      for (var k in lastMyOpenIds){ has = true; break; }
-      if (has) setPollEnabled(true);
-    }, 4500);
+      if (!pollEnabled) return;
+      if (!isDuelsView() || document.hidden) return;
+      try { await pollOpenOnce({silent:true}); } catch(_){}
+      // продолжаем пока условие выполняется
+      if (pollEnabled) setPollEnabled(true);
+    }, delayMs);
   }
+
 
   function renderOpen(items){
     var list = byId('duels-list');
@@ -929,17 +934,48 @@ function renderHistory(items){
   }
 
 
-async function loadOpen(){
+async function loadOpen(opts){
+    opts = opts || {};
+    var silent = !!opts.silent;
     var list = byId('duels-list');
-    if (list) list.innerHTML = '<div class="muted">Загружаю комнаты…</div>';
+    if (list){
+      // Чтобы в момент обновления не прыгала высота — сохраняем текущую.
+      if (silent && list.dataset && list.dataset.loaded === '1'){
+        try{
+          var h = list.getBoundingClientRect().height;
+          if (h && h > 0) list.style.minHeight = Math.ceil(h) + 'px';
+        }catch(_){}
+        list.classList.add('is-loading');
+      } else {
+        // первый рендер — рисуем скелетоны
+        list.classList.add('is-loading');
+        list.innerHTML = '' +
+          '<div class="duel-item skeleton"></div>' +
+          '<div class="duel-item skeleton"></div>' +
+          '<div class="duel-item skeleton"></div>';
+      }
+    }
 
-    var q = '/api/duels?status=open&order=queue&limit=100';
-    var res = await apiJson(q);
+    
+    function endListLoading(){
+      if (!list) return;
+      try{ if (list.dataset) list.dataset.loaded = '1'; }catch(_){}
+      list.classList.remove('is-loading');
+      // отпускаем min-height на следующий кадр (чтобы не было "прыжка" в момент замены)
+      try{
+        requestAnimationFrame(function(){ try{ list.style.minHeight = ''; }catch(_){ } });
+      }catch(_){ try{ list.style.minHeight = ''; }catch(_){ } }
+    }
+
+var q = '/api/duels?status=open&order=queue&limit=100';
+    var res = null;
+    try{ res = await apiJson(q); }catch(e){ res = { r:{ ok:false }, j:null }; }
     if (!res.r.ok || !res.j || !res.j.ok){
       lastOpenItems = [];
       updateStakeCounts([]);
       renderOpen([]);
       try{ setKpi('kpi-open', 0); setKpi('kpi-myopen', 0); }catch(_){ }
+      endListLoading();
       return [];
     }
     var items = res.j.items || [];
@@ -959,6 +995,7 @@ async function loadOpen(){
 
     try{ updateMyDuelsUI(); }catch(_){ }
 
+    endListLoading();
     return items;
   }
 
@@ -991,8 +1028,8 @@ async function loadOpen(){
     } catch(_){}
   }
 
-  async function pollOpenOnce(){
-    var items = await loadOpen();
+  async function pollOpenOnce(opts){
+    var items = await loadOpen(opts);
     var myNow = {};
     if (myUserId){
       for (var i=0;i<items.length;i++){
@@ -1014,9 +1051,8 @@ async function loadOpen(){
 
     lastMyOpenIds = myNow;
 
-    // включаем/выключаем polling
-    setPollEnabled(has);
-    return items;
+    // polling open-комнат управляется отдельно (syncOpenPolling)
+return items;
   }
 
   async function createDuel(stake){
@@ -1053,7 +1089,7 @@ async function loadOpen(){
 
     // если список ещё не загружен — подгрузим
     if (!lastOpenItems || !lastOpenItems.length){
-      try{ await loadOpen(); }catch(_){ }
+      try{ await loadOpen({silent:true}); }catch(_){ }
     }
 
     var target = null;
@@ -1276,6 +1312,7 @@ async function loadOpen(){
     try{
       window.addEventListener('hashchange', syncOpenPolling);
       window.addEventListener('ggroom:lottery-tab', syncOpenPolling);
+      document.addEventListener('visibilitychange', syncOpenPolling);
     }catch(_){ }
     syncOpenPolling();
   }
