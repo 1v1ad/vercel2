@@ -508,22 +508,81 @@
 }
 
 .stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; min-width:0; }
-.stake-top{ position:relative; z-index:1; display:flex; flex-direction:column; gap:4px; }
-.stake-top .amt{ font-weight:950; font-size:18px; letter-spacing:.2px; }
-.stake-top .meta{ font-size:12px; color:var(--muted); line-height:1.15; }
 
-.stake-kpis{ position:relative; z-index:1; display:flex; gap:10px; align-items:center; }
-.stake-kpis .kpi{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
-.stake-kpis .dot{ width:6px; height:6px; border-radius:10px; background:rgba(244,216,138,.95); box-shadow:0 0 0 3px rgba(244,216,138,.14); }
+.stake-top{
+  position:relative; z-index:1;
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:10px;
+  min-width:0;
+}
+.stake-top-left{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  min-width:0;
+}
+.stake-top-right{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex:0 0 auto;
+  margin-left:auto;
+}
+.stake-top .amt{ font-weight:950; font-size:18px; letter-spacing:.2px; white-space:nowrap; }
+.stake-top .meta{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.15;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.comma{
+  margin-left:-2px;
+  margin-right:8px;
+  color:rgba(232,234,240,.40);
+  font-weight:900;
+  white-space:nowrap;
+}
+
+/* GOLD shimmer (safe fallback) */
+.amt-gold{ color:var(--gold); text-shadow: 0 0 14px rgba(244,216,138,.18); }
+@supports ((-webkit-background-clip:text) or (background-clip:text)){
+  .amt-gold{
+    background: linear-gradient(90deg,
+      rgba(244,216,138,.95) 0%,
+      rgba(255,245,203,.98) 15%,
+      rgba(214,160,60,.95) 32%,
+      rgba(255,250,220,.98) 50%,
+      rgba(214,160,60,.95) 68%,
+      rgba(255,245,203,.98) 85%,
+      rgba(244,216,138,.95) 100%);
+    background-size: 240% 100%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color: transparent;
+    animation: amtShine 2.6s linear infinite;
+  }
+}
+@keyframes amtShine{
+  0%{ background-position:0% 50%; filter:brightness(1); }
+  100%{ background-position:240% 50%; filter:brightness(1.12); }
+}
+
+.stake-kpis{ position:relative; z-index:1; display:flex; gap:10px; align-items:center; } /* legacy wrapper (не обязателен) */
+.stake-card .kpi{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
+.stake-card .dot{ width:6px; height:6px; border-radius:10px; background:rgba(244,216,138,.95); box-shadow:0 0 0 3px rgba(244,216,138,.14); }
 
 /* живой индикатор, если есть открытые комнаты */
-.stake-kpis .kpi.is-live{ color:rgba(232,234,240,.95); }
-.stake-kpis .kpi.is-live b{
+.stake-card .kpi.is-live{ color:rgba(232,234,240,.95); }
+.stake-card .kpi.is-live b{
   color:#8ff3df;
   text-shadow:0 0 10px rgba(45,212,191,.22);
   animation:kpiPulse 1.8s ease-in-out infinite;
 }
-.stake-kpis .kpi.is-live .dot{
+.stake-card .kpi.is-live .dot{
   background:rgba(45,212,191,.95);
   box-shadow:0 0 0 3px rgba(45,212,191,.16);
   animation:dotPulse 1.8s ease-in-out infinite;
@@ -548,10 +607,11 @@
 
 @media (prefers-reduced-motion: reduce){
   .stake-card,
+  .amt-gold,
   .stake-ill img,
   .stake-ill::after,
-  .stake-kpis .kpi.is-live b,
-  .stake-kpis .kpi.is-live .dot{
+  .stake-card .kpi.is-live b,
+  .stake-card .kpi.is-live .dot{
     animation:none !important;
     transition:none !important;
   }
@@ -574,6 +634,7 @@
     linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.10));
   display:flex; align-items:center; justify-content:center;
 }
+.stake-ill picture{ width:100%; height:100%; display:block; }
 .stake-ill img{
   width:100%;
   height:100%;
@@ -1236,11 +1297,13 @@
 <div aria-hidden="true" class="stake-badge"></div>
 <div class="stake-left">
 <div class="stake-top">
-<div class="amt">₽100</div>
-<div class="meta">pot ₽200 • fee ~₽10</div>
-</div>
-<div class="stake-kpis">
-<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="100">—</b></span>
+  <div class="stake-top-left">
+    <span class="amt amt-gold">₽100</span><span class="comma">,</span>
+    <span class="meta">pot ₽200 • fee ~₽10</span>
+  </div>
+  <div class="stake-top-right">
+    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="100">—</b></span>
+  </div>
 </div>
 <div class="stake-actions">
 <button class="btn primary" data-action="quick" data-stake="100" type="button">Быстрый матч</button>
@@ -1248,18 +1311,23 @@
 </div>
 </div>
 <div aria-hidden="true" class="stake-ill">
-<img alt="" loading="lazy" src="/assets/stakes/stake-100.svg"/>
+<picture>
+  <source srcset="/assets/stakes/stake-100.webp" type="image/webp"/>
+  <img alt="" loading="lazy" src="/assets/stakes/stake-100.png"/>
+</picture>
 </div>
 </div>
 <div class="stake-card" data-stake="250">
 <div aria-hidden="true" class="stake-badge"></div>
 <div class="stake-left">
 <div class="stake-top">
-<div class="amt">₽250</div>
-<div class="meta">pot ₽500 • fee ~₽25</div>
-</div>
-<div class="stake-kpis">
-<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="250">—</b></span>
+  <div class="stake-top-left">
+    <span class="amt amt-gold">₽250</span><span class="comma">,</span>
+    <span class="meta">pot ₽500 • fee ~₽25</span>
+  </div>
+  <div class="stake-top-right">
+    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="250">—</b></span>
+  </div>
 </div>
 <div class="stake-actions">
 <button class="btn primary" data-action="quick" data-stake="250" type="button">Быстрый матч</button>
@@ -1267,18 +1335,23 @@
 </div>
 </div>
 <div aria-hidden="true" class="stake-ill">
-<img alt="" loading="lazy" src="/assets/stakes/stake-250.svg"/>
+<picture>
+  <source srcset="/assets/stakes/stake-250.webp" type="image/webp"/>
+  <img alt="" loading="lazy" src="/assets/stakes/stake-250.png"/>
+</picture>
 </div>
 </div>
 <div class="stake-card has-shine" data-stake="500">
 <div aria-hidden="true" class="stake-badge"></div>
 <div class="stake-left">
 <div class="stake-top">
-<div class="amt">₽500</div>
-<div class="meta">pot ₽1 000 • fee ~₽50</div>
-</div>
-<div class="stake-kpis">
-<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="500">—</b></span>
+  <div class="stake-top-left">
+    <span class="amt amt-gold">₽500</span><span class="comma">,</span>
+    <span class="meta">pot ₽1 000 • fee ~₽50</span>
+  </div>
+  <div class="stake-top-right">
+    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="500">—</b></span>
+  </div>
 </div>
 <div class="stake-actions">
 <button class="btn primary" data-action="quick" data-stake="500" type="button">Быстрый матч</button>
@@ -1286,18 +1359,23 @@
 </div>
 </div>
 <div aria-hidden="true" class="stake-ill">
-<img alt="" loading="lazy" src="/assets/stakes/stake-500.svg"/>
+<picture>
+  <source srcset="/assets/stakes/stake-500.webp" type="image/webp"/>
+  <img alt="" loading="lazy" src="/assets/stakes/stake-500.png"/>
+</picture>
 </div>
 </div>
 <div class="stake-card has-shine" data-stake="1000">
 <div aria-hidden="true" class="stake-badge"></div>
 <div class="stake-left">
 <div class="stake-top">
-<div class="amt">₽1 000</div>
-<div class="meta">pot ₽2 000 • fee ~₽100</div>
-</div>
-<div class="stake-kpis">
-<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="1000">—</b></span>
+  <div class="stake-top-left">
+    <span class="amt amt-gold">₽1 000</span><span class="comma">,</span>
+    <span class="meta">pot ₽2 000 • fee ~₽100</span>
+  </div>
+  <div class="stake-top-right">
+    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="1000">—</b></span>
+  </div>
 </div>
 <div class="stake-actions">
 <button class="btn primary" data-action="quick" data-stake="1000" type="button">Быстрый матч</button>
@@ -1305,18 +1383,23 @@
 </div>
 </div>
 <div aria-hidden="true" class="stake-ill">
-<img alt="" loading="lazy" src="/assets/stakes/stake-1000.svg"/>
+<picture>
+  <source srcset="/assets/stakes/stake-1000.webp" type="image/webp"/>
+  <img alt="" loading="lazy" src="/assets/stakes/stake-1000.png"/>
+</picture>
 </div>
 </div>
 <div class="stake-card has-shine" data-stake="2500">
 <div aria-hidden="true" class="stake-badge"></div>
 <div class="stake-left">
 <div class="stake-top">
-<div class="amt">₽2 500</div>
-<div class="meta">pot ₽5 000 • fee ~₽250</div>
-</div>
-<div class="stake-kpis">
-<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="2500">—</b></span>
+  <div class="stake-top-left">
+    <span class="amt amt-gold">₽2 500</span><span class="comma">,</span>
+    <span class="meta">pot ₽5 000 • fee ~₽250</span>
+  </div>
+  <div class="stake-top-right">
+    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="2500">—</b></span>
+  </div>
 </div>
 <div class="stake-actions">
 <button class="btn primary" data-action="quick" data-stake="2500" type="button">Быстрый матч</button>
@@ -1324,18 +1407,23 @@
 </div>
 </div>
 <div aria-hidden="true" class="stake-ill">
-<img alt="" loading="lazy" src="/assets/stakes/stake-2500.svg"/>
+<picture>
+  <source srcset="/assets/stakes/stake-2500.webp" type="image/webp"/>
+  <img alt="" loading="lazy" src="/assets/stakes/stake-2500.png"/>
+</picture>
 </div>
 </div>
 <div class="stake-card stake-vip" data-disabled="1" data-stake="vip">
 <div aria-hidden="true" class="stake-badge"></div>
 <div class="stake-left">
 <div class="stake-top">
-<div class="amt">VIP</div>
-<div class="meta">Особые условия • приватные дуэли • скоро</div>
-</div>
-<div class="stake-kpis">
-<span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="vip">—</b></span>
+  <div class="stake-top-left">
+    <span class="amt amt-gold">VIP</span><span class="comma">,</span>
+    <span class="meta">Особые условия • приватные дуэли • скоро</span>
+  </div>
+  <div class="stake-top-right">
+    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="vip">—</b></span>
+  </div>
 </div>
 <div class="stake-actions">
 <button class="btn primary" disabled="" type="button">Скоро</button>
@@ -1343,7 +1431,10 @@
 </div>
 </div>
 <div aria-hidden="true" class="stake-ill">
-<img alt="" loading="lazy" src="/assets/stakes/stake-vip.svg"/>
+<picture>
+  <source srcset="/assets/stakes/stake-vip.webp" type="image/webp"/>
+  <img alt="" loading="lazy" src="/assets/stakes/stake-vip.png"/>
+</picture>
 </div>
 </div>
 </div>
