@@ -624,23 +624,23 @@
 
 .stake-ill{
   position:relative; z-index:1;
-  height:82px;
+  /* рамка вокруг картинки: скругления рамки обрезают углы изображения */
   border-radius:14px;
   overflow:hidden;
-  border:none;
-  background:
-    radial-gradient(240px 220px at 40% 35%, rgba(244,216,138,.10), transparent 60%),
-    radial-gradient(260px 240px at 60% 75%, rgba(90,160,255,.10), transparent 65%),
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.10));
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.10);
+  width:220px;
+  max-width:100%;
+  margin-left:auto;
   display:flex; align-items:center; justify-content:center;
 }
-.stake-ill picture{ width:100%; height:100%; display:block; }
+.stake-ill picture{ width:100%; display:block; }
 .stake-ill img{
   width:100%;
-  height:100%;
-  object-fit:contain;
+  height:auto;
+  display:block;
   opacity:.98;
-  transform: translateY(2px);
+  transform: translateY(1px);
   transition: transform .18s ease, filter .18s ease;
   filter: drop-shadow(0 10px 18px rgba(0,0,0,.28));
 }
@@ -683,8 +683,8 @@
 }
 
 @media (min-width: 980px){
-  .stake-card{ grid-template-columns: minmax(0,1fr) 220px; }
-  .stake-ill{ height:auto; min-height:110px; }
+  .stake-card{ grid-template-columns: minmax(0,1fr) 210px; align-items:center; }
+  .stake-ill{ width:210px; }
 }
 
 @media (max-width: 420px){
@@ -1056,12 +1056,15 @@
 .stake-actions{ gap:8px; }
 .stake-actions .btn{ padding:9px 10px; font-size:13px; }
 .stake-ill{
-  height:86px;
-  border-radius:12px;
+  height:auto;
+  border-radius:14px;
+  width:220px;
+  max-width:100%;
+  margin-left:auto;
 }
 @media (min-width: 980px){
-  .stake-card{ grid-template-columns: minmax(0,1fr) 240px; }
-  .stake-ill{ min-height:110px; }
+  .stake-card{ grid-template-columns: minmax(0,1fr) 210px; align-items:center; }
+  .stake-ill{ width:210px; }
 }
 
 /* розыгрыши: PF + статус внутри основной карточки */
