@@ -450,9 +450,9 @@
   display:grid;
   /* mobile-first: по умолчанию как на телефоне */
   grid-template-columns: 1fr;
-  gap:10px;
+  gap:6px;
   align-items:stretch;
-  padding:10px 12px 10px;
+  padding:6px 12px;
   border-radius:16px;
   border:1px solid var(--border);
   background: linear-gradient(180deg, rgba(18,22,33,.70), rgba(12,16,24,.92));
@@ -507,20 +507,20 @@
   color:#e6d6ff;
 }
 
-.stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
 
 .stake-top{
   position:relative; z-index:1;
   display:flex;
   align-items:baseline;
   justify-content:space-between;
-  gap:10px;
+  gap:6px;
   min-width:0;
 }
 .stake-top-left{
   display:flex;
   align-items:baseline;
-  gap:8px;
+  gap:6px;
   min-width:0;
 }
 .stake-top-right{
@@ -618,8 +618,8 @@
 }
 
 
-.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr; gap:10px; margin-top:auto; }
-.stake-actions .btn{ justify-content:center; padding:10px 12px; border-radius:12px; font-weight:900; white-space:nowrap; }
+.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr; gap:6px; margin-top:auto; }
+.stake-actions .btn{ justify-content:center; padding:8px 12px; border-radius:12px; font-weight:900; white-space:nowrap; }
 .stake-actions .btn:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
 
 .stake-ill{
@@ -629,7 +629,7 @@
   overflow:hidden;
   border:1px solid rgba(255,255,255,.12);
   background: rgba(0,0,0,.10);
-  width:220px;
+  width:208px;
   max-width:100%;
   margin-left:auto;
   display:flex; align-items:center; justify-content:center;
@@ -683,12 +683,12 @@
 }
 
 @media (min-width: 980px){
-  .stake-card{ grid-template-columns: minmax(0,1fr) 210px; align-items:center; }
-  .stake-ill{ width:210px; }
+  .stake-card{ grid-template-columns: minmax(0,1fr) 200px; align-items:center; }
+  .stake-ill{ width:200px; }
 }
 
 @media (max-width: 420px){
-  .stake-actions .btn{ padding:10px 10px; font-size:13px; }
+  .stake-actions .btn{ padding:8px 10px; font-size:13px; }
 }
 
 /* legacy small cards (используем в заглушках розыгрышей) */
@@ -1049,22 +1049,22 @@
 
 /* компактнее карточки ставок (примерно в 2 раза ниже) */
 .stake-card{
-  gap:10px;
-  padding:10px 12px 10px;
+  gap:6px;
+  padding:6px 12px;
 }
-.stake-left{ gap:8px; }
-.stake-actions{ gap:8px; }
-.stake-actions .btn{ padding:9px 10px; font-size:13px; }
+.stake-left{ gap:6px; }
+.stake-actions{ gap:6px; }
+.stake-actions .btn{ padding:8px 12px; font-size:13px; }
 .stake-ill{
   height:auto;
   border-radius:14px;
-  width:220px;
+  width:208px;
   max-width:100%;
   margin-left:auto;
 }
 @media (min-width: 980px){
-  .stake-card{ grid-template-columns: minmax(0,1fr) 210px; align-items:center; }
-  .stake-ill{ width:210px; }
+  .stake-card{ grid-template-columns: minmax(0,1fr) 200px; align-items:center; }
+  .stake-ill{ width:200px; }
 }
 
 /* розыгрыши: PF + статус внутри основной карточки */
