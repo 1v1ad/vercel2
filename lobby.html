@@ -1,2041 +1,2127 @@
 <!DOCTYPE html>
-
 <html lang="ru">
 <head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<!-- Бэкенд и ID бота -->
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <meta content="https://vercel2pr.onrender.com" name="api-base"/>
 <meta content="8236271394" name="tg-bot-id"/>
 <title>GG ROOM — Лобби</title>
-<!-- FAVICONS -->
 <link href="/assets/favicon.svg" rel="icon" type="image/svg+xml"/>
 <link href="/assets/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
 <link href="/assets/favicon-16.png" rel="icon" sizes="16x16" type="image/png"/>
 <link href="/assets/favicon.ico" rel="shortcut icon"/>
 <link href="/assets/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="/assets/site.webmanifest" rel="manifest"/>
-<!-- UI tokens (единая палитра/радиусы/тени) -->
 <link href="/css/ui-tokens.css" rel="stylesheet"/>
+
 <style>
-    *{box-sizing:border-box}
-    body{ margin:0; background:var(--bg); color:var(--text); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+/* ═══════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    .welcome-card{
-  position:relative;
-  overflow:hidden;
-  margin-bottom:14px;
-  background: var(--surface);
-}
-.welcome-card > *{ position:relative; z-index:2; }
-.welcome-card::before{
-  /* base GG-style wash across the whole card */
-  content:"";
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  z-index:0;
-  background: linear-gradient(90deg,
-    rgba(10,132,255,.26) 0%,
-    rgba(46,209,169,.22) 55%,
-    rgba(0,0,0,0) 100%);
-  opacity:.9;
-}
-.welcome-card::after{
-  /* moving shimmer exactly like admin duel-card header */
-  content:"";
-  position:absolute;
-  inset: -80px -220px;
-  pointer-events:none;
-  z-index:1;
+:root {
+  --bg: #0b0d12;
+  --surface: #0f1219;
+  --card: #121621;
+  --card-2: #161c28;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --muted-2: #98a2b3;
+  --border: rgba(255,255,255,.07);
+  --border-2: rgba(255,255,255,.12);
+  --accent: #2dd4bf;
+  --accent-dim: rgba(45,212,191,.12);
+  --gold: #f4d88a;
+  --gold-dim: rgba(244,216,138,.12);
+  --gold-border: rgba(244,216,138,.30);
+  --good: #34d399;
+  --bad: #f87171;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
 
-  background-image:
-    linear-gradient(110deg,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0) 22%,
-      rgba(10,132,255,.32) 32%,
-      rgba(46,209,169,.30) 44%,
-      rgba(0,0,0,0) 58%,
-      rgba(0,0,0,0) 100%),
-    linear-gradient(110deg,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0) 36%,
-      rgba(255,193,7,.26) 46%,
-      rgba(10,132,255,.26) 58%,
-      rgba(0,0,0,0) 72%,
-      rgba(0,0,0,0) 100%),
-    linear-gradient(110deg,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0) 10%,
-      rgba(46,209,169,.22) 22%,
-      rgba(255,193,7,.22) 34%,
-      rgba(0,0,0,0) 50%,
-      rgba(0,0,0,0) 100%);
-  background-size:220% 220%;
-  background-position: 0% 12%, 0% 52%, 0% 88%;
-  opacity:.72;
-  filter:saturate(1.25);
-  animation: dcShimmer 12s linear infinite;
+  /* Safe area insets for notch phones */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Layout constants */
+  --hdr-h: 60px;
+  --tab-h: 60px;
 }
 
-/* =========================
-   TopBar (покерный стиль)
-   ========================= */
-.hdr{
-  position:sticky; top:0; z-index:50;
-  display:flex; align-items:center; justify-content:space-between;
-  gap:12px;
-  padding:12px 16px;
-  border-bottom:1px solid var(--border);
-  background:linear-gradient(180deg, rgba(15,19,27,.96), rgba(11,13,18,.96));
-  backdrop-filter: blur(10px);
-}
-.hdr-left{ display:flex; align-items:center; gap:12px; min-width:0; }
-.hdr-brand{
-  display:flex; align-items:baseline; gap:8px;
-  font-weight:900; letter-spacing:.3px;
-  white-space:nowrap;
-}
-.hdr-brand .gg{
-  background:linear-gradient(90deg,#ff3b3b,#2dd4bf);
-  -webkit-background-clip:text; background-clip:text; color:transparent;
-}
-.hdr-brand .room{ color:var(--text); opacity:.92; }
-.hdr-title{ color:var(--muted); font-weight:700; white-space:nowrap; }
-
-.hdr-nav{
-  display:flex; align-items:center; justify-content:center;
-  gap:10px; flex:1;
-  min-width:180px;
-}
-.hdr-nav-group{
-  display:flex; align-items:center; gap:6px;
-  padding:6px 8px;
-  border-radius:999px;
-  border:none;
-  background:rgba(18,22,33,.28);
-}
-.hdr-nav-label{
-  font-size:10px;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--muted);
-  padding:0 6px 0 4px;
-  font-weight:900;
-}
-.hdr-nav-label.is-click, .side-label.is-click{cursor:pointer;}
-.hdr-nav-label.is-click:hover, .side-label.is-click:hover{color:var(--text);}
-.hdr-nav-group a{
-  border:1px solid transparent;
-  background:transparent;
-}
-.hdr-nav a{
-  display:inline-flex; align-items:center; justify-content:center;
-  padding:7px 10px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  color:var(--muted);
-  text-decoration:none;
-  background:rgba(18,22,33,.55);
-  font-weight:700;
-  white-space:nowrap;
-}
-.hdr-nav a:hover{ filter:brightness(1.08); }
-
-.hdr-sep{
-  width:1px; height:22px;
-  background:var(--border);
-  border-radius:1px;
-  opacity:.9;
-  margin:0 4px;
-}
-.lotteries{
-  display:grid;
-  grid-template-columns:repeat(3, minmax(0, 1fr));
-  gap:10px;
-  margin-top:12px;
-}
-@media (max-width: 980px){ .lotteries{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
-@media (max-width: 560px){ .lotteries{ grid-template-columns:repeat(1, minmax(0,1fr)); } }
-.lottery-card[aria-disabled="true"]{ cursor:default; }
-
-/* lottery tabs */
-.lot-tabs{ margin-top:12px; }
-.lot-tabs button{ padding:8px 12px; }
-.lot-pane{ display:none; }
-.lot-pane.is-active{ display:block; }
-.lot-empty{ padding:14px; border-radius:16px; border:1px dashed rgba(255,255,255,.14); background:rgba(18,22,33,.35); }
-.lot-empty .title{ font-weight:900; margin-bottom:6px; }
-.lot-table{ width:100%; border-collapse:separate; border-spacing:0 10px; margin-top:8px; }
-.lot-row{ background:rgba(18,22,33,.45); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:10px 12px; }
-.lot-row .r{ display:flex; justify-content:space-between; gap:10px; align-items:center; }
-.lot-row .k{ color:var(--muted); font-size:12px; font-weight:800; }
-.lot-row .v{ font-weight:900; }
-
-.hdr-nav a.is-active{
-  color:var(--text);
-  border-color:rgba(45,212,191,.35);
-  background:rgba(45,212,191,.10);
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
-.hdr-right{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-
-/* Base UI */
-.btn{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:8px 12px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  background:#121621;
-  color:var(--text);
-  text-decoration:none;
-  white-space:nowrap;
-  cursor:pointer;
-  user-select:none;
-}
-.btn:hover{ filter:brightness(1.06); }
-.btn.primary{
-  background:linear-gradient(180deg,#1b2234,#121621);
-  border-color:rgba(244,216,138,.35);
-  color:var(--gold);
-}
-.btn.ghost{
-  background:rgba(18,22,33,.55);
-}
-
-.pill{
-  text-decoration:none;
-  display:inline-flex; align-items:center; gap:6px;
-  padding:8px 12px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  background:rgba(18,22,33,.55);
-  color:var(--text);
-  font-weight:800;
-}
-.hdr-user{
-  display:flex; align-items:center; gap:10px;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  background:rgba(18,22,33,.55);
-  min-width:0;
-}
-.hdr-user img{ width:34px; height:34px; border-radius:50%; object-fit:cover; background:#222; }
-.hdr-user .name{ display:flex; flex-direction:column; min-width:0; }
-.hdr-user .name strong{ font-size:13px; line-height:1.1; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.hdr-user .name span{ font-size:12px; color:var(--muted); line-height:1.1; }
-
-@media (max-width: 980px){
-  .hdr{ flex-wrap:wrap; }
-  .hdr-nav{ order:3; width:100%; justify-content:flex-start; }
-  .hdr-right{ width:100%; justify-content:space-between; }
-  .hdr-user .name strong{ max-width:160px; }
-}
-@media (max-width: 420px){
-  .hdr-title{ display:none; }
-}
-
-    .wrap{ max-width:1280px; margin:0 auto; padding:18px 16px }
-    .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:16px }
-    /* --- mini tiles (GGpoker-like quick actions) --- */
-.hdr-minis{
-  display:flex; align-items:center; gap:8px;
-  margin-right:10px;
-}
-.mini-tile{
-  position:relative;
-  display:flex; align-items:center; gap:8px;
-  height:34px;
-  padding:0 10px;
-  border-radius:10px;
-  border:1px solid rgba(255,255,255,.14);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.12));
+body {
+  background: var(--bg);
   color: var(--text);
-  font-weight:900;
-  font-size:12px;
-  letter-spacing:.2px;
-  text-decoration:none;
-  cursor:pointer;
-  user-select:none;
-  overflow:hidden;
-  box-shadow: 0 10px 18px rgba(0,0,0,.18);
-}
-.mini-tile::before{
-  content:"";
-  position:absolute; inset:-1px;
-  border-radius:10px;
-  background: radial-gradient(180px 70px at 25% 0%, rgba(244,216,138,.12), transparent 55%);
-  pointer-events:none;
-  opacity:.9;
-}
-.mini-tile::after{
-  content:"";
-  position:absolute;
-  inset:-60px -160px;
-  background-image: linear-gradient(110deg,
-    rgba(0,0,0,0) 0%,
-    rgba(0,0,0,0) 34%,
-    rgba(10,132,255,.28) 46%,
-    rgba(46,209,169,.24) 55%,
-    rgba(0,0,0,0) 68%,
-    rgba(0,0,0,0) 100%);
-  background-size:220% 220%;
-  background-position:0% 50%;
-  opacity:.0;
-  pointer-events:none;
-  transition: opacity .18s ease;
-}
-.mini-tile:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.22); }
-.mini-tile:hover::after{ opacity:.55; animation: dcShimmer 2.8s linear infinite; }
-.mini-ico{ width:18px; height:18px; display:block; color: rgba(244,216,138,.95); }
-.mini-lbl{ white-space:nowrap; }
-@media (max-width: 980px){
-  .hdr-minis{ order:2; margin-right:0; }
-  .mini-tile{ padding:0 8px; gap:6px; }
-}
-@media (max-width: 560px){
-  .mini-lbl{ display:none; }
-  .mini-tile{ width:34px; justify-content:center; padding:0; }
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  /* Reserve space for fixed header + bottom tab bar */
+  padding-top: calc(var(--hdr-h) + var(--safe-top));
+  padding-bottom: calc(var(--tab-h) + var(--safe-bottom));
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
-/* =========================
-       Layout (Sidebar / Main / Right rail)
-       ========================= */
-    html{ scroll-behavior:smooth; }
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 4px; }
 
-    .layout{
-      display:grid;
-      grid-template-columns: 240px minmax(0,1fr);
-      gap:14px;
-      align-items:start;
-    }
-    .sidebar{
-      position:sticky;
-      top:74px; /* высота topbar + небольшой отступ */
-      align-self:start;
-    }
-    .rail{
-      position:static;
-      grid-column: 2;
-      align-self:start;
-      max-width:760px;
-      width:100%;
-      justify-self:center;
-      margin-top:14px;
-    }
-    .main{ min-width:0; }
-
-    .side-card{ padding:14px; }
-    .side-title{ font-weight:900; margin:0 0 10px; font-size:14px; letter-spacing:.2px; color:var(--text); }
-    .side-nav{ display:flex; flex-direction:column; gap:14px; }
-    .side-group{ display:flex; flex-direction:column; gap:8px; }
-    .side-label{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:900; margin:0 10px; }
-
-    .side-link{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:rgba(18,22,33,.55);
-      color:var(--text);
-      text-decoration:none;
-      font-weight:800;
-    }
-    .side-link span{ color:var(--muted); font-weight:700; }
-    .side-link:hover{ filter:brightness(1.06); }
-    .side-link.is-active{
-      border-color:rgba(45,212,191,.35);
-      background:rgba(45,212,191,.10);
-    }
-
-    /* =========================
-       Mobile nav card (Path A)
-       ========================= */
-    #mobile-nav-card{ display:none; padding:14px; }
-    .mnav details{
-      border:1px solid var(--border);
-      border-radius:16px;
-      background:rgba(18,22,33,.55);
-      overflow:hidden;
-    }
-    .mnav summary{
-      list-style:none;
-      cursor:pointer;
-      user-select:none;
-      padding:12px 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      font-weight:900;
-    }
-    .mnav summary::-webkit-details-marker{ display:none; }
-    .mnav .path{ color:var(--muted); font-weight:800; font-size:12px; white-space:nowrap; }
-    .mnav .chev{ opacity:.7; }
-    .mnav .body{ padding:12px; border-top:1px solid rgba(255,255,255,.08); }
-    .mnav .grp{ display:flex; flex-direction:column; gap:8px; }
-    .mnav .lbl{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:900; margin:0 2px; }
-    .mnav .links{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; }
-    .mnav .a{
-      display:flex; align-items:center; justify-content:center;
-      padding:10px 10px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background:rgba(12,16,24,.65);
-      color:var(--text);
-      text-decoration:none;
-      font-weight:900;
-      white-space:nowrap;
-    }
-    .mnav .a:hover{ filter:brightness(1.06); }
-    .mnav .a.is-active{ border-color:rgba(45,212,191,.35); background:rgba(45,212,191,.10); }
-    .mnav .a.is-warn{ border-color:rgba(244,216,138,.28); }
-    @media (max-width: 420px){
-      .mnav .links{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
-    }
-
-    .rail .card{ padding:14px; }
-    .rail h3{ margin:0 0 8px; font-size:14px; font-weight:900; letter-spacing:.2px; }
-    .rail .small{ font-size:13px; color:var(--muted); line-height:1.4; }
-    .rail .kpi{
-      display:grid; grid-template-columns:1fr 1fr;
-      gap:10px;
-      margin-top:10px;
-    }
-    .rail .kpi .k{ padding:10px 12px; border-radius:14px; border:1px solid var(--border); background:#0c1018; }
-    .rail .kpi .k .t{ font-size:12px; color:var(--muted); }
-    .rail .kpi .k .v{ font-size:16px; font-weight:900; margin-top:4px; }
-
-    @media (max-width: 1180px){
-      .layout{ grid-template-columns: 72px minmax(0,1fr); }
-      .sidebar{ top:74px; }
-      .side-label{ display:none; }
-      .side-link span{ display:none; }
-      .side-link{ justify-content:center; padding:10px 8px; }
-      .side-link::before{ margin-right:0; }
-      .rail{ position:static; grid-column: 2; justify-self:stretch; }
-    }
-    @media (max-width: 900px){
-      .layout{ grid-template-columns: 1fr; }
-      /* Path A: делаем мобильный “one-column” и прячем лишнее */
-      .sidebar{ display:none; }
-      .hdr-nav{ display:none; }
-      #mobile-nav-card{ display:block; }
-      .rail{ position:static; grid-column: 1; justify-self:stretch; max-width:none; width:100%; }
-    }
-
-
-    /* --- duels (1v1) --- */
-    .grid{ display:grid; grid-template-columns:1fr; gap:14px; }
-    .card h2{ margin:0 0 10px; font-size:18px; }
-    .muted{ color:var(--muted); }
-
-    .duels-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .duels-head .right{ display:flex; align-items:center; gap:8px; }
-
-    .btn.primary{ background:linear-gradient(180deg,#1b2234,#121621); border-color:rgba(244,216,138,.35); color:var(--gold); }
-    .btn.primary:hover{ filter:brightness(1.05); }
-    .btn.danger{ border-color:rgba(255,59,59,.35); color:#ffb3b3; }
-
-    .duels-create{ border-top:1px dashed var(--border); margin-top:12px; padding-top:12px; }
-    .stakes{ display:grid; grid-template-columns:1fr; gap:12px; margin:10px 0 12px; }
-
-.stakes-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0 8px; }
-.stakes-head-right{ display:flex; align-items:center; gap:8px; }
-@media (max-width: 560px){ .stakes-head{ flex-direction:column; align-items:flex-start; } }
-
-.stake-card{
-  position:relative;
-  display:grid;
-  /* mobile-first: по умолчанию как на телефоне */
-  grid-template-columns: 1fr;
-  gap:6px;
-  align-items:stretch;
-  padding:6px 12px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  background: linear-gradient(180deg, rgba(18,22,33,.70), rgba(12,16,24,.92));
-  box-shadow: 0 10px 18px rgba(0,0,0,.18);
-  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, filter .16s ease;
-}
-.stake-card::before{
-  content:'';
-  position:absolute; inset:0;
-  border-radius:16px;
-  background: radial-gradient(1200px 260px at 40% 0%, rgba(244,216,138,.10), transparent 55%);
-  pointer-events:none;
-  opacity:.85;
-}
-.stake-card:hover{ transform: translateY(-2px); border-color: rgba(255,255,255,.16); filter:brightness(1.03); }
-.stake-card.is-selected{
-  border-color: rgba(244,216,138,.55);
-  box-shadow: 0 0 0 3px rgba(244,216,138,.12) inset, 0 14px 26px rgba(0,0,0,.24);
+/* ═══════════════════════════════════════════════
+   TOP HEADER — compact, sticky, mobile-native
+═══════════════════════════════════════════════ */
+.hdr {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: calc(var(--hdr-h) + var(--safe-top));
+  padding-top: var(--safe-top);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 14px;
+  padding-right: 14px;
+  background: linear-gradient(180deg, rgba(11,13,18,.98) 0%, rgba(11,13,18,.92) 100%);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid var(--border);
 }
 
-.stake-badge{
-  position:absolute;
-  top:10px; right:10px;
-  display:none;
-  align-items:center; justify-content:center;
-  padding:6px 10px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(18,22,33,.68);
-  color:var(--text);
-  font-size:11px;
-  font-weight:950;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  z-index:2;
-  box-shadow:0 10px 18px rgba(0,0,0,.25);
+/* Brand */
+.hdr-brand {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -.3px;
+  text-decoration: none;
 }
-.stake-card.has-badge .stake-badge{ display:inline-flex; }
-.stake-badge.badge-live{
-  border-color:rgba(45,212,191,.35);
-  background:rgba(45,212,191,.12);
-  color:#8ff3df;
+.hdr-brand .gg {
+  background: linear-gradient(135deg, #ff4444 0%, #ff8800 50%, #2dd4bf 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
-.stake-badge.badge-hot{
-  border-color:rgba(244,216,138,.55);
-  background:rgba(244,216,138,.12);
-  color:var(--gold);
+.hdr-brand .room { color: var(--text); }
+
+/* Balance chip — главный элемент шапки для игрока */
+.hdr-balance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(244,216,138,.08);
+  border: 1px solid var(--gold-border);
+  cursor: default;
+  user-select: none;
+  transition: transform .15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.stake-badge.badge-vip{
-  border-color:rgba(186,141,255,.40);
-  background:rgba(186,141,255,.12);
-  color:#e6d6ff;
+.hdr-balance:active { transform: scale(.96); }
+
+.hdr-balance-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+.hdr-balance-amount {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .2px;
+  min-width: 20px;
+}
+.hdr-balance-label {
+  font-size: 10px;
+  color: rgba(244,216,138,.5);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
 }
 
-.stake-left{ position:relative; z-index:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
-
-.stake-top{
-  position:relative; z-index:1;
-  display:flex;
-  align-items:baseline;
-  justify-content:space-between;
-  gap:6px;
-  min-width:0;
-}
-.stake-top-left{
-  display:flex;
-  align-items:baseline;
-  gap:6px;
-  min-width:0;
-}
-.stake-top-right{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  flex:0 0 auto;
-  margin-left:auto;
-}
-.stake-top .amt{ font-weight:950; font-size:18px; letter-spacing:.2px; white-space:nowrap; }
-.stake-top .meta{
-  font-size:12px;
-  color:var(--muted);
-  line-height:1.15;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.comma{
-  margin-left:-2px;
-  margin-right:8px;
-  color:rgba(232,234,240,.40);
-  font-weight:900;
-  white-space:nowrap;
+/* Avatar */
+.hdr-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--card-2);
+  border: 2px solid var(--border-2);
+  flex-shrink: 0;
 }
 
-/* GOLD shimmer (safe fallback) */
-.amt-gold{ color:var(--gold); text-shadow: 0 0 14px rgba(244,216,138,.18); }
-@supports ((-webkit-background-clip:text) or (background-clip:text)){
-  .amt-gold{
-    background: linear-gradient(90deg,
-      rgba(244,216,138,.95) 0%,
-      rgba(255,245,203,.98) 15%,
-      rgba(214,160,60,.95) 32%,
-      rgba(255,250,220,.98) 50%,
-      rgba(214,160,60,.95) 68%,
-      rgba(255,245,203,.98) 85%,
-      rgba(244,216,138,.95) 100%);
-    background-size: 240% 100%;
-    -webkit-background-clip:text;
-    background-clip:text;
-    -webkit-text-fill-color: transparent;
-    animation: amtShine 2.6s linear infinite;
-  }
-}
-@keyframes amtShine{
-  0%{ background-position:0% 50%; filter:brightness(1); }
-  100%{ background-position:240% 50%; filter:brightness(1.12); }
+.hdr-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.stake-kpis{ position:relative; z-index:1; display:flex; gap:10px; align-items:center; } /* legacy wrapper (не обязателен) */
-.stake-card .kpi{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:8px; }
-.stake-card .dot{ width:6px; height:6px; border-radius:10px; background:rgba(244,216,138,.95); box-shadow:0 0 0 3px rgba(244,216,138,.14); }
-
-/* живой индикатор, если есть открытые комнаты */
-.stake-card .kpi.is-live{ color:rgba(232,234,240,.95); }
-.stake-card .kpi.is-live b{
-  color:#8ff3df;
-  text-shadow:0 0 10px rgba(45,212,191,.22);
-  animation:kpiPulse 1.8s ease-in-out infinite;
-}
-.stake-card .kpi.is-live .dot{
-  background:rgba(45,212,191,.95);
-  box-shadow:0 0 0 3px rgba(45,212,191,.16);
-  animation:dotPulse 1.8s ease-in-out infinite;
+/* User name — скрыт на мобиле, виден на десктопе */
+.hdr-name {
+  display: none;
+  font-size: 13px;
+  font-weight: 700;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-@keyframes kpiPulse{
-  0%,100%{ opacity:.88; filter:brightness(1); }
-  50%{ opacity:1; filter:brightness(1.25); }
+/* Topup button */
+.btn-topup {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(45,212,191,.35);
+  background: rgba(45,212,191,.08);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s, transform .12s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
 }
-@keyframes dotPulse{
-  0%,100%{ transform:scale(1); box-shadow:0 0 0 3px rgba(45,212,191,.16); }
-  50%{ transform:scale(1.18); box-shadow:0 0 0 6px rgba(45,212,191,.10); }
+.btn-topup:active { transform: scale(.95); background: rgba(45,212,191,.14); }
+.btn-topup svg { flex-shrink: 0; }
+
+/* Link buttons (hidden by default, shown by JS) */
+#link-tg, #link-vk { display: none !important; }
+
+/* ═══════════════════════════════════════════════
+   BOTTOM TAB BAR — главная мобильная навигация
+═══════════════════════════════════════════════ */
+.tab-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  height: calc(var(--tab-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  display: flex;
+  align-items: stretch;
+  background: rgba(11,13,18,.96);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-top: 1px solid var(--border);
 }
 
-@keyframes illShine{
-  0%{ transform: rotate(20deg) translateX(-80%); opacity:0; }
-  18%{ opacity:.28; }
-  50%{ opacity:.45; }
-  82%{ opacity:.28; }
-  100%{ transform: rotate(20deg) translateX(80%); opacity:0; }
-}
-
-@media (prefers-reduced-motion: reduce){
-  .stake-card,
-  .amt-gold,
-  .stake-ill img,
-  .stake-ill::after,
-  .stake-card .kpi.is-live b,
-  .stake-card .kpi.is-live .dot{
-    animation:none !important;
-    transition:none !important;
-  }
-}
-
-
-.stake-actions{ position:relative; z-index:1; display:grid; grid-template-columns: 1fr; gap:6px; margin-top:auto; }
-.stake-actions .btn{ justify-content:center; padding:8px 12px; border-radius:12px; font-weight:900; white-space:nowrap; }
-.stake-actions .btn:disabled{ opacity:.55; cursor:not-allowed; filter:none; transform:none; }
-
-.stake-ill{
-  position:relative; z-index:1;
-  /* рамка вокруг картинки: скругления рамки обрезают углы изображения */
-  border-radius:14px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.10);
-  width:208px;
-  max-width:100%;
-  margin-left:auto;
-  display:flex; align-items:center; justify-content:center;
-}
-.stake-ill picture{ width:100%; display:block; }
-.stake-ill img{
-  width:100%;
-  height:auto;
-  display:block;
-  opacity:.98;
-  transform: translateY(1px);
-  transition: transform .18s ease, filter .18s ease;
-  filter: drop-shadow(0 10px 18px rgba(0,0,0,.28));
-}
-.stake-ill::after{
-  content:'';
-  position:absolute;
-  inset:-40%;
-  background: linear-gradient(90deg, transparent, rgba(244,216,138,.12), transparent);
-  transform: rotate(20deg) translateX(-60%);
-  opacity:0;
-  transition: opacity .22s ease, transform .34s ease;
-  pointer-events:none;
-}
-.stake-card:hover .stake-ill img{ transform: translateY(-4px) scale(1.02); filter: drop-shadow(0 14px 22px rgba(0,0,0,.35)); }
-.stake-card:not(.has-shine):hover .stake-ill::after{ opacity:1; transform: rotate(20deg) translateX(40%); }
-
-.stake-card.has-shine .stake-ill::after{
-  opacity:.35;
-  animation: illShine 4.6s ease-in-out infinite;
-}
-.stake-card.has-shine:hover .stake-ill::after{ opacity:.55; }
-
-.stake-card.stake-vip{
-  border-color: rgba(186,141,255,.28);
-}
-.stake-card.stake-vip::before{
-  background: radial-gradient(1200px 260px at 40% 0%, rgba(186,141,255,.12), transparent 55%);
-}
-.stake-card.stake-vip .stake-ill{
-  background:
-    radial-gradient(240px 220px at 40% 35%, rgba(186,141,255,.14), transparent 60%),
-    radial-gradient(260px 240px at 60% 75%, rgba(244,216,138,.08), transparent 65%),
-    linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.10));
-}
-.stake-card.stake-vip[data-disabled="1"]{ opacity:.72; }
-.stake-card.stake-vip[data-disabled="1"]:hover{ transform:none; filter:none; }
-
-@media (min-width: 520px){
-  .stake-actions{ grid-template-columns: 1fr 1fr; }
-}
-
-@media (min-width: 980px){
-  .stake-card{ grid-template-columns: minmax(0,1fr) 200px; align-items:center; }
-  .stake-ill{ width:200px; }
-}
-
-@media (max-width: 420px){
-  .stake-actions .btn{ padding:8px 10px; font-size:13px; }
-}
-
-/* legacy small cards (используем в заглушках розыгрышей) */
-.stake-chip{
-  display:flex; flex-direction:column; align-items:flex-start; gap:6px;
-  padding:12px 12px;
-  border-radius:14px; border:1px solid var(--border);
-  background:rgba(18,22,33,.55);
-  color:var(--text);
-  text-align:left;
-  transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease, filter .15s ease;
-}
-.stake-chip:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.16); filter:brightness(1.03); }
-.stake-chip[aria-disabled="true"]{ opacity:.72; cursor:not-allowed; transform:none; }
-
-.hint{ margin-top:8px; font-size:13px; color:var(--muted); }
-
-    .duels-list{ display:grid; grid-template-columns:1fr; gap:10px; margin-top:12px; }
-    .duel-item{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; border-radius:14px; border:1px solid var(--border); background:#0c1018; }
-    .duel-left{ display:flex; align-items:center; gap:10px; min-width:0; }
-    .duel-left img{ width:38px; height:38px; border-radius:12px; object-fit:cover; background:#222; }
-    .duel-title{ font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .duel-sub{ font-size:12px; color:var(--muted); }
-    .duel-actions{ display:flex; align-items:center; gap:8px; }
-
-    .live-list .duel-item{ background:rgba(12,16,24,.88); }
-    .duel-avatars{ display:flex; align-items:center; }
-    .duel-avatars img{ width:36px; height:36px; border-radius:12px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.06); object-fit:cover; }
-    .duel-avatars img + img{ margin-left:-10px; }
-    .duel-avatars .ph{ opacity:.55; filter:saturate(.6); }
-    .duel-meta{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .duel-id{ font-size:12px; padding:4px 8px; border-radius:999px; background:rgba(18,22,33,.55); border:1px solid var(--border); color:var(--muted); font-weight:800; }
-    .wait{ font-variant-numeric: tabular-nums; }
-    .wait::before{ content:"⏱ "; opacity:.7; }
-    .duel-actions{ flex-wrap:wrap; justify-content:flex-end; }
-    @media (max-width:560px){
-      .duel-item{ flex-direction:column; align-items:stretch; gap:10px; }
-      .duel-actions{ justify-content:stretch; }
-      .duel-actions .btn{ width:100%; }
-    }
-
-    .toast{
-      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
-      background:#0f1219; border:1px solid var(--border); border-radius:14px;
-      padding:12px 14px; max-width:min(560px, calc(100vw - 24px));
-      box-shadow:0 12px 30px rgba(0,0,0,.4);
-      z-index:9999; display:none;
-    }
-    .toast.show{ display:block; }
-    .toast .t{ font-weight:800; margin-bottom:4px; }
-    .toast .b{ color:var(--muted); font-size:13px; }
-
-    /* бренд-вид кнопок рядом с балансом */
-    .hdr-user .btn.vk { background:#2787F5; border-color:#2787F5; color:#fff; }
-    .hdr-user .btn.tg { background:#229ED9; border-color:#229ED9; color:#fff; }
-    .hdr-user .btn.vk:hover, .hdr-user .btn.tg:hover { filter:brightness(1.05); }
-
-    /* на всякий случай вырубаем старый блок линковок, если где-то остался */
-    #link-actions{ display:none !important; }
-  
-
-.section-title{ margin-top:14px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
-.section-title .h3{ font-size:18px; font-weight:700; }
-.history-list{ display:grid; grid-template-columns:1fr; gap:10px; margin-top:10px; }
-.history-item{ cursor:pointer; padding:10px 12px; border-radius:14px; border:1px solid var(--border); background:#0c1018; display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.history-left{ display:flex; flex-direction:column; gap:2px; }
-.history-right{ text-align:right; display:flex; flex-direction:column; gap:2px; }
-.history-top{ display:flex; align-items:center; gap:10px; min-width:0; }
-.history-avatars{ display:flex; gap:8px; align-items:center; flex:0 0 auto; }
-.history-avatars img{ width:28px; height:28px; border-radius:10px; object-fit:cover; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); }
-.history-info{ min-width:0; }
-.history-title-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.history-title-row .duel-title{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.pill{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; border:1px solid var(--border); font-size:12px; color:var(--muted); }
-.pill.win{ color:#4ed1a9; border-color:rgba(78,209,169,.35); }
-.pill.lose{ color:#ff6b6b; border-color:rgba(255,107,107,.35); }
-.pill.cancel{ color:#c7c7c7; border-color:rgba(199,199,199,.25); }
-
-/* modal */
-.modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:9999; padding:18px; }
-.modal{ width:min(720px, 100%); border-radius:18px; border:1px solid var(--border); background:#0b0f18; box-shadow:0 20px 60px rgba(0,0,0,.5); }
-.modal-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.06); }
-.modal-title{ font-weight:800; }
-.modal-close{ cursor:pointer; border:1px solid var(--border); background:#0c1018; color:var(--text); padding:6px 10px; border-radius:10px; }
-.modal-body{ padding:14px 16px; color:var(--text); }
-.kv{ display:grid; grid-template-columns: 160px 1fr; gap:8px 12px; font-size:14px; }
-.kv .k{ color:var(--muted); }
-.kv .v{ color:var(--text); overflow-wrap:anywhere; }
-
-/* coin overlay */
-.coin-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.70); display:none; align-items:center; justify-content:center; z-index:10000; }
-.coin-card{ width:min(520px, 92vw); border-radius:18px; border:1px solid var(--border); background:#0b0f18; padding:18px; text-align:center; }
-.coin{ width:90px; height:90px; margin:10px auto 12px; border-radius:50%; border:2px solid rgba(255,215,0,.55); background:radial-gradient(circle at 30% 30%, rgba(255,215,0,.95), rgba(255,215,0,.25)); animation: coinFlip 1.05s linear infinite; }
-.coin-text{ font-size:15px; color:var(--muted); }
-@keyframes coinFlip{ 0%{ transform:rotateY(0deg) rotateX(0deg); } 50%{ transform:rotateY(180deg) rotateX(14deg); } 100%{ transform:rotateY(360deg) rotateX(0deg); } }
-
-/* ===== Step 1.5: режимы создания комнат ===== */
-.mode-line{
-  margin-top:10px;
-  display:flex; align-items:center; gap:8px;
-  flex-wrap:wrap;
-  font-size:13px;
-}
-.mode-pill{
-  display:inline-flex; align-items:center; gap:8px;
-  padding:4px 10px;
-  border-radius:999px;
-  border:1px solid rgba(255,255,255,.12);
-  background:rgba(18,22,33,.55);
-  color:var(--text);
-  font-weight:800;
-}
-.mode-pill .tag{
-  font-weight:900;
-  font-size:11px;
-  padding:2px 8px;
-  border-radius:999px;
-  border:1px solid rgba(45,212,191,.35);
-  background:rgba(45,212,191,.10);
-  color:#8ff3df;
-}
-.mode-link{
-  color:var(--muted);
-  text-decoration:none;
-  border-bottom:1px dashed rgba(255,255,255,.18);
-}
-.mode-link:hover{ color:var(--text); }
-
-.split-btn{
-  display:inline-flex; gap:8px; align-items:center;
-}
-.btn.icon{
-  width:40px; justify-content:center; padding:8px 0;
-  border-radius:12px;
-}
-
-/* create-mode modal */
-.seg{
-  display:flex; gap:8px; flex-wrap:wrap;
-  margin:6px 0 14px;
-}
-.seg button{
-  padding:9px 12px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  background:rgba(18,22,33,.55);
-  color:var(--muted);
-  font-weight:900;
-  cursor:pointer;
-}
-.seg button:hover{ filter:brightness(1.06); }
-.seg button.is-active{
-  color:var(--text);
-  border-color:rgba(244,216,138,.50);
-  box-shadow:0 0 0 3px rgba(244,216,138,.10) inset;
-}
-.mode-pane{ display:none; }
-.mode-pane.is-active{ display:block; }
-
-.field{
-  display:flex; flex-direction:column; gap:6px;
-  margin-top:10px;
-}
-.field label{ font-size:12px; color:var(--muted); font-weight:800; }
-.field input, .field select{
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  background:#0b0f18;
-  color:var(--text);
-  outline:none;
-}
-.field input:focus, .field select:focus{ border-color:rgba(244,216,138,.45); }
-
-.modal-foot{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:14px 16px;
-  border-top:1px solid rgba(255,255,255,.06);
-}
-.modal-foot .left{ color:var(--muted); font-size:12px; }
-.modal-foot .actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.badge-soon{
-  display:inline-flex; align-items:center;
-  padding:2px 8px;
-  border-radius:999px;
-  border:1px solid rgba(255,107,107,.35);
-  background:rgba(255,107,107,.08);
-  color:#ffb3b3;
-  font-weight:900;
-  font-size:11px;
-}
-
-
-/* lottery hero */
-.lot-hero{
-  display:flex; gap:14px; align-items:stretch; justify-content:space-between;
-  padding:14px; border-radius:16px;
-  border:1px solid var(--border);
-  background: linear-gradient(110deg, rgba(24,36,56,.75), rgba(18,22,33,.55) 40%, rgba(16,48,40,.35));
-  box-shadow: var(--shadow);
-  margin-top:12px;
-}
-.lot-hero .left{ flex:1; min-width:0; }
-.lot-hero .right{ width:230px; display:flex; flex-direction:column; gap:10px; align-items:flex-end; justify-content:space-between; }
-.lot-hero .badge{
-  display:inline-flex; align-items:center; gap:8px;
-  font-weight:900; font-size:12px; letter-spacing:.04em;
-  padding:6px 10px; border-radius:999px;
-  background: rgba(45,212,191,.12);
-  border:1px solid rgba(45,212,191,.35);
-  color: rgba(167,243,208,1);
-}
-.lot-hero .title{ font-size:18px; font-weight:950; margin-top:8px; }
-.lot-hero .sub{ margin-top:6px; color:var(--muted); font-size:13px; line-height:1.35; }
-.lot-hero .prog{ margin-top:10px; }
-.lot-hero .bar{
-  height:10px; border-radius:999px; overflow:hidden;
-  background: rgba(148,163,184,.12);
-  border:1px solid rgba(148,163,184,.16);
-}
-.lot-hero .fill{
-  height:100%;
-  background: linear-gradient(90deg, rgba(34,211,238,.95), rgba(34,197,94,.95));
-  width:34%;
-}
-.lot-hero .meta-line{ margin-top:8px; font-size:12px; color:var(--muted); display:flex; gap:10px; flex-wrap:wrap; }
-.lot-hero .count{
-  width:100%;
-  padding:10px 12px; border-radius:14px;
-  border:1px solid var(--border);
-  background: rgba(18,22,33,.55);
-}
-.lot-hero .count .k{ color:var(--muted); font-size:12px; }
-.lot-hero .count .v{ font-size:16px; font-weight:950; margin-top:4px; }
-
-.lot-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:12px;
-  overflow:hidden;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background: rgba(18,22,33,.45);
-}
-.lot-table th, .lot-table td{
-  padding:10px 12px;
-  border-bottom:1px solid rgba(148,163,184,.12);
-  font-size:13px;
-}
-.lot-table th{
-  color:var(--muted);
-  font-weight:900;
-  text-align:left;
-  background: rgba(18,22,33,.55);
-}
-.lot-table tr:last-child td{ border-bottom:none; }
-.lot-table .pill{
-  display:inline-flex; padding:4px 10px; border-radius:999px;
-  border:1px solid rgba(148,163,184,.18);
-  background: rgba(148,163,184,.08);
-  font-weight:900;
-}
-.side-sub{
-  margin-top:10px; display:flex; flex-direction:column; gap:6px;
-}
-.side-sub a{
-  display:flex; justify-content:space-between; align-items:center;
-  padding:10px 12px; border-radius:12px;
-  background: rgba(18,22,33,.45);
-  border:1px solid rgba(148,163,184,.12);
-  color: var(--text);
-  text-decoration:none;
-  font-weight:800;
-  font-size:13px;
-  opacity:.9;
-}
-.side-sub a.is-active{
-  border-color: rgba(34,211,238,.4);
-  box-shadow: 0 0 0 1px rgba(34,211,238,.2) inset;
-  opacity:1;
-}
-.side-sub a span{
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 4px;
+  text-decoration: none;
   color: var(--muted);
-  font-weight:900;
-  font-size:12px;
-}
-@media (max-width: 980px){
-  .lot-hero{ flex-direction:column; }
-  .lot-hero .right{ width:100%; align-items:stretch; }
-}
-
-
-/* my duels tabs (step 3.2) */
-.myduels-tabs{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin:10px 0 12px;
-}
-.myduels-tabs button{
-  appearance:none;
-  border:1px solid rgba(255,255,255,.10);
-  background:rgba(18,22,33,.45);
-  color:var(--muted);
-  padding:8px 12px;
-  border-radius:999px;
-  font-weight:800;
-  cursor:pointer;
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  white-space:nowrap;
-}
-.myduels-tabs button:hover{ filter:brightness(1.08); }
-.myduels-tabs button.is-active{
-  color:var(--text);
-  border-color:rgba(82,214,255,.28);
-  background:rgba(82,214,255,.10);
-}
-.myduels-tabs .cnt{
-  min-width:20px;
-  height:20px;
-  border-radius:999px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-size:12px;
-  padding:0 6px;
-  background:rgba(255,255,255,.10);
-  color:var(--text);
-}
-.myduels-tabs button.is-active .cnt{ background:rgba(82,214,255,.22); }
-
-.myduels-pane{ display:none; }
-.myduels-pane.is-active{ display:block; }
-
-.myduels-list .mini-hdr{
-  margin:10px 2px 8px;
-  font-size:11px;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--muted);
-}
-.myduels-list .mini-hdr strong{ color:var(--text); letter-spacing:.02em; text-transform:none; font-size:12px; }
-.myduels-list .mini-hdr .note{ opacity:.85; margin-left:6px; font-size:11px; text-transform:none; letter-spacing:0; }
-
-
-
-/* --- lobby tweaks: spacing, compact stakes, lottery undercards, admin-like shimmer --- */
-@keyframes dcShimmer{
-  0%   { background-position: 0% 12%, 0% 52%, 0% 88%; }
-  100% { background-position: 120% 12%, 120% 52%, 120% 88%; }
+  cursor: pointer;
+  background: none;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color .18s ease;
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
 }
 
-@media (prefers-reduced-motion: reduce){
-  .welcome-card::after{ animation:none; }
+.tab-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(45,212,191,.12), transparent 70%);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.tab-item.is-active::before { opacity: 1; }
+.tab-item.is-active { color: var(--accent); }
+.tab-item.is-active .tab-icon { color: var(--accent); }
+
+.tab-icon {
+  width: 22px;
+  height: 22px;
+  color: inherit;
+  flex-shrink: 0;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.tab-item.is-active .tab-icon { transform: scale(1.1); }
+
+.tab-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  line-height: 1;
 }
 
-/* компактнее карточки ставок (примерно в 2 раза ниже) */
-.stake-card{
-  gap:6px;
-  padding:6px 12px;
+.tab-badge {
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 16px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  display: none;
 }
-.stake-left{ gap:6px; }
-.stake-actions{ gap:6px; }
-.stake-actions .btn{ padding:8px 12px; font-size:13px; }
-.stake-ill{
-  height:auto;
-  border-radius:14px;
-  width:208px;
-  max-width:100%;
-  margin-left:auto;
-}
-@media (min-width: 980px){
-  .stake-card{ grid-template-columns: minmax(0,1fr) 200px; align-items:center; }
-  .stake-ill{ width:200px; }
-}
+.tab-badge.visible { display: flex; }
 
-/* розыгрыши: PF + статус внутри основной карточки */
-.lottery-under{
-  margin-top:14px;
-  display:grid;
-  grid-template-columns:1fr;
-  gap:14px;
-}
-@media (min-width: 980px){
-  .lottery-under{ grid-template-columns: 1fr 1fr; }
+/* ═══════════════════════════════════════════════
+   MAIN SCROLL CONTENT
+═══════════════════════════════════════════════ */
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 12px 8px;
 }
 
-    /* mobile-first even on desktop: держим основной контент компактным */
-    .main .grid{ max-width:760px; margin:0 auto; }
+/* Section panels — hubs */
+.hub { display: none; }
+.hub.is-active { display: block; }
 
+/* Section title row */
+.section-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 10px;
+}
+.section-hd:first-child { margin-top: 4px; }
+.section-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.2px;
+}
+.section-sub {
+  font-size: 12px;
+  color: var(--muted-2);
+  font-weight: 600;
+}
 
-    @media (min-width: 1400px){
-      .layout{ grid-template-columns: 260px minmax(0,1fr) 320px; }
-      .rail{ position:sticky; top:74px; grid-column:auto; max-width:none; width:auto; justify-self:stretch; margin-top:0; }
-      .main .grid{ max-width:none; margin:0; }
-    }
+/* ═══════════════════════════════════════════════
+   WELCOME BANNER
+═══════════════════════════════════════════════ */
+.welcome {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(10,132,255,.18) 0%, rgba(45,212,191,.10) 60%, rgba(0,0,0,.0) 100%);
+  border: 1px solid rgba(45,212,191,.15);
+  margin-bottom: 14px;
+}
+.welcome::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg,
+    transparent 0%,
+    rgba(45,212,191,.06) 40%,
+    rgba(244,216,138,.06) 70%,
+    transparent 100%);
+  background-size: 200% 100%;
+  animation: welcomeShimmer 5s linear infinite;
+  pointer-events: none;
+}
+@keyframes welcomeShimmer {
+  0% { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+.welcome-text {
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+.welcome-sub {
+  position: relative;
+  z-index: 1;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted-2);
+}
+#provider-note { margin: 0; font-size: 12px; color: var(--muted-2); }
 
+/* ═══════════════════════════════════════════════
+   STAKE CARDS — горизонтальный скролл на мобиле
+═══════════════════════════════════════════════ */
+.stakes-scroll {
+  margin: 0 -12px;
+  padding: 0 12px;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  display: flex;
+  gap: 10px;
+  padding-bottom: 4px;
+}
+.stakes-scroll::-webkit-scrollbar { display: none; }
 
+.stake-card {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 200px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-2);
+  background: linear-gradient(160deg, var(--card-2) 0%, rgba(10,12,20,.95) 100%);
+  padding: 14px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .2s, transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
+.stake-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 60px;
+  background: radial-gradient(ellipse at 50% -10%, rgba(244,216,138,.10), transparent 70%);
+  pointer-events: none;
+}
 
-/* History rows: compact poker-style */
-.history-row{ padding:8px 12px; }
-.history-avatars img{ width:28px; height:28px; }
-.history-info .duel-sub{ display:none !important; }
-.history-title-row{ gap:8px; }
-.history-right{
-  min-width:92px;
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  justify-content:center;
-  gap:6px;
+.stake-card:active { transform: scale(.97); }
+.stake-card.is-selected {
+  border-color: var(--gold-border);
+  box-shadow: 0 0 0 1px rgba(244,216,138,.12) inset,
+              0 8px 24px rgba(0,0,0,.3);
+}
+.stake-card.is-selected::before {
+  background: radial-gradient(ellipse at 50% -10%, rgba(244,216,138,.18), transparent 70%);
+}
+
+/* VIP card */
+.stake-card.stake-vip { opacity: .6; cursor: default; border-color: rgba(186,141,255,.2); }
+.stake-card.stake-vip::before {
+  background: radial-gradient(ellipse at 50% -10%, rgba(186,141,255,.12), transparent 70%);
+}
+
+/* Stake amount */
+.stake-amt {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -.5px;
+  color: var(--gold);
+  line-height: 1;
+}
+
+/* Fake gold text shimmer */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .stake-amt {
+    background: linear-gradient(90deg,
+      #d4a843 0%, #f4d88a 25%, #fff8d4 50%, #f4d88a 75%, #d4a843 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: goldShimmer 3s linear infinite;
+  }
+  .stake-card.stake-vip .stake-amt {
+    background: linear-gradient(90deg, #9b6edc, #c4a0ff, #9b6edc);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+@keyframes goldShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.stake-meta {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: -4px;
+}
+
+/* Live indicator */
+.stake-live {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.stake-live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(244,216,138,.5);
+  flex-shrink: 0;
+}
+.stake-live.is-on { color: var(--accent); }
+.stake-live.is-on .stake-live-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(45,212,191,.15);
+  animation: dotPulse 1.8s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); box-shadow: 0 0 0 5px rgba(45,212,191,.08); }
+}
+
+/* Badge overlay (HOT/LIVE/VIP) */
+.stake-badge {
+  position: absolute;
+  top: 10px; right: 10px;
+  display: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.stake-card.has-badge .stake-badge { display: block; }
+.badge-live { background: rgba(45,212,191,.15); border: 1px solid rgba(45,212,191,.3); color: #8ff3df; }
+.badge-hot { background: rgba(244,216,138,.15); border: 1px solid rgba(244,216,138,.35); color: var(--gold); }
+.badge-vip { background: rgba(186,141,255,.12); border: 1px solid rgba(186,141,255,.3); color: #c4a0ff; }
+
+/* Stake action buttons */
+.stake-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: auto;
+}
+.stake-actions .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-2);
+  background: rgba(255,255,255,.04);
+  color: var(--muted-2);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .12s;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.stake-actions .btn:active { transform: scale(.95); }
+.stake-actions .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.stake-actions .btn.primary {
+  background: rgba(244,216,138,.08);
+  border-color: rgba(244,216,138,.25);
+  color: var(--gold);
+}
+.stake-actions .btn.primary:active { background: rgba(244,216,138,.14); }
+
+/* Mode pill */
+.mode-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 0 2px;
+}
+.mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-2);
+  background: rgba(255,255,255,.04);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+}
+.mode-pill .tag {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(45,212,191,.3);
+  background: rgba(45,212,191,.10);
+  color: #8ff3df;
+  letter-spacing: .05em;
+}
+.mode-link {
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(255,255,255,.15);
+  padding-bottom: 1px;
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: inherit;
+}
+
+/* ═══════════════════════════════════════════════
+   REFRESH BUTTON
+═══════════════════════════════════════════════ */
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-2);
+  background: rgba(255,255,255,.04);
+  color: var(--muted-2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .15s, transform .12s;
+  font-family: inherit;
+}
+.btn-refresh:active { transform: scale(.95); background: rgba(255,255,255,.07); }
+
+/* ═══════════════════════════════════════════════
+   DUEL ITEMS — live list
+═══════════════════════════════════════════════ */
+.duels-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.duel-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color .15s, background .15s;
+  min-height: 64px;
+}
+.duel-item:active { background: var(--card-2); border-color: var(--border-2); }
+
+.duel-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.duel-avatars {
+  display: flex;
+  flex-shrink: 0;
+}
+.duel-avatars img {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--card-2);
+  border: 1px solid var(--border-2);
+}
+.duel-avatars img + img { margin-left: -10px; }
+.duel-avatars img.ph { opacity: .4; filter: saturate(.3); }
+
+.duel-info { min-width: 0; flex: 1; }
+.duel-title {
+  font-size: 14px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duel-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+.duel-id {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+}
+.wait {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.history-right .pill{ margin-left:0; }
+.wait::before { content: '⏱ '; opacity: .7; }
 
-/* archive: id + outcome in one line */
-.history-right-inline{
-  min-width:0;
-  flex-direction:row;
-  align-items:center;
-  justify-content:flex-end;
-  gap:8px;
-  white-space:nowrap;
+.duel-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
 }
-
-
-
-/* --- Live list refresh: без "прыжков" высоты --- */
-.duels-list{ position:relative; }
-.duels-list.is-loading{ }
-.duels-list.is-loading::after{
-  content:'';
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.05), transparent);
-  transform: translateX(-65%);
-  animation: listShine 1.25s linear infinite;
-}
-@keyframes listShine{
-  0%{ transform: translateX(-65%); }
-  100%{ transform: translateX(65%); }
-}
-.duel-item.skeleton{
-  height:64px;
-  border:1px solid var(--border);
-  border-radius:14px;
+.duel-actions .btn {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-2);
   background: rgba(255,255,255,.04);
-  overflow:hidden;
-  position:relative;
+  color: var(--muted-2);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .15s, transform .12s;
+  white-space: nowrap;
+  font-family: inherit;
 }
-.duel-item.skeleton::before{
-  content:'';
-  position:absolute;
-  inset:-40px -140px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
-  animation: listShine 1.35s linear infinite;
+.duel-actions .btn:active { transform: scale(.94); }
+.duel-actions .btn.primary {
+  background: rgba(244,216,138,.07);
+  border-color: rgba(244,216,138,.25);
+  color: var(--gold);
+}
+.duel-actions .btn.danger {
+  background: rgba(248,113,113,.07);
+  border-color: rgba(248,113,113,.25);
+  color: var(--bad);
+}
+.duel-actions .btn.ghost { color: var(--muted); }
+
+/* Skeleton loading */
+.duel-item.skeleton {
+  height: 64px;
+  background: rgba(255,255,255,.03);
+  border-color: var(--border);
+  overflow: hidden;
+  position: relative;
+  cursor: default;
+}
+.duel-item.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.04), transparent);
+  animation: skeletonShine 1.4s linear infinite;
+}
+@keyframes skeletonShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.empty-state-icon {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 8px;
+  opacity: .5;
+}
+
+/* ═══════════════════════════════════════════════
+   MY DUELS TABS
+═══════════════════════════════════════════════ */
+.myduels-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+.myduels-tabs button {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.03);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all .18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-family: inherit;
+}
+.myduels-tabs button.is-active {
+  color: var(--text);
+  border-color: rgba(45,212,191,.3);
+  background: rgba(45,212,191,.08);
+}
+.cnt {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  font-size: 10px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.myduels-tabs button.is-active .cnt { background: rgba(45,212,191,.2); }
+
+.myduels-pane { display: none; }
+.myduels-pane.is-active { display: block; }
+
+/* ═══════════════════════════════════════════════
+   HISTORY ROWS
+═══════════════════════════════════════════════ */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color .15s, background .15s;
+}
+.history-item:active { background: var(--card-2); }
+
+.history-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.history-avatars { display: flex; flex-shrink: 0; }
+.history-avatars img {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--card-2);
+  border: 1px solid var(--border-2);
+}
+.history-avatars img + img { margin-left: -8px; }
+
+.history-info { min-width: 0; flex: 1; }
+.history-title {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.pill.win { color: var(--good); border-color: rgba(52,211,153,.3); background: rgba(52,211,153,.06); }
+.pill.lose { color: var(--bad); border-color: rgba(248,113,113,.3); background: rgba(248,113,113,.06); }
+.pill.cancel { color: var(--muted); background: rgba(255,255,255,.04); }
+.pill-id { color: var(--muted); background: rgba(255,255,255,.04); font-size: 11px; }
+
+/* Mini header inside lists */
+.mini-hdr {
+  padding: 4px 2px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mini-hdr strong { color: var(--muted-2); font-size: 12px; text-transform: none; letter-spacing: 0; }
+.mini-hdr .note { opacity: .75; font-size: 10px; text-transform: none; letter-spacing: 0; }
+
+/* ═══════════════════════════════════════════════
+   LOTTERY HUB
+═══════════════════════════════════════════════ */
+.lot-hero {
+  border-radius: var(--radius);
+  border: 1px solid rgba(45,212,191,.15);
+  background: linear-gradient(135deg, rgba(18,36,56,.8), rgba(11,22,33,.6));
+  padding: 16px;
+  margin-bottom: 10px;
+}
+.lot-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(45,212,191,.1);
+  border: 1px solid rgba(45,212,191,.3);
+  color: rgba(167,243,208,1);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.lot-hero-title { font-size: 20px; font-weight: 900; margin-bottom: 6px; }
+.lot-hero-sub { font-size: 13px; color: var(--muted-2); line-height: 1.45; margin-bottom: 12px; }
+.lot-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.06);
+  margin-bottom: 6px;
+}
+.lot-progress-fill {
+  height: 100%;
+  width: 34%;
+  background: linear-gradient(90deg, rgba(34,211,238,.9), rgba(52,211,153,.9));
+  border-radius: 999px;
+}
+.lot-meta { font-size: 12px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.lot-meta b { color: var(--muted-2); }
+
+.lot-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(244,216,138,.25);
+  background: rgba(244,216,138,.07);
+  color: rgba(244,216,138,.4);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: not-allowed;
+  font-family: inherit;
+}
+
+.lot-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.lot-tabs button {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.03);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all .18s;
+  font-family: inherit;
+}
+.lot-tabs button.is-active {
+  color: var(--text);
+  border-color: rgba(45,212,191,.3);
+  background: rgba(45,212,191,.08);
+}
+.lot-pane { display: none; }
+.lot-pane.is-active { display: block; }
+
+.lot-empty-box {
+  padding: 20px 16px;
+  border-radius: var(--radius);
+  border: 1px dashed rgba(255,255,255,.10);
+  background: rgba(255,255,255,.02);
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.lot-empty-box .title { font-weight: 800; color: var(--muted-2); margin-bottom: 6px; font-size: 14px; }
+
+.lot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+.lot-chip {
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lot-chip-label { font-size: 10px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.lot-chip-title { font-size: 14px; font-weight: 800; }
+.lot-chip-sub { font-size: 11px; color: var(--muted); }
+.lot-chip-btn {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-2);
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.25);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: not-allowed;
+  font-family: inherit;
+}
+
+/* PF info card */
+.info-card {
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--card);
+  margin-top: 10px;
+}
+.info-card h3 { font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.info-card p { font-size: 13px; color: var(--muted-2); line-height: 1.5; }
+
+/* ═══════════════════════════════════════════════
+   STAT STRIP — вверху раздела Ставки
+═══════════════════════════════════════════════ */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.stat-chip {
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--card);
+  text-align: center;
+}
+.stat-chip .v {
+  font-size: 16px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.stat-chip .t {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 700;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL — bottom sheet on mobile
+═══════════════════════════════════════════════ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 200;
+  display: none;
+  align-items: flex-end; /* bottom sheet */
+  justify-content: center;
+  padding: 12px;
+  padding-bottom: calc(12px + var(--safe-bottom));
+}
+.modal-backdrop.show { display: flex; }
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 20px 20px 16px 16px;
+  border: 1px solid var(--border-2);
+  background: #0e1320;
+  box-shadow: 0 -20px 60px rgba(0,0,0,.5);
+  overflow: hidden;
+  animation: slideUp .28s cubic-bezier(.34,1.4,.64,1);
+}
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Drag handle */
+.modal::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,.15);
+  margin: 10px auto 0;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title { font-size: 16px; font-weight: 800; }
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-2);
+  background: rgba(255,255,255,.06);
+  color: var(--muted-2);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+.modal-body { padding: 14px 16px; }
+
+.kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  font-size: 14px;
+}
+.kv .k { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.kv .v { font-weight: 700; overflow-wrap: anywhere; }
+
+.modal-foot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Seg tabs in modal */
+.seg {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 8px 0 14px;
+}
+.seg button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-2);
+  background: rgba(255,255,255,.04);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all .15s;
+  font-family: inherit;
+}
+.seg button.is-active {
+  color: var(--text);
+  border-color: var(--gold-border);
+  background: rgba(244,216,138,.08);
+}
+.mode-pane { display: none; }
+.mode-pane.is-active { display: block; }
+
+.field { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.field label { font-size: 12px; color: var(--muted); font-weight: 700; }
+.field input, .field select {
+  padding: 11px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-2);
+  background: rgba(0,0,0,.3);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  -webkit-appearance: none;
+}
+.field input:focus, .field select:focus { border-color: rgba(244,216,138,.4); }
+
+.badge-soon {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(248,113,113,.3);
+  background: rgba(248,113,113,.07);
+  color: #fca5a5;
+  font-size: 10px;
+  font-weight: 900;
+  margin-left: 5px;
+}
+
+.modal-foot-actions {
+  display: flex;
+  gap: 8px;
+}
+.modal-foot-actions .btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-2);
+  background: rgba(255,255,255,.04);
+  color: var(--muted-2);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+  transition: background .15s, transform .12s;
+  text-align: center;
+}
+.modal-foot-actions .btn:active { transform: scale(.97); }
+.modal-foot-actions .btn.primary {
+  background: rgba(244,216,138,.08);
+  border-color: var(--gold-border);
+  color: var(--gold);
+}
+
+/* ═══════════════════════════════════════════════
+   COIN OVERLAY
+═══════════════════════════════════════════════ */
+.coin-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+}
+.coin-overlay.show { display: flex; }
+.coin-label {
+  font-size: 18px;
+  font-weight: 800;
+  text-align: center;
+  padding: 0 24px;
+}
+.coin {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,215,0,.5);
+  background: radial-gradient(circle at 32% 30%, rgba(255,215,0,.9), rgba(180,130,0,.6));
+  box-shadow: 0 0 30px rgba(255,200,0,.2), inset 0 0 20px rgba(255,255,255,.15);
+  animation: coinFlip 1s linear infinite;
+}
+@keyframes coinFlip {
+  0% { transform: rotateY(0deg) scale(1); }
+  25% { transform: rotateY(90deg) scale(.9); }
+  50% { transform: rotateY(180deg) scale(1); }
+  75% { transform: rotateY(270deg) scale(.9); }
+  100% { transform: rotateY(360deg) scale(1); }
+}
+.coin-sub { font-size: 14px; color: var(--muted-2); text-align: center; }
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tab-h) + var(--safe-bottom) + 12px);
+  transform: translateX(-50%);
+  background: #1a2035;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  max-width: min(400px, calc(100vw - 28px));
+  width: max-content;
+  box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  z-index: 250;
+  display: none;
+  animation: toastIn .22s ease;
+  pointer-events: none;
+}
+.toast.show { display: block; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.toast .t { font-weight: 800; font-size: 13px; }
+.toast .b { color: var(--muted-2); font-size: 12px; margin-top: 2px; }
+
+/* ═══════════════════════════════════════════════
+   DESKTOP ADJUSTMENTS (≥640px)
+═══════════════════════════════════════════════ */
+@media (min-width: 640px) {
+  .hdr-name { display: block; }
+
+  .stakes-scroll {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    overflow-x: visible;
+    margin: 0;
+    padding: 0;
+  }
+  .stake-card { width: auto; }
+
+  .modal-backdrop { align-items: center; }
+  .modal { border-radius: 20px; max-width: 480px; }
+  .modal::before { display: none; }
+
+  .stat-strip { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 900px) {
+  :root { --hdr-h: 62px; --tab-h: 0px; }
+
+  body { padding-bottom: 0; }
+
+  /* Show desktop sidebar instead of bottom tab bar */
+  .tab-bar { display: none; }
+
+  /* Desktop layout: sidebar + main */
+  .page-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px 20px;
+    align-items: start;
+  }
+  .wrap { padding: 0; max-width: none; }
+
+  .desktop-sidebar {
+    display: block;
+    position: sticky;
+    top: calc(var(--hdr-h) + 12px);
+  }
+  .sidebar-card {
+    padding: 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--card);
+    margin-bottom: 10px;
+  }
+  .sidebar-title { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 10px; }
+  .sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    color: var(--muted-2);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all .15s;
+  }
+  .sidebar-link:hover { background: rgba(255,255,255,.04); color: var(--text); }
+  .sidebar-link.is-active { background: rgba(45,212,191,.08); border-color: rgba(45,212,191,.2); color: var(--accent); }
+  .sidebar-link .badge { font-size: 11px; color: var(--muted); font-weight: 700; }
+
+  .stakes-scroll {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 899px) {
+  .desktop-sidebar { display: none; }
+  .page-layout { display: block; padding: 0; }
+}
+
+/* ═══════════════════════════════════════════════
+   ACCESSIBILITY
+═══════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════
+     HEADER
+══════════════════════════════════ -->
 <header class="hdr">
-<div class="hdr-left">
-<a class="btn hdr-back" href="/index.html" title="На главную">
-<span aria-hidden="true">←</span>
-<span class="label">На главную</span>
-</a>
-<div aria-label="GGROOM" class="hdr-brand">
-<span class="gg">GG</span><span class="room">ROOM</span>
-</div>
-<div class="hdr-title">Лобби</div>
-</div>
-<nav aria-label="Навигация" class="hdr-nav">
-<div class="hdr-nav-group" data-group="duels">
-<span class="hdr-nav-label">Дуэли</span>
-<a class="is-active" href="#stakes">Ставки</a>
-<a href="#live">Live</a>
-<a href="#archive">Архив</a>
-</div>
-<div class="hdr-nav-group" data-group="lottery">
-<span class="hdr-nav-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</span>
-<a href="#lottery">Розыгрыши</a>
-</div>
-</nav>
-<div class="hdr-right">
-<div class="hdr-minis" aria-label="Быстрые действия">
-  <button class="mini-tile" id="mini-cashier" type="button" title="Касса">
-    <svg class="mini-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v10H4z"/><path d="M7 10h3v4H7zM14 10h3v4h-3z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 5h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-    <span class="mini-lbl">Касса</span>
-  </button>
-  <a class="mini-tile" href="#stakes" data-mini="duels" title="Дуэли">
-    <svg class="mini-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17l10-10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6.5 7.5c2-2 5-2 7 0s2 5 0 7-5 2-7 0-2-5 0-7z" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".9"/></svg>
-    <span class="mini-lbl">Дуэли</span>
+  <a class="hdr-brand" href="/index.html" aria-label="GG Room — на главную">
+    <span class="gg">GG</span><span class="room">ROOM</span>
   </a>
-  <a class="mini-tile" href="#lottery" data-mini="lottery" title="Розыгрыши">
-    <svg class="mini-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12v12H6z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v12" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 6c0 1.7 1.3 2 3 2s3-.3 3-2-1.3-2-3-2-3 .3-3 2z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
-    <span class="mini-lbl">Розыгрыши</span>
-  </a>
-</div>
-<span class="pill" id="user-balance">
-      ₿ <span class="balance-amount" data-balance="">0</span>
-</span>
-<a class="btn primary" href="#" id="topup-btn" title="Пополнить баланс">Пополнить</a>
-<button class="btn ghost" id="link-tg" style="display:none" type="button">Связать Telegram</button>
-<button class="btn ghost" id="link-vk" style="display:none" type="button">Связать ВКонтакте</button>
-<div class="hdr-user">
-<img alt="avatar" id="user-avatar" referrerpolicy="no-referrer" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' rx='40' fill='%23222'/%3E%3Ctext x='40' y='48' text-anchor='middle' font-size='28' fill='%23aaa' font-family='Arial'%3EGG%3C/text%3E%3C/svg%3E"/>
-<div class="name">
-<strong id="user-name-text">Гость</strong>
-<span>Профиль</span>
-</div>
-</div>
-</div>
+
+  <div class="hdr-right">
+    <!-- balance chip — клик открывает топап -->
+    <div class="hdr-balance" id="user-balance" role="button" tabindex="0" aria-label="Баланс">
+      <span class="hdr-balance-icon">₽</span>
+      <span class="hdr-balance-amount"><span class="balance-amount" data-balance="">0</span></span>
+      <span class="hdr-balance-label">баланс</span>
+    </div>
+
+    <button class="btn-topup" id="topup-btn" aria-label="Пополнить баланс">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      <span>Пополнить</span>
+    </button>
+
+    <!-- link buttons (hidden, shown by JS) -->
+    <button class="btn-topup" id="link-tg" style="display:none" type="button">Telegram</button>
+    <button class="btn-topup" id="link-vk" style="display:none" type="button">ВКонтакте</button>
+
+    <img class="hdr-avatar" alt="Аватар" id="user-avatar"
+      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' rx='40' fill='%23222'/%3E%3Ctext x='40' y='48' text-anchor='middle' font-size='28' fill='%23aaa' font-family='Arial'%3EGG%3C/text%3E%3C/svg%3E"
+      referrerpolicy="no-referrer"/>
+    <span class="hdr-name" id="user-name-text">Гость</span>
+  </div>
 </header>
-<div class="wrap">
-<div class="layout">
-<aside aria-label="Боковая панель" class="sidebar">
-<div class="card side-card">
-<h3 class="side-title">Навигация</h3>
-<nav class="side-nav">
-<div class="side-group">
-<div class="side-label">Дуэли</div>
-<a class="side-link" href="#stakes">Ставки <span>создать</span></a>
-<a class="side-link" href="#live">Live <span>комнаты</span></a>
-<a class="side-link" href="#archive">Архив <span>история</span></a>
-</div>
-<div class="side-group">
-<div class="side-label is-click" data-hash="#lottery" role="link" tabindex="0">Розыгрыши</div>
-<a class="side-link" href="#lottery">Розыгрыши <span>призы</span></a>
-<div class="side-sub" id="lottery-subnav" style="display:none">
-<a data-lot-jump="active" href="#lottery"><span>раздел</span> Активные</a>
-<a data-lot-jump="archive" href="#lottery"><span>раздел</span> Архив</a>
-<a data-lot-jump="mine" href="#lottery"><span>раздел</span> Мои билеты</a>
-</div>
-</div>
+
+<!-- ══════════════════════════════════
+     PAGE LAYOUT
+══════════════════════════════════ -->
+<div class="page-layout">
+
+  <!-- Desktop sidebar -->
+  <aside class="desktop-sidebar" aria-label="Навигация">
+    <div class="sidebar-card">
+      <div class="sidebar-title">Дуэли</div>
+      <nav class="sidebar-nav">
+        <a class="sidebar-link is-active" href="#stakes" data-nav="stakes">
+          Ставки <span class="badge">создать</span>
+        </a>
+        <a class="sidebar-link" href="#live" data-nav="live">
+          Live <span class="badge" id="sb-live-cnt">—</span>
+        </a>
+        <a class="sidebar-link" href="#archive" data-nav="archive">
+          Мои дуэли <span class="badge" id="sb-archive-cnt">—</span>
+        </a>
+      </nav>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-title">Разделы</div>
+      <nav class="sidebar-nav">
+        <a class="sidebar-link" href="#lottery" data-nav="lottery">
+          Розыгрыши <span class="badge">скоро</span>
+        </a>
+      </nav>
+    </div>
+    <div class="sidebar-card">
+      <div class="sidebar-title">Provably Fair</div>
+      <p style="font-size:12px;color:var(--muted-2);line-height:1.5">
+        Каждая дуэль: commit → reveal → winner. Seed/nonce/commit видны в карточке.
+      </p>
+    </div>
+    <div class="sidebar-card" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="stat-chip"><div class="v" id="kpi-open">—</div><div class="t">Открытых</div></div>
+      <div class="stat-chip"><div class="v" id="kpi-myopen">—</div><div class="t">Моих open</div></div>
+      <div class="stat-chip"><div class="v" id="kpi-history">—</div><div class="t">Архив</div></div>
+      <div class="stat-chip"><div class="v" id="kpi-links">—</div><div class="t">Связи</div></div>
+    </div>
+  </aside>
+
+  <!-- Main scroll -->
+  <main class="wrap" aria-label="Основной контент">
+
+    <!-- ── HUB: STAKES ───────────────────────────── -->
+    <section class="hub is-active" id="hub-stakes" aria-label="Ставки">
+
+      <div class="welcome" id="welcome-card">
+        <div class="welcome-text">Добро пожаловать в лобби</div>
+        <p id="provider-note" class="welcome-sub"></p>
+      </div>
+
+      <!-- Stats strip (mobile only) -->
+      <div class="stat-strip" aria-label="Статистика" id="mobile-stats">
+        <div class="stat-chip"><div class="v" id="m-kpi-open">—</div><div class="t">Открытых</div></div>
+        <div class="stat-chip"><div class="v" id="m-kpi-myopen">—</div><div class="t">Моих</div></div>
+        <div class="stat-chip"><div class="v" id="m-kpi-history">—</div><div class="t">Архив</div></div>
+        <div class="stat-chip"><div class="v" id="m-kpi-links">—</div><div class="t">Связи</div></div>
+      </div>
+
+      <div class="section-hd">
+        <span class="section-title">Дуэли 1v1</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="mode-pill" id="create-mode-pill"><span class="tag">1v1</span> Публичная</span>
+          <button class="mode-link" id="create-mode-btn" aria-label="Настройки режима" type="button">⚙</button>
+        </div>
+      </div>
+
+      <div class="muted" style="font-size:12px;margin-bottom:10px;padding:0 2px">
+        Выбери ставку → создай комнату → дождись соперника. Coinflip определяет победителя.
+      </div>
+
+      <!-- Stake cards — horizontal scroll on mobile -->
+      <div class="stakes-scroll" aria-label="Ставки" role="list">
+
+        <div class="stake-card is-selected" data-stake="100" role="listitem">
+          <div class="stake-badge" aria-hidden="true"></div>
+          <div class="stake-amt">₽100</div>
+          <div class="stake-meta">pot ₽200 · fee ~₽10</div>
+          <div class="stake-live"><span class="stake-live-dot"></span><span>Открытых: <b data-open-count="100">—</b></span></div>
+          <div class="stake-actions">
+            <button class="btn primary" data-action="quick" data-stake="100" type="button">Быстрый</button>
+            <button class="btn" data-action="create" data-stake="100" type="button">Создать</button>
+          </div>
+        </div>
+
+        <div class="stake-card" data-stake="250" role="listitem">
+          <div class="stake-badge" aria-hidden="true"></div>
+          <div class="stake-amt">₽250</div>
+          <div class="stake-meta">pot ₽500 · fee ~₽25</div>
+          <div class="stake-live"><span class="stake-live-dot"></span><span>Открытых: <b data-open-count="250">—</b></span></div>
+          <div class="stake-actions">
+            <button class="btn primary" data-action="quick" data-stake="250" type="button">Быстрый</button>
+            <button class="btn" data-action="create" data-stake="250" type="button">Создать</button>
+          </div>
+        </div>
+
+        <div class="stake-card" data-stake="500" role="listitem">
+          <div class="stake-badge" aria-hidden="true"></div>
+          <div class="stake-amt">₽500</div>
+          <div class="stake-meta">pot ₽1 000 · fee ~₽50</div>
+          <div class="stake-live"><span class="stake-live-dot"></span><span>Открытых: <b data-open-count="500">—</b></span></div>
+          <div class="stake-actions">
+            <button class="btn primary" data-action="quick" data-stake="500" type="button">Быстрый</button>
+            <button class="btn" data-action="create" data-stake="500" type="button">Создать</button>
+          </div>
+        </div>
+
+        <div class="stake-card" data-stake="1000" role="listitem">
+          <div class="stake-badge" aria-hidden="true"></div>
+          <div class="stake-amt">₽1 000</div>
+          <div class="stake-meta">pot ₽2 000 · fee ~₽100</div>
+          <div class="stake-live"><span class="stake-live-dot"></span><span>Открытых: <b data-open-count="1000">—</b></span></div>
+          <div class="stake-actions">
+            <button class="btn primary" data-action="quick" data-stake="1000" type="button">Быстрый</button>
+            <button class="btn" data-action="create" data-stake="1000" type="button">Создать</button>
+          </div>
+        </div>
+
+        <div class="stake-card" data-stake="2500" role="listitem">
+          <div class="stake-badge" aria-hidden="true"></div>
+          <div class="stake-amt">₽2 500</div>
+          <div class="stake-meta">pot ₽5 000 · fee ~₽250</div>
+          <div class="stake-live"><span class="stake-live-dot"></span><span>Открытых: <b data-open-count="2500">—</b></span></div>
+          <div class="stake-actions">
+            <button class="btn primary" data-action="quick" data-stake="2500" type="button">Быстрый</button>
+            <button class="btn" data-action="create" data-stake="2500" type="button">Создать</button>
+          </div>
+        </div>
+
+        <div class="stake-card stake-vip" data-disabled="1" data-stake="vip" role="listitem" aria-label="VIP — скоро">
+          <div class="stake-badge badge-vip has-badge" aria-hidden="true">VIP</div>
+          <div class="stake-amt">VIP</div>
+          <div class="stake-meta">Особые условия · приватные дуэли · скоро</div>
+          <div class="stake-live"><span class="stake-live-dot"></span><span>Открытых: <b data-open-count="vip">—</b></span></div>
+          <div class="stake-actions">
+            <button class="btn primary" disabled type="button">Скоро</button>
+            <button class="btn" disabled type="button">Создать</button>
+          </div>
+        </div>
+
+      </div><!-- /stakes-scroll -->
+
+      <div class="mode-row">
+        <span class="muted" style="font-size:12px">Режим:</span>
+        <button class="mode-link" id="create-mode-link" type="button">изменить</button>
+      </div>
+
+    </section>
+
+    <!-- ── HUB: LIVE ─────────────────────────────── -->
+    <section class="hub" id="hub-live" aria-label="Активные дуэли">
+      <div class="section-hd" id="live">
+        <span class="section-title">Live — открытые комнаты</span>
+        <button class="btn-refresh" id="duels-refresh" type="button" aria-label="Обновить список">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          Обновить
+        </button>
+      </div>
+      <div class="duels-list" id="duels-list">
+        <div class="muted" style="font-size:13px;padding:8px 2px">Загружаю комнаты…</div>
+      </div>
+    </section>
+
+    <!-- ── HUB: ARCHIVE / MY DUELS ───────────────── -->
+    <section class="hub" id="hub-archive" aria-label="Мои дуэли">
+      <div class="section-hd" id="archive">
+        <span class="section-title">Мои дуэли</span>
+      </div>
+
+      <div class="myduels-tabs" role="tablist" aria-label="Мои дуэли">
+        <button class="is-active" data-myduels-tab="active" type="button" role="tab" aria-selected="true">
+          Активные <span class="cnt" id="myduels-count-active">0</span>
+        </button>
+        <button data-myduels-tab="created" type="button" role="tab" aria-selected="false">
+          Созданные <span class="cnt" id="myduels-count-created">0</span>
+        </button>
+        <button data-myduels-tab="archive" type="button" role="tab" aria-selected="false">
+          Архив <span class="cnt" id="myduels-count-archive">0</span>
+        </button>
+      </div>
+
+      <div class="myduels-pane is-active" id="myduels-pane-active">
+        <div class="duels-list" id="myduels-active-list">
+          <div class="muted" style="font-size:13px;padding:8px 2px">Загружаю…</div>
+        </div>
+      </div>
+      <div class="myduels-pane" id="myduels-pane-created">
+        <div id="myduels-created-list">
+          <div class="muted" style="font-size:13px;padding:8px 2px">Загружаю…</div>
+        </div>
+      </div>
+      <div class="myduels-pane" id="myduels-pane-archive">
+        <div class="history-list" id="history-list">
+          <div class="muted" style="font-size:13px;padding:8px 2px">Загружаю историю…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── HUB: LOTTERY ──────────────────────────── -->
+    <section class="hub" id="hub-lottery" aria-label="Розыгрыши">
+      <div class="section-hd" id="lottery">
+        <span class="section-title">Розыгрыши</span>
+        <span class="pill">Скоро</span>
+      </div>
+
+      <div class="lot-hero">
+        <div class="lot-hero-badge">● РОЗЫГРЫШ НЕДЕЛИ</div>
+        <div class="lot-hero-title">iPhone 17 Pro</div>
+        <div class="lot-hero-sub">Билеты от ₽100 · механика билетов подключится позже — сейчас UI</div>
+        <div class="lot-progress-bar"><div class="lot-progress-fill"></div></div>
+        <div class="lot-meta">
+          <span>Продано: <b>340 / 1000</b></span>
+          <span>Банк: <b>₽34 000</b></span>
+          <span>Финиш: <b>скоро</b></span>
+        </div>
+        <button class="lot-btn" disabled type="button">Купить билет (soon)</button>
+      </div>
+
+      <div class="lot-tabs" role="tablist">
+        <button class="is-active" data-lot-tab="active" type="button">Активные</button>
+        <button data-lot-tab="archive" type="button">Архив</button>
+        <button data-lot-tab="mine" type="button">Мои билеты</button>
+      </div>
+
+      <div class="lot-pane is-active" data-lot-pane="active">
+        <div class="lot-grid">
+          <div class="lot-chip">
+            <div class="lot-chip-label">Розыгрыш</div>
+            <div class="lot-chip-title">iPhone 17 Pro</div>
+            <div class="lot-chip-sub">Билеты · таймер</div>
+            <button class="lot-chip-btn" disabled type="button">Скоро</button>
+          </div>
+          <div class="lot-chip">
+            <div class="lot-chip-label">Розыгрыш</div>
+            <div class="lot-chip-title">Largus</div>
+            <div class="lot-chip-sub">Билеты · таймер</div>
+            <button class="lot-chip-btn" disabled type="button">Скоро</button>
+          </div>
+          <div class="lot-chip">
+            <div class="lot-chip-label">Розыгрыш</div>
+            <div class="lot-chip-title">Денежный приз</div>
+            <div class="lot-chip-sub">Билеты · таймер</div>
+            <button class="lot-chip-btn" disabled type="button">Скоро</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="lot-pane" data-lot-pane="archive">
+        <div class="lot-empty-box">
+          <div class="title">Архив розыгрышей</div>
+          Пока пуст. UI готов — данные появятся после подключения механики.
+        </div>
+      </div>
+
+      <div class="lot-pane" data-lot-pane="mine">
+        <div class="lot-empty-box">
+          <div class="title">Мои билеты</div>
+          История билетов: куплено, статус, выигрыш — скоро.
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>Честность розыгрышей</h3>
+        <p>Прозрачные правила, публичные результаты и проверяемый механизм выбора победителя (аналог provably fair).</p>
+      </div>
+    </section>
+
+  </main>
+</div><!-- /page-layout -->
+
+<!-- ══════════════════════════════════
+     BOTTOM TAB BAR
+══════════════════════════════════ -->
+<nav class="tab-bar" aria-label="Навигация">
+
+  <button class="tab-item is-active" data-tab="stakes" type="button" aria-label="Ставки">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+      <path d="M3 9h18M9 21V9"/>
+    </svg>
+    <span class="tab-label">Ставки</span>
+  </button>
+
+  <button class="tab-item" data-tab="live" type="button" aria-label="Live дуэли">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/>
+    </svg>
+    <span class="tab-label">Live</span>
+    <span class="tab-badge" id="tab-live-badge"></span>
+  </button>
+
+  <button class="tab-item" data-tab="archive" type="button" aria-label="Мои дуэли">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+      <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </svg>
+    <span class="tab-label">Мои</span>
+    <span class="tab-badge" id="tab-archive-badge"></span>
+  </button>
+
+  <button class="tab-item" data-tab="lottery" type="button" aria-label="Розыгрыши">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+      <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/>
+      <path d="M12 22V7"/>
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+    </svg>
+    <span class="tab-label">Призы</span>
+  </button>
+
 </nav>
-</div>
-<div class="card side-card" style="margin-top:14px">
-<h3 class="side-title">Подсказка</h3>
-<div class="muted" style="font-size:13px; line-height:1.45">
-            Выбирай ставку → создай комнату → дождись соперника.
-            Победителя определяет coinflip. Детали дуэли можно открыть по клику в истории.
-          </div>
-</div>
-</aside>
-<main aria-label="Основной контент" class="main">
-<div class="grid">
-<div id="hub-duels">
-<div class="card welcome-card" id="welcome-card">
-<p style="margin:0">Добро пожаловать в лобби.</p>
-<p id="provider-note" style="margin:8px 0 0; color:var(--muted)"></p>
+
+<!-- ══════════════════════════════════
+     MODALS
+══════════════════════════════════ -->
+
+<!-- Duel details modal -->
+<div class="modal-backdrop" id="duel-modal" role="dialog" aria-modal="true" aria-label="Детали дуэли">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="duel-modal-title">Дуэль</div>
+      <button class="modal-close" id="duel-modal-close" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="kv" id="duel-modal-kv"></div>
+    </div>
+  </div>
 </div>
 
-<!-- Path A (mobile-first): компактная навигация под welcome, вместо сайдбара -->
-<div class="card" id="mobile-nav-card">
-  <div class="mnav">
-    <details id="mnav-details">
-      <summary>
-        <span>Навигация</span>
-        <span class="path" id="mnav-path">Дуэли · Ставки</span>
-        <span class="chev">▾</span>
-      </summary>
-      <div class="body">
-        <div class="grp">
-          <div class="lbl">Дуэли</div>
-          <div class="links">
-            <a class="a" href="#stakes" data-mnav="stakes">Ставки</a>
-            <a class="a" href="#live" data-mnav="live">Live</a>
-            <a class="a" href="#archive" data-mnav="archive">Архив</a>
-          </div>
-        </div>
+<!-- Create mode modal -->
+<div class="modal-backdrop" id="create-modal" role="dialog" aria-modal="true" aria-label="Создать комнату">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Создать комнату</div>
+      <button class="modal-close" id="create-modal-close" type="button" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="muted" style="font-size:13px;line-height:1.4;margin-bottom:4px">
+        Сейчас работает только <b>публичная дуэль 1v1</b> — остальные режимы на подходе.
+      </div>
+      <div class="seg" role="tablist" aria-label="Режим комнаты">
+        <button class="is-active" data-mode="duel_1v1_public" type="button">1v1</button>
+        <button data-mode="duel_invite" type="button">Invite <span class="badge-soon">soon</span></button>
+        <button data-mode="duel_multi" type="button">3/6/10 <span class="badge-soon">soon</span></button>
+      </div>
 
-        <div class="grp" style="margin-top:12px">
-          <div class="lbl">Розыгрыши</div>
-          <div class="links">
-            <a class="a is-warn" href="#lottery" data-lot-jump="active">Активные</a>
-            <a class="a is-warn" href="#lottery" data-lot-jump="archive">Архив</a>
-            <a class="a is-warn" href="#lottery" data-lot-jump="mine">Мои билеты</a>
-          </div>
+      <div class="mode-pane is-active" data-pane="duel_1v1_public">
+        <div style="font-weight:800;font-size:14px">Публичная дуэль 1v1</div>
+        <div class="muted" style="font-size:13px;margin-top:6px;line-height:1.4">
+          Комната попадёт в Live. Победитель — coinflip. Детали в карточке дуэли.
         </div>
       </div>
-    </details>
-  </div>
-</div>
-<div class="card" id="duels-card">
-<div class="duels-head" id="stakes">
-<h2 style="margin:0">Дуэли 1v1</h2>
-<div class="right">
-<button class="btn" id="duels-refresh" type="button">Обновить</button>
-</div>
-</div>
-<div class="duels-create">
-<div class="muted" style="font-size:13px">
-            Создай комнату со ставкой — второй игрок заходит, и система честно кидает монету (coinflip).
-          </div>
-<div class="stakes-head">
-<div class="muted" style="font-size:13px">Выбери ставку</div>
-<div class="stakes-head-right">
-<span class="mode-pill" id="create-mode-pill"><span class="tag">1v1</span> Публичная дуэль</span>
-<button aria-label="Режим комнаты" class="btn ghost icon" id="create-mode-btn" title="Режим комнаты" type="button">⚙</button>
-</div>
-</div>
-<div aria-label="Ставки" class="stakes">
-<div class="stake-card is-selected" data-stake="100">
-<div aria-hidden="true" class="stake-badge"></div>
-<div class="stake-left">
-<div class="stake-top">
-  <div class="stake-top-left">
-    <span class="amt amt-gold">₽100</span><span class="comma">,</span>
-    <span class="meta">pot ₽200 • fee ~₽10</span>
-  </div>
-  <div class="stake-top-right">
-    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="100">—</b></span>
-  </div>
-</div>
-<div class="stake-actions">
-<button class="btn primary" data-action="quick" data-stake="100" type="button">Быстрый матч</button>
-<button class="btn ghost" data-action="create" data-stake="100" type="button">Создать</button>
-</div>
-</div>
-<div aria-hidden="true" class="stake-ill">
-<picture>
-  <source srcset="/assets/stakes/stake-100.webp" type="image/webp"/>
-  <img alt="" loading="lazy" src="/assets/stakes/stake-100.png"/>
-</picture>
-</div>
-</div>
-<div class="stake-card" data-stake="250">
-<div aria-hidden="true" class="stake-badge"></div>
-<div class="stake-left">
-<div class="stake-top">
-  <div class="stake-top-left">
-    <span class="amt amt-gold">₽250</span><span class="comma">,</span>
-    <span class="meta">pot ₽500 • fee ~₽25</span>
-  </div>
-  <div class="stake-top-right">
-    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="250">—</b></span>
-  </div>
-</div>
-<div class="stake-actions">
-<button class="btn primary" data-action="quick" data-stake="250" type="button">Быстрый матч</button>
-<button class="btn ghost" data-action="create" data-stake="250" type="button">Создать</button>
-</div>
-</div>
-<div aria-hidden="true" class="stake-ill">
-<picture>
-  <source srcset="/assets/stakes/stake-250.webp" type="image/webp"/>
-  <img alt="" loading="lazy" src="/assets/stakes/stake-250.png"/>
-</picture>
-</div>
-</div>
-<div class="stake-card has-shine" data-stake="500">
-<div aria-hidden="true" class="stake-badge"></div>
-<div class="stake-left">
-<div class="stake-top">
-  <div class="stake-top-left">
-    <span class="amt amt-gold">₽500</span><span class="comma">,</span>
-    <span class="meta">pot ₽1 000 • fee ~₽50</span>
-  </div>
-  <div class="stake-top-right">
-    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="500">—</b></span>
-  </div>
-</div>
-<div class="stake-actions">
-<button class="btn primary" data-action="quick" data-stake="500" type="button">Быстрый матч</button>
-<button class="btn ghost" data-action="create" data-stake="500" type="button">Создать</button>
-</div>
-</div>
-<div aria-hidden="true" class="stake-ill">
-<picture>
-  <source srcset="/assets/stakes/stake-500.webp" type="image/webp"/>
-  <img alt="" loading="lazy" src="/assets/stakes/stake-500.png"/>
-</picture>
-</div>
-</div>
-<div class="stake-card has-shine" data-stake="1000">
-<div aria-hidden="true" class="stake-badge"></div>
-<div class="stake-left">
-<div class="stake-top">
-  <div class="stake-top-left">
-    <span class="amt amt-gold">₽1 000</span><span class="comma">,</span>
-    <span class="meta">pot ₽2 000 • fee ~₽100</span>
-  </div>
-  <div class="stake-top-right">
-    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="1000">—</b></span>
-  </div>
-</div>
-<div class="stake-actions">
-<button class="btn primary" data-action="quick" data-stake="1000" type="button">Быстрый матч</button>
-<button class="btn ghost" data-action="create" data-stake="1000" type="button">Создать</button>
-</div>
-</div>
-<div aria-hidden="true" class="stake-ill">
-<picture>
-  <source srcset="/assets/stakes/stake-1000.webp" type="image/webp"/>
-  <img alt="" loading="lazy" src="/assets/stakes/stake-1000.png"/>
-</picture>
-</div>
-</div>
-<div class="stake-card has-shine" data-stake="2500">
-<div aria-hidden="true" class="stake-badge"></div>
-<div class="stake-left">
-<div class="stake-top">
-  <div class="stake-top-left">
-    <span class="amt amt-gold">₽2 500</span><span class="comma">,</span>
-    <span class="meta">pot ₽5 000 • fee ~₽250</span>
-  </div>
-  <div class="stake-top-right">
-    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="2500">—</b></span>
-  </div>
-</div>
-<div class="stake-actions">
-<button class="btn primary" data-action="quick" data-stake="2500" type="button">Быстрый матч</button>
-<button class="btn ghost" data-action="create" data-stake="2500" type="button">Создать</button>
-</div>
-</div>
-<div aria-hidden="true" class="stake-ill">
-<picture>
-  <source srcset="/assets/stakes/stake-2500.webp" type="image/webp"/>
-  <img alt="" loading="lazy" src="/assets/stakes/stake-2500.png"/>
-</picture>
-</div>
-</div>
-<div class="stake-card stake-vip" data-disabled="1" data-stake="vip">
-<div aria-hidden="true" class="stake-badge"></div>
-<div class="stake-left">
-<div class="stake-top">
-  <div class="stake-top-left">
-    <span class="amt amt-gold">VIP</span><span class="comma">,</span>
-    <span class="meta">Особые условия • приватные дуэли • скоро</span>
-  </div>
-  <div class="stake-top-right">
-    <span class="kpi"><span class="dot"></span>Открытых: <b data-open-count="vip">—</b></span>
-  </div>
-</div>
-<div class="stake-actions">
-<button class="btn primary" disabled="" type="button">Скоро</button>
-<button class="btn ghost" disabled="" type="button">Создать</button>
-</div>
-</div>
-<div aria-hidden="true" class="stake-ill">
-<picture>
-  <source srcset="/assets/stakes/stake-vip.webp" type="image/webp"/>
-  <img alt="" loading="lazy" src="/assets/stakes/stake-vip.png"/>
-</picture>
-</div>
-</div>
-</div>
-<div aria-label="Режим создания" class="mode-line">
-<span class="muted">Режим:</span>
-<a class="mode-link" href="#" id="create-mode-link">изменить</a>
-</div>
-<div class="hint" id="duels-hint">Комиссия сейчас фиксированная: 5% (пока только в логе). Скоро подключим «дом».</div>
-</div>
-<div class="section-title" id="live" style="margin-top:18px">
-<div class="h3">Активные дуэли (Live)</div>
-<div class="muted">открытые комнаты — ожидание соперника</div>
-</div>
-<div class="duels-list live-list" id="duels-list">
-<div class="muted">Загружаю комнаты…</div>
-</div>
-<div class="section-title" id="archive">
-<div class="h3">Мои дуэли</div>
-<div class="muted">созданные • активные • архив</div>
-</div>
-<div aria-label="Мои дуэли" class="myduels-tabs" role="tablist">
-<button class="is-active" data-myduels-tab="active" type="button">Активные <span class="cnt" id="myduels-count-active">0</span></button>
-<button data-myduels-tab="created" type="button">Созданные <span class="cnt" id="myduels-count-created">0</span></button>
-<button data-myduels-tab="archive" type="button">Архив <span class="cnt" id="myduels-count-archive">0</span></button>
-</div>
-<div class="myduels-pane is-active" id="myduels-pane-active">
-<div class="duels-list live-list" id="myduels-active-list">
-<div class="muted">Загружаю…</div>
-</div>
-</div>
-<div class="myduels-pane" id="myduels-pane-created">
-<div class="myduels-list" id="myduels-created-list">
-<div class="muted">Загружаю…</div>
-</div>
-</div>
-<div class="myduels-pane" id="myduels-pane-archive">
-<div class="history-list" id="history-list">
-<div class="muted">Загружаю историю…</div>
-</div>
-</div>
-</div>
-</div>
-<div id="hub-lottery" style="display:none">
-<div class="card" id="lottery-card" style="margin-top:14px">
-<div class="duels-head" id="lottery">
-<h2 style="margin:0">Розыгрыши</h2>
-<div class="right">
-<span class="pill" style="background:rgba(18,22,33,.55); border:1px solid var(--border); color:var(--muted); font-weight:800;">
-        Скоро
-      </span>
-</div>
-</div>
-<div class="muted" style="font-size:13px; margin-top:8px">
-    Розыгрыши — отдельный раздел GGRoom (айфон/авто/кеш и т.д.). Сейчас готовим UI и механику билетов.
-  </div>
-<div aria-label="Розыгрыши" class="seg lot-tabs" role="tablist">
-<button class="is-active" data-lot-tab="active" type="button">Активные</button>
-<button data-lot-tab="archive" type="button">Архив</button>
-<button data-lot-tab="mine" type="button">Мои билеты</button>
-</div>
-<div class="lot-pane is-active" data-lot-pane="active">
-<div aria-label="Активный розыгрыш (UI-заготовка)" class="lot-hero">
-<div class="left">
-<div class="badge">АКТИВНО • РОЗЫГРЫШ НЕДЕЛИ</div>
-<div class="title">iPhone 17 Pro</div>
-<div class="sub">Билеты от ₽100 • таймер и механика билетов подключим позже (сейчас — UI).</div>
-<div class="prog">
-<div class="bar"><div class="fill"></div></div>
-<div class="meta-line">
-<span>Продано: <b>340 / 1000</b></span>
-<span>Банк: <b>₽34 000</b></span>
-<span>Финиш: <b>скоро</b></span>
-</div>
-</div>
-</div>
-<div class="right">
-<div class="count">
-<div class="k">Ближайшее завершение</div>
-<div class="v">скоро</div>
-</div>
-<button class="btn primary" disabled="" style="opacity:.6; cursor:not-allowed" type="button">Купить билет (soon)</button>
-</div>
-</div>
-<div class="lotteries">
-<div aria-disabled="true" class="stake-chip lottery-card">
-<div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">iPhone</span></div>
-<div class="amt">iPhone 17 Pro</div>
-<div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
-<button class="btn ghost" disabled="" style="margin-top:10px; opacity:.6; cursor:not-allowed" type="button">Скоро</button>
-</div>
-<div aria-disabled="true" class="stake-chip lottery-card">
-<div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">Авто</span></div>
-<div class="amt">Largus</div>
-<div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
-<button class="btn ghost" disabled="" style="margin-top:10px; opacity:.6; cursor:not-allowed" type="button">Скоро</button>
-</div>
-<div aria-disabled="true" class="stake-chip lottery-card">
-<div class="meta"><span class="tag">РОЗЫГРЫШ</span><span class="muted">Cash</span></div>
-<div class="amt">Денежный приз</div>
-<div class="muted" style="font-size:12px">Билеты • таймер • карточка розыгрыша</div>
-<button class="btn ghost" disabled="" style="margin-top:10px; opacity:.6; cursor:not-allowed" type="button">Скоро</button>
-</div>
-</div>
-</div>
-<div class="lot-pane" data-lot-pane="archive">
-<div class="lot-empty">
-<div class="title">Архив розыгрышей</div>
-<div class="muted" style="font-size:13px">Пока данные не подключены — но UI уже готов к «живому» архиву.</div>
-<table aria-label="Архив розыгрышей (заглушка)" class="lot-table">
-<thead>
-<tr>
-<th style="width:120px">Дата</th>
-<th>Приз</th>
-<th style="width:160px">Победитель</th>
-<th style="width:140px">Билеты</th>
-<th style="width:140px">Проверка</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="muted">—</td>
-<td>—</td>
-<td><span class="pill">—</span></td>
-<td class="muted">—</td>
-<td class="muted">seed/nonce/commit</td>
-</tr>
-<tr>
-<td class="muted">—</td>
-<td>—</td>
-<td><span class="pill">—</span></td>
-<td class="muted">—</td>
-<td class="muted">seed/nonce/commit</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="lot-pane" data-lot-pane="mine">
-<div class="lot-empty">
-<div class="title">Мои билеты</div>
-<div class="muted" style="font-size:13px">Будет история билетов: сколько куплено, статус, выигрыш. Пока — UI-заготовка.</div>
-<div class="lot-row" style="margin-top:12px">
-<div class="r"><div><div class="k">Активных билетов</div><div class="v">—</div></div><div class="muted" style="font-size:12px">скоро</div></div>
-</div>
-<table aria-label="Мои билеты (заглушка)" class="lot-table">
-<thead>
-<tr>
-<th style="width:160px">Розыгрыш</th>
-<th style="width:120px">Билетов</th>
-<th style="width:140px">Статус</th>
-<th>Комментарий</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>—</td>
-<td class="muted">—</td>
-<td><span class="pill">—</span></td>
-<td class="muted">данные появятся после подключения билетов</td>
-</tr>
-</tbody>
-</table>
-</div></div><div class="muted" style="font-size:12px">скоро</div><div class="lottery-under">
-<div class="card" id="lottery-pf-card">
-<h3>Честность розыгрышей</h3>
-<div class="small">
-    Розыгрыши будут отдельным режимом: прозрачные правила, публичные результаты,
-    и проверяемый механизм выбора победителя (по аналогии с provably fair).
-  </div>
-</div>
-<div class="card" id="lottery-status-card">
-<h3>Статус розыгрышей</h3>
-<div class="small">Здесь появятся активные розыгрыши и прогресс по билетам.</div>
-</div>
 
-</div></div>
-
-</div>
-
-</div>
-</main>
-<aside aria-label="Правая панель" class="rail">
-<div class="card" id="rail-duels-pf">
-<h3>Provably fair</h3>
-<div class="small">
-            Каждая дуэль имеет проверяемую «монетку»: commit → reveal → вычисление winner.
-            В карточке дуэли можно увидеть seed/nonce/commit и повторить расчёт.
-          </div>
-</div>
-
-<div class="card" id="rail-duels-status" style="margin-top:14px">
-<h3>Статус дуэлей</h3>
-<div class="small">Коротко о лобби прямо сейчас — чтобы не гадать, живо ли оно.</div>
-<div class="kpi">
-<div class="k"><div class="t">Открытых</div><div class="v" id="kpi-open">—</div></div>
-<div class="k"><div class="t">Моих open</div><div class="v" id="kpi-myopen">—</div></div>
-<div class="k"><div class="t">Архив</div><div class="v" id="kpi-history">—</div></div>
-<div class="k"><div class="t">Связи</div><div class="v" id="kpi-links">—</div></div>
-</div>
-</div>
-
-</aside>
-</div>
-</div>
-
-<!-- Детали дуэли -->
-<div class="modal-backdrop" id="duel-modal">
-<div class="modal">
-<div class="modal-head">
-<div class="modal-title" id="duel-modal-title">Дуэль</div>
-<button class="modal-close" id="duel-modal-close">Закрыть</button>
-</div>
-<div class="modal-body">
-<div class="kv" id="duel-modal-kv"></div>
-</div>
-</div>
-</div>
-<!-- Создание комнаты (режимы) -->
-<div class="modal-backdrop" id="create-modal">
-<div class="modal">
-<div class="modal-head">
-<div class="modal-title">Создать комнату</div>
-<button class="modal-close" id="create-modal-close" type="button">Закрыть</button>
-</div>
-<div class="modal-body">
-<div class="muted" style="font-size:13px; line-height:1.4">
-        Выбери формат. Сейчас полноценно работает только <b>публичная дуэль 1v1</b> — остальные режимы уже «на рельсах», но появятся чуть позже.
+      <div class="mode-pane" data-pane="duel_invite">
+        <div style="font-weight:800;font-size:14px">Приглашение игрока</div>
+        <div class="muted" style="font-size:13px;margin-top:6px;line-height:1.4">
+          Приватная комната — видна только вам двоим.
+        </div>
+        <div class="field">
+          <label for="invite-user-id">Кого приглашаем (user_id)</label>
+          <input id="invite-user-id" min="1" placeholder="например: 97" type="number"/>
+        </div>
       </div>
-<div aria-label="Режим комнаты" class="seg" role="tablist">
-<button class="is-active" data-mode="duel_1v1_public" type="button">1v1</button>
-<button data-mode="duel_invite" type="button">Invite <span class="badge-soon" style="margin-left:6px">soon</span></button>
-<button data-mode="duel_multi" type="button">3/6/10 <span class="badge-soon" style="margin-left:6px">soon</span></button>
-</div>
-<div class="mode-pane is-active" data-pane="duel_1v1_public">
-<div style="font-weight:900; margin-top:2px;">Публичная дуэль 1v1</div>
-<div class="muted" style="font-size:13px; margin-top:6px;">
-          Комната попадёт в Live. Победитель определяется coinflip. Детали будут в карточке дуэли.
+
+      <div class="mode-pane" data-pane="duel_multi">
+        <div style="font-weight:800;font-size:14px">Комнаты на несколько участников</div>
+        <div class="muted" style="font-size:13px;margin-top:6px;line-height:1.4">
+          3 / 6 / 10 человек — механика будет похожа.
         </div>
-</div>
-<div class="mode-pane" data-pane="duel_invite">
-<div style="font-weight:900; margin-top:2px;">Приглашение конкретного игрока</div>
-<div class="muted" style="font-size:13px; margin-top:6px;">
-          Приватная комната: видна только вам двоим, по приглашению. Отлично для «вызова».
+        <div class="field">
+          <label for="multi-size">Количество участников</label>
+          <select id="multi-size">
+            <option value="3">3</option>
+            <option value="6">6</option>
+            <option value="10">10</option>
+          </select>
         </div>
-<div class="field">
-<label for="invite-user-id">Кого приглашаем (user_id)</label>
-<input id="invite-user-id" min="1" placeholder="например: 97" type="number"/>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div class="modal-foot-actions">
+        <button class="btn" id="create-modal-cancel" type="button">Отмена</button>
+        <button class="btn primary" id="create-modal-save" type="button">Сохранить</button>
+        <button class="btn primary" id="create-modal-create" type="button">Создать</button>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Coin flip overlay -->
+<div class="coin-overlay" id="coin-overlay" role="status" aria-live="polite">
+  <div class="coin-label">Монетка решает судьбу…</div>
+  <div class="coin" aria-hidden="true"></div>
+  <div class="coin-sub">Честный coinflip. Секунду.</div>
 </div>
-<div class="mode-pane" data-pane="duel_multi">
-<div style="font-weight:900; margin-top:2px;">Комнаты на несколько участников</div>
-<div class="muted" style="font-size:13px; margin-top:6px;">
-          Формат «на компанию»: 3 / 6 / 10 человек. Механика будет похожа, но с иным распределением побед.
-        </div>
-<div class="field">
-<label for="multi-size">Количество участников</label>
-<select id="multi-size">
-<option value="3">3</option>
-<option value="6">6</option>
-<option value="10">10</option>
-</select>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="alert" aria-live="assertive">
+  <div class="t" id="toast-title"></div>
+  <div class="b" id="toast-body"></div>
 </div>
-</div>
-</div>
-<div class="modal-foot">
-<div class="left">Подготовительный UI-шаг: сохраняем выбор, но создаём пока только 1v1.</div>
-<div class="actions">
-<button class="btn" id="create-modal-cancel" type="button">Отмена</button>
-<button class="btn primary" id="create-modal-save" type="button">Сохранить режим</button>
-<button class="btn primary" id="create-modal-create" type="button">Создать сейчас</button>
-</div>
-</div>
-</div>
-</div>
-<!-- Монетка (3–4 секунды) -->
-<div class="coin-overlay" id="coin-overlay">
-<div class="coin-card">
-<div style="font-weight:800; font-size:18px;">Монетка решает судьбу…</div>
-<div aria-hidden="true" class="coin"></div>
-<div class="coin-text">Секунду. Мы честно кидаем coinflip.</div>
-</div>
-</div>
-<div class="toast" id="toast">
-<div class="t" id="toast-title"></div>
-<div class="b" id="toast-body"></div>
-</div>
-<!-- Telegram Login (асинхронно) -->
-<script async="" src="https://telegram.org/js/telegram-widget.js?22"></script>
-<!-- Весь JS — в одном файле. Он тянет HUM-баланс, делает proof-link и меняет кнопку на «… связан». -->
+
+<!-- ══════════════════════════════════
+     SCRIPTS
+══════════════════════════════════ -->
+<script async src="https://telegram.org/js/telegram-widget.js?22"></script>
 <script src="/js/lobby-balance-fix.js"></script>
-<!-- Дуэли 1v1: список, создание, join/cancel -->
 <script src="/js/duels-lobby.js?v=12"></script>
+
 <script>
-    // Подсветка активной вкладки (topbar + sidebar) по hash + переключение разделов
-    (function(){
-      const topLinks = Array.from(document.querySelectorAll('.hdr-nav a'));
-      const sideLinks = Array.from(document.querySelectorAll('.side-nav a'));
-      const mnavLinks = Array.from(document.querySelectorAll('#mobile-nav-card .mnav .a'));
-      const mnavPath = document.getElementById('mnav-path');
-      const mnavDetails = document.getElementById('mnav-details');
+(function () {
 
-      const hubDuels = document.getElementById('hub-duels');
-      const hubLottery = document.getElementById('hub-lottery');
+  /* ── Tab navigation ─────────────────────────── */
+  const tabs = Array.from(document.querySelectorAll('.tab-item[data-tab]'));
+  const hubs = {
+    stakes:  document.getElementById('hub-stakes'),
+    live:    document.getElementById('hub-live'),
+    archive: document.getElementById('hub-archive'),
+    lottery: document.getElementById('hub-lottery'),
+  };
 
-      const railDuelsPF = document.getElementById('rail-duels-pf');
-      const railLotteryPF = document.getElementById('rail-lottery-pf');
-      const railDuelsStatus = document.getElementById('rail-duels-status');
-      const railLotteryStatus = document.getElementById('rail-lottery-status');
+  const sidebarLinks = Array.from(document.querySelectorAll('.sidebar-link[data-nav]'));
 
-      // закрываем mobile-nav после выбора пункта
-      if(mnavDetails && mnavLinks.length){
-        mnavLinks.forEach(a=> a.addEventListener('click', ()=>{ mnavDetails.open = false; }));
-      }
+  // Hash → tab mapping
+  const hashToTab = {
+    '#stakes':  'stakes',
+    '#live':    'live',
+    '#archive': 'archive',
+    '#lottery': 'lottery',
+    '#':        'stakes',
+    '':         'stakes',
+  };
 
-const lotSub = document.getElementById('lottery-subnav');
-const lotSideLinks = Array.from(document.querySelectorAll('[data-lot-jump]'));
+  let currentTab = 'stakes';
 
-if(lotSideLinks.length){
-  lotSideLinks.forEach(a=>{
-    a.addEventListener('click', (e)=>{
+  function activateTab(tab) {
+    if (!hubs[tab]) tab = 'stakes';
+    currentTab = tab;
+
+    // hubs
+    Object.entries(hubs).forEach(([k, el]) => {
+      if (el) el.classList.toggle('is-active', k === tab);
+    });
+
+    // bottom tabs
+    tabs.forEach(t => t.classList.toggle('is-active', t.dataset.tab === tab));
+
+    // sidebar links
+    sidebarLinks.forEach(a => a.classList.toggle('is-active', a.dataset.nav === tab));
+
+    // sync hash without scroll jump
+    const newHash = '#' + tab;
+    if (location.hash !== newHash) {
+      history.replaceState(null, '', newHash);
+    }
+
+    // lottery sub-tabs
+    const isLottery = tab === 'lottery';
+    const lotSub = document.getElementById('lottery-subnav');
+    if (lotSub) lotSub.style.display = isLottery ? '' : 'none';
+
+    // fire event for duels-lobby.js polling sync
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+  }
+
+  // Clicks on bottom tabs
+  tabs.forEach(t => {
+    t.addEventListener('click', () => activateTab(t.dataset.tab));
+  });
+
+  // Clicks on sidebar links
+  sidebarLinks.forEach(a => {
+    a.addEventListener('click', e => {
       e.preventDefault();
-      location.hash = '#lottery';
-      const t = a.dataset.lotJump || 'active';
-      if(typeof window.__gg_setLotteryTab === 'function'){
-        window.__gg_setLotteryTab(t);
-      } else {
-        try{ localStorage.setItem('ggroom_lottery_tab_v1', t); }catch(_){}
-      }
+      activateTab(a.dataset.nav);
     });
   });
-}
 
-      // Кликабельные заголовки-группы (чтобы по слову «Розыгрыши» тоже открывалось)
-      const labelLinks = Array.from(document.querySelectorAll('[data-hash].is-click'));
-      labelLinks.forEach(el=>{
-        el.addEventListener('click', ()=>{ location.hash = el.dataset.hash; });
-        el.addEventListener('keydown', (e)=>{
-          if(e.key === 'Enter' || e.key === ' '){
-            e.preventDefault();
-            location.hash = el.dataset.hash;
-          }
-        });
-      });
+  // Anchor links within page (stake cards etc.) → resolve to tab
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const hash = a.getAttribute('href');
+    const tab = hashToTab[hash];
+    if (tab) {
+      e.preventDefault();
+      activateTab(tab);
+    }
+  });
 
-      function norm(h){
-        if(!h) return '#stakes';
-        if(!h.startsWith('#')) return '#stakes';
-        return h;
+  // Initial state from hash
+  const initTab = hashToTab[location.hash] || 'stakes';
+  activateTab(initTab);
+
+  // Sync KPIs to mobile stat strip
+  function syncMobileKpis() {
+    const map = { open:'m-kpi-open', myopen:'m-kpi-myopen', history:'m-kpi-history', links:'m-kpi-links' };
+    Object.entries(map).forEach(([k, mId]) => {
+      const src = document.getElementById('kpi-' + k);
+      const dst = document.getElementById(mId);
+      if (src && dst) {
+        const observer = new MutationObserver(() => { dst.textContent = src.textContent; });
+        observer.observe(src, { childList: true, characterData: true, subtree: true });
+        dst.textContent = src.textContent;
       }
+    });
+  }
+  syncMobileKpis();
 
-      function update(){
-        const h = norm(location.hash);
+  // Live tab badge: update when kpi-open changes
+  const kpiOpen = document.getElementById('kpi-open');
+  const liveBadge = document.getElementById('tab-live-badge');
+  if (kpiOpen && liveBadge) {
+    new MutationObserver(() => {
+      const n = parseInt(kpiOpen.textContent, 10);
+      if (n > 0) { liveBadge.textContent = n; liveBadge.classList.add('visible'); }
+      else liveBadge.classList.remove('visible');
+    }).observe(kpiOpen, { childList: true, characterData: true, subtree: true });
+  }
 
-        // активные пункты меню
-        topLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
-        sideLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
-        mnavLinks.forEach(a => a.classList.toggle('is-active', a.getAttribute('href') === h));
+  // Balance chip also triggers topup
+  const balChip = document.getElementById('user-balance');
+  const topupBtn = document.getElementById('topup-btn');
+  if (balChip && topupBtn) {
+    balChip.addEventListener('click', () => topupBtn.click());
+    balChip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') topupBtn.click(); });
+  }
 
-        // разделы: Дуэли vs Розыгрыши
-        const isLottery = (h === '#lottery' || h.startsWith('#lottery'));
+  /* ── Modals ─────────────────────────────────── */
+  function openModal(id) {
+    const m = document.getElementById(id);
+    if (m) { m.classList.add('show'); m.style.display = 'flex'; }
+  }
+  function closeModal(id) {
+    const m = document.getElementById(id);
+    if (m) { m.classList.remove('show'); m.style.display = ''; }
+  }
+  function closeAllModals() {
+    document.querySelectorAll('.modal-backdrop').forEach(m => {
+      m.classList.remove('show');
+      m.style.display = '';
+    });
+  }
 
-if(lotSub) lotSub.style.display = isLottery ? '' : 'none';
-if(isLottery){
-  const t = (typeof window.__gg_getLotteryTab === 'function')
-    ? window.__gg_getLotteryTab()
-    : (function(){ try{return localStorage.getItem('ggroom_lottery_tab_v1')||'active';}catch(e){return 'active';} })();
-  lotSideLinks.forEach(a => a.classList.toggle('is-active', a.dataset.lotJump === t));
-}
+  document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) closeAllModals(); });
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModals(); });
 
-        if (hubDuels) hubDuels.style.display = isLottery ? 'none' : '';
-        if (hubLottery) hubLottery.style.display = isLottery ? '' : 'none';
+  document.getElementById('duel-modal-close')?.addEventListener('click', () => closeModal('duel-modal'));
+  document.getElementById('create-modal-close')?.addEventListener('click', () => closeModal('create-modal'));
 
-        // правая панель тоже меняется
-        if (railDuelsPF) railDuelsPF.style.display = isLottery ? 'none' : '';
-        if (railDuelsStatus) railDuelsStatus.style.display = isLottery ? 'none' : '';
-        if (railLotteryPF) railLotteryPF.style.display = isLottery ? '' : 'none';
-        if (railLotteryStatus) railLotteryStatus.style.display = isLottery ? '' : 'none';
+  // expose for duels-lobby.js
+  window.__gg_openDuelModal  = () => openModal('duel-modal');
+  window.__gg_closeDuelModal = () => closeModal('duel-modal');
 
-        // mobile-nav breadcrumb
-        if(mnavPath){
-          if(isLottery){
-            const t = (typeof window.__gg_getLotteryTab === 'function')
-              ? window.__gg_getLotteryTab()
-              : (function(){ try{return localStorage.getItem('ggroom_lottery_tab_v1')||'active';}catch(e){return 'active';} })();
-            const map = { active:'Активные', archive:'Архив', mine:'Мои билеты' };
-            mnavPath.textContent = `Розыгрыши · ${map[t]||'Активные'}`;
-          } else {
-            const map = { '#stakes':'Ставки', '#live':'Live', '#archive':'Архив' };
-            mnavPath.textContent = `Дуэли · ${map[h]||'Ставки'}`;
-          }
-        }
-      }
+  // Coin overlay
+  const coinEl = document.getElementById('coin-overlay');
+  window.__gg_showCoin = show => {
+    if (!coinEl) return;
+    if (show) { coinEl.classList.add('show'); coinEl.style.display = 'flex'; }
+    else      { coinEl.classList.remove('show'); coinEl.style.display = ''; }
+  };
 
-      // expose + respond to lottery subtab changes (hash may not change)
-      window.__gg_syncNavActive = update;
-      window.addEventListener('ggroom:lottery-tab', update);
+  /* ── Create-mode modal ──────────────────────── */
+  const LS_MODE = 'ggroom_create_mode_v1';
 
-      window.addEventListener('hashchange', update);
-      update();
-    })();
-
-      // ===== Step 1.6.2: lottery tabs (Активные / Архив / Мои билеты) =====
-      (function(){
-        const btns = Array.from(document.querySelectorAll('[data-lot-tab]'));
-        const panes = Array.from(document.querySelectorAll('[data-lot-pane]'));
-        if(!btns.length || !panes.length) return;
-
-        const LS_KEY = 'ggroom_lottery_tab_v1';
-        function getTab(){
-          try{ return localStorage.getItem(LS_KEY) || 'active'; }catch(e){ return 'active'; }
-        }
-        function setTab(t){
-          btns.forEach(b => b.classList.toggle('is-active', b.dataset.lotTab === t));
-          panes.forEach(p => p.classList.toggle('is-active', p.dataset.lotPane === t));
-          try{ localStorage.setItem(LS_KEY, t); }catch(e){}
-
-          // сообщаем навигации обновиться даже если hash не менялся
-          try{
-            window.dispatchEvent(new CustomEvent('ggroom:lottery-tab', { detail:{ tab:t }}));
-          }catch(e){
-            window.dispatchEvent(new Event('ggroom:lottery-tab'));
-          }
-          if(typeof window.__gg_syncNavActive === 'function') window.__gg_syncNavActive();
-        }
-
-        btns.forEach(b => b.addEventListener('click', ()=> setTab(b.dataset.lotTab)));
-
-        // expose для сайдбара/других блоков
-        window.__gg_setLotteryTab = setTab;
-        window.__gg_getLotteryTab = getTab;
-
-        function syncOnEnter(){
-          const h = (location.hash || '#stakes');
-          const isLottery = (h === '#lottery' || h.startsWith('#lottery'));
-          if(isLottery) setTab(getTab());
-        }
-
-        window.addEventListener('hashchange', syncOnEnter);
-        syncOnEnter();
-      })();
-  </script>
-<script>
-    // ===== Step 1.5: режимы комнат (UI-слой, без изменения логики 1v1) =====
-    (function(){
-      const $ = (s, r=document) => r.querySelector(s);
-      const getCreateBtns = () => Array.from(document.querySelectorAll('[data-action="create"]'));
-      const getQuickBtns  = () => Array.from(document.querySelectorAll('[data-action="quick"]'));
-      const getActionBtns = () => Array.from(document.querySelectorAll('[data-action="create"],[data-action="quick"]'));
-      const btnMode = $('#create-mode-btn');
-      const linkMode = $('#create-mode-link');
-      const pillMode = $('#create-mode-pill');
-
-      const modal = $('#create-modal');
-      const closeBtn = $('#create-modal-close');
-      const cancelBtn = $('#create-modal-cancel');
-      const saveBtn = $('#create-modal-save');
-      const createNowBtn = $('#create-modal-create');
-
-      const segBtns = Array.from(modal.querySelectorAll('.seg button[data-mode]'));
-      const panes = Array.from(modal.querySelectorAll('.mode-pane[data-pane]'));
-
-      const inviteInput = $('#invite-user-id');
-      const multiSize = $('#multi-size');
-
-      const LS_KEY = 'ggroom_create_mode_v1';
-
-      function toast(title, body){
-        // Если в проекте уже есть showToast — используем его.
-        if (typeof window.showToast === 'function') return window.showToast(title, body);
-
-        const t = $('#toast'); const tt = $('#toast-title'); const tb = $('#toast-body');
-        if(!t || !tt || !tb) return;
-        tt.textContent = title || '';
-        tb.textContent = body || '';
-        t.classList.add('show');
-        clearTimeout(window.__gg_toast_timer);
-        window.__gg_toast_timer = setTimeout(()=>t.classList.remove('show'), 3800);
-      }
-
-      function openModal(){ modal.style.display='flex'; }
-      function closeModal(){ modal.style.display='none'; }
-
-      function getMode(){
-        try{
-          const raw = localStorage.getItem(LS_KEY);
-          if(raw){
-            const m = JSON.parse(raw);
-            if(m && m.type === 'lottery') return { type:'duel_1v1_public' };
-            return m;
-          }
-        }catch(e){}
-        return { type:'duel_1v1_public' };
-      }
-
-      function setMode(m){
-        try{ localStorage.setItem(LS_KEY, JSON.stringify(m)); }catch(e){}
-        renderMode();
-      }
-
-      function setActiveMode(type){
-        segBtns.forEach(b => b.classList.toggle('is-active', b.dataset.mode === type));
-        panes.forEach(p => p.classList.toggle('is-active', p.dataset.pane === type));
-      }
-
-      function applyModeToButtons(type){
-        const ok = (type === 'duel_1v1_public');
-        getQuickBtns().forEach((b)=>{ b.disabled = !ok; b.textContent = ok ? 'Быстрый матч' : 'Матч (скоро)'; });
-        getCreateBtns().forEach((b)=>{ b.disabled = !ok; b.textContent = ok ? 'Создать' : 'Создать (скоро)'; });
-      }
-
-      function renderMode(){
-        const m = getMode();
-        const map = {
-          duel_1v1_public: { tag:'1v1', text:'Публичная дуэль' },
-          duel_invite: { tag:'INV', text:`Приглашение${m.invite_user_id ? `: #${m.invite_user_id}` : ''}` },
-          duel_multi: { tag:'MULTI', text:`Комната на ${m.seats || 3}` },
-};
-        const x = map[m.type] || map.duel_1v1_public;
-        pillMode.innerHTML = `<span class="tag">${x.tag}</span> ${x.text}`;
-        setActiveMode(m.type);
-        // Если режим не 1v1 — блокируем действия в карточках (но не лезем в расчёты/запросы)
-        applyModeToButtons(m.type);
-      }
-
-      // переключение табов в модалке
-      segBtns.forEach(b => b.addEventListener('click', ()=>{
-        const type = b.dataset.mode;
-        setActiveMode(type);
-      }));
-
-      // открыть модалку
-      function openFromUI(e){ e.preventDefault(); openModal(); }
-      btnMode.addEventListener('click', openFromUI);
-      linkMode.addEventListener('click', openFromUI);
-
-      // закрытие
-      closeBtn.addEventListener('click', closeModal);
-      cancelBtn.addEventListener('click', closeModal);
-      modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-      document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
-
-      function collectSelected(){
-        const active = segBtns.find(b=>b.classList.contains('is-active'));
-        const type = active ? active.dataset.mode : 'duel_1v1_public';
-        const m = { type };
-
-        if(type === 'duel_invite'){
-          const v = parseInt(inviteInput.value || '', 10);
-          if(Number.isFinite(v) && v > 0) m.invite_user_id = v;
-        }
-        if(type === 'duel_multi'){
-          const seats = parseInt(multiSize.value || '3', 10);
-          m.seats = Number.isFinite(seats) ? seats : 3;
-        }
+  function getMode() {
+    try {
+      const raw = localStorage.getItem(LS_MODE);
+      if (raw) {
+        const m = JSON.parse(raw);
+        if (m && m.type === 'lottery') return { type: 'duel_1v1_public' };
         return m;
       }
+    } catch (_) {}
+    return { type: 'duel_1v1_public' };
+  }
+  function setMode(m) {
+    try { localStorage.setItem(LS_MODE, JSON.stringify(m)); } catch (_) {}
+    renderMode();
+  }
 
-      saveBtn.addEventListener('click', ()=>{
-        const m = collectSelected();
-        setMode(m);
-        closeModal();
+  const segBtns = Array.from(document.querySelectorAll('#create-modal .seg button[data-mode]'));
+  const modePanes = Array.from(document.querySelectorAll('.mode-pane[data-pane]'));
 
-        if(m.type !== 'duel_1v1_public'){
-          toast('Режим сохранён', 'Этот формат пока в разработке. Сейчас создаём только публичные дуэли 1v1.');
-        } else {
-          toast('Режим сохранён', 'Публичная дуэль 1v1.');
-        }
-      });
+  function setActiveSeg(type) {
+    segBtns.forEach(b => b.classList.toggle('is-active', b.dataset.mode === type));
+    modePanes.forEach(p => p.classList.toggle('is-active', p.dataset.pane === type));
+  }
 
-      createNowBtn.addEventListener('click', ()=>{
-        const m = collectSelected();
-        setMode(m);
-        closeModal();
+  function renderMode() {
+    const m = getMode();
+    const map = {
+      duel_1v1_public: { tag: '1v1', text: 'Публичная' },
+      duel_invite:     { tag: 'INV', text: `Invite${m.invite_user_id ? ` #${m.invite_user_id}` : ''}` },
+      duel_multi:      { tag: 'MLT', text: `×${m.seats || 3}` },
+    };
+    const x = map[m.type] || map.duel_1v1_public;
+    const pill = document.getElementById('create-mode-pill');
+    if (pill) pill.innerHTML = `<span class="tag">${x.tag}</span> ${x.text}`;
+    setActiveSeg(m.type);
 
-        if(m.type !== 'duel_1v1_public'){
-          toast('Скоро', 'Этот формат появится чуть позже. Сейчас доступна только публичная дуэль 1v1.');
-          return;
-        }
-        // Создаём комнату по выбранной ставке (делегируем в duels-lobby.js)
-        if (typeof window.__gg_duels_create_selected === 'function') window.__gg_duels_create_selected();
-        else toast('Ок', 'Выбери ставку и нажми «Создать» на карточке.');
-      });
-      // блокируем создание/быстрый матч, если выбран неподдерживаемый режим
-      document.addEventListener('click', (e)=>{
-        const btn = e.target && e.target.closest && e.target.closest('[data-action="create"],[data-action="quick"]');
-        if(!btn) return;
-        const m = getMode();
-        if(m.type !== 'duel_1v1_public'){
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          toast('Скоро', 'Выбранный режим пока не активен. Переключи на «Публичная дуэль 1v1».');
-        }
-      }, true);
+    const ok = m.type === 'duel_1v1_public';
+    document.querySelectorAll('[data-action="quick"],[data-action="create"]').forEach(b => {
+      b.disabled = !ok;
+      if (b.dataset.action === 'quick') b.textContent = ok ? 'Быстрый' : 'Скоро';
+      if (b.dataset.action === 'create') b.textContent = ok ? 'Создать' : 'Скоро';
+    });
+  }
 
-      // init
-      renderMode();
-    })();
-  </script>
-<script defer="" src="/gg-linker.js"></script>
+  segBtns.forEach(b => b.addEventListener('click', () => setActiveSeg(b.dataset.mode)));
+
+  function openCreateModal(e) { if (e) e.preventDefault(); setActiveSeg(getMode().type); openModal('create-modal'); }
+  document.getElementById('create-mode-btn')?.addEventListener('click', openCreateModal);
+  document.getElementById('create-mode-link')?.addEventListener('click', openCreateModal);
+
+  function collectSeg() {
+    const active = segBtns.find(b => b.classList.contains('is-active'));
+    const type = active ? active.dataset.mode : 'duel_1v1_public';
+    const m = { type };
+    if (type === 'duel_invite') {
+      const v = parseInt(document.getElementById('invite-user-id')?.value || '', 10);
+      if (Number.isFinite(v) && v > 0) m.invite_user_id = v;
+    }
+    if (type === 'duel_multi') {
+      const seats = parseInt(document.getElementById('multi-size')?.value || '3', 10);
+      m.seats = Number.isFinite(seats) ? seats : 3;
+    }
+    return m;
+  }
+
+  function showToast(title, body) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    document.getElementById('toast-title').textContent = title || '';
+    document.getElementById('toast-body').textContent  = body  || '';
+    t.classList.add('show');
+    clearTimeout(window.__gg_toast_timer);
+    window.__gg_toast_timer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+  window.showToast = showToast;
+
+  document.getElementById('create-modal-cancel')?.addEventListener('click', () => closeModal('create-modal'));
+  document.getElementById('create-modal-save')?.addEventListener('click', () => {
+    const m = collectSeg();
+    setMode(m);
+    closeModal('create-modal');
+    showToast('Режим сохранён', m.type !== 'duel_1v1_public' ? 'Этот режим пока в разработке.' : 'Публичная дуэль 1v1.');
+  });
+  document.getElementById('create-modal-create')?.addEventListener('click', () => {
+    const m = collectSeg();
+    setMode(m);
+    closeModal('create-modal');
+    if (m.type !== 'duel_1v1_public') {
+      showToast('Скоро', 'Этот формат появится позже. Пока — публичная 1v1.');
+      return;
+    }
+    if (typeof window.__gg_duels_create_selected === 'function') window.__gg_duels_create_selected();
+    else showToast('Ок', 'Выбери ставку и нажми «Создать» на карточке.');
+  });
+
+  // Block unsupported modes
+  document.addEventListener('click', e => {
+    const btn = e.target?.closest('[data-action="create"],[data-action="quick"]');
+    if (!btn) return;
+    if (getMode().type !== 'duel_1v1_public') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showToast('Скоро', 'Выбранный режим пока не активен.');
+    }
+  }, true);
+
+  renderMode();
+
+  /* ── Lottery tabs ───────────────────────────── */
+  const LS_LOT = 'ggroom_lottery_tab_v1';
+  const lotBtns  = Array.from(document.querySelectorAll('[data-lot-tab]'));
+  const lotPanes = Array.from(document.querySelectorAll('[data-lot-pane]'));
+
+  function setLotTab(t) {
+    lotBtns.forEach(b => b.classList.toggle('is-active', b.dataset.lotTab === t));
+    lotPanes.forEach(p => p.classList.toggle('is-active', p.dataset.lotPane === t));
+    try { localStorage.setItem(LS_LOT, t); } catch (_) {}
+  }
+  function getLotTab() { try { return localStorage.getItem(LS_LOT) || 'active'; } catch (_) { return 'active'; } }
+
+  lotBtns.forEach(b => b.addEventListener('click', () => setLotTab(b.dataset.lotTab)));
+  setLotTab(getLotTab());
+
+  window.__gg_setLotteryTab = setLotTab;
+  window.__gg_getLotteryTab = getLotTab;
+
+})();
+</script>
+<script defer src="/gg-linker.js"></script>
 </body>
 </html>
